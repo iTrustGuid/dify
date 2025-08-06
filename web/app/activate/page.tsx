@@ -13,7 +13,7 @@ const Activate = () => {
         <Header />
         <ActivateForm />
         {!systemFeatures.branding.enabled && <div className='px-8 py-6 text-sm font-normal text-text-tertiary'>
-          © {new Date().getFullYear()} LangGenius, Inc. All rights reserved.
+          {/* © {new Date().getFullYear()} LangGenius, Inc. All rights reserved. */}
         </div>}
       </div>
     </div>
