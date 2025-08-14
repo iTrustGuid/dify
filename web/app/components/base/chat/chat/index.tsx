@@ -4,6 +4,7 @@ import type {
 } from 'react'
 import {
   memo,
+  use,
   useCallback,
   useEffect,
   useRef,
@@ -211,9 +212,21 @@ const Chat: FC<ChatProps> = ({
   }, [])
 
   useEffect(() => {
+    // 接收外部消息，推入一条新增聊天消息
+    window.addEventListener('message', (event) => {
+      console.log('event.data.message', event.data.message)
+      if (event.data.type === 'dify-chatbot-append-message') {
+        chatList.push(event.data.message as ChatItem)
+      }
+    });
+  }, [])
+
+  useEffect(() => {
     if (!sidebarCollapseState)
       setTimeout(() => handleWindowResize(), 200)
   }, [handleWindowResize, sidebarCollapseState])
+
+
 
   const hasTryToAsk = config?.suggested_questions_after_answer?.enabled && !!suggestedQuestions?.length && onSend
 
@@ -238,6 +251,7 @@ const Chat: FC<ChatProps> = ({
           className={cn('relative h-full overflow-y-auto overflow-x-hidden', chatContainerClassName)}
         >
           {chatNode}
+          <div>问题数：{chatList.length}</div>
           <div
             ref={chatContainerInnerRef}
             className={cn('w-full', !noSpacing && 'px-8', chatContainerInnerClassName)}
