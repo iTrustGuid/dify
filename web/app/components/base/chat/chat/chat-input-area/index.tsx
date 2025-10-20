@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
 } from 'react'
@@ -91,6 +92,24 @@ const ChatInputArea = ({
     },
     [handleTextareaResize],
   )
+  const handleOnMessage = (event: any) => {
+    console.log('event.data.message', event.data.message)
+    if (event.data.type === 'dify-chatbot-append-message') {
+      const message = event.data.message as string
+      setQuery(message)
+      historyRef.current.push(message)
+      setCurrentIndex(historyRef.current.length)
+      if (onSend) {
+        onSend(message)
+        setQuery('')
+      }
+    }
+  }
+  useEffect(() => {
+    // 接收外部消息，推入一条新增聊天消息
+    window.removeEventListener('message', handleOnMessage)
+    window.addEventListener('message', handleOnMessage)
+  }, [])
 
   const handleSend = () => {
     if (isResponding) {
@@ -126,6 +145,7 @@ const ChatInputArea = ({
       isComposingRef.current = false
     }, 50)
   }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       // if isComposing, exit
