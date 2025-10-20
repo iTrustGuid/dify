@@ -23,9 +23,6 @@ COPY pnpm-lock.yaml .
 # RUN pnpm install --frozen-lockfile --registry https://registry.npmmirror.com/
 
 RUN pnpm install --frozen-lockfile
-# 替换为淘宝 npm 镜像（或其他国内镜像）
-RUN npm config set registry https://registry.npmmirror.com && \
-    pnpm config set registry https://registry.npmmirror.com
 
 # build resources
 FROM base AS builder

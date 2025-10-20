@@ -33,12 +33,11 @@ const DifyLogo: FC<DifyLogoProps> = ({
   const themedStyle = (theme === 'dark' && style === 'default') ? 'monochromeWhite' : style
 
   return (
-    <div>Escon</div>
-    // <img
-    //   src={`${basePath}${logoPathMap[themedStyle]}`}
-    //   className={classNames('block object-contain', logoSizeMap[size], className)}
-    //   alt='Dify logo'
-    // />
+    <img
+      src={`${basePath}${logoPathMap[themedStyle]}`}
+      className={classNames('block object-contain', logoSizeMap[size], className)}
+      alt='Dify logo'
+    />
   )
 }
 
