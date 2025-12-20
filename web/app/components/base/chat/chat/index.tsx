@@ -238,7 +238,7 @@ const Chat: FC<ChatProps> = ({
           className={cn('relative h-full overflow-y-auto overflow-x-hidden', chatContainerClassName)}
         >
           {chatNode}
-          <div>问题数：{chatList.length}</div>
+          {/* <div>问题数：{chatList.length}</div> */}
           <div
             ref={chatContainerInnerRef}
             className={cn('w-full', !noSpacing && 'px-8', chatContainerInnerClassName)}
