@@ -13,7 +13,7 @@ import type {
 import { FormTypeEnum } from '../declarations'
 import { useLanguage } from '../hooks'
 import Input from './Input'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import { SimpleSelect } from '@/app/components/base/select'
 import Tooltip from '@/app/components/base/tooltip'
 import Radio from '@/app/components/base/radio'
@@ -48,8 +48,8 @@ type FormProps<
   fieldMoreInfo?: (payload: CredentialFormSchema | CustomFormSchema) => ReactNode
   customRenderField?: (
     formSchema: CustomFormSchema,
-    props: Omit<FormProps<CustomFormSchema>, 'override' | 'customRenderField'>
-  ) => ReactNode
+    props: Omit<FormProps<CustomFormSchema>, 'override' | 'customRenderField'>,
+  ) => ReactNode,
   // If return falsy value, this field will fallback to default render
   override?: [Array<FormTypeEnum>, (formSchema: CredentialFormSchema, props: Omit<FormProps<CustomFormSchema>, 'override' | 'customRenderField'>) => ReactNode]
   nodeId?: string
@@ -264,7 +264,7 @@ function Form<
       )
     }
 
-    if (formSchema.type === FormTypeEnum.boolean) {
+    if (formSchema.type === FormTypeEnum.checkbox) {
       const {
         variable, label, show_on, required,
       } = formSchema as CredentialFormSchemaRadio

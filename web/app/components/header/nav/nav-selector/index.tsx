@@ -9,13 +9,13 @@ import {
 import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { useRouter } from 'next/navigation'
 import { debounce } from 'lodash-es'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import AppIcon from '@/app/components/base/app-icon'
 import { AppTypeIcon } from '@/app/components/app/type-selector'
 import { useAppContext } from '@/context/app-context'
 import { useStore as useAppStore } from '@/app/components/app/store'
 import { FileArrow01, FilePlus01, FilePlus02 } from '@/app/components/base/icons/src/vender/line/files'
-import type { AppIconType, AppMode } from '@/types/app'
+import type { AppIconType, AppModeEnum } from '@/types/app'
 
 export type NavItem = {
   id: string
@@ -25,7 +25,7 @@ export type NavItem = {
   icon: string
   icon_background: string | null
   icon_url: string | null
-  mode?: AppMode
+  mode?: AppModeEnum
 }
 export type INavSelectorProps = {
   navigationItems: NavItem[]

@@ -22,7 +22,7 @@ import { Line3 } from '@/app/components/base/icons/src/public/common'
 import { Variable02 } from '@/app/components/base/icons/src/vender/solid/development'
 import { BubbleX } from '@/app/components/base/icons/src/vender/line/others'
 import { FILE_EXTS } from '@/app/components/base/prompt-editor/constants'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import type { FileEntity } from '@/app/components/base/file-uploader/types'
 import BoolInput from './bool-input'
 import { useHooksStore } from '@/app/components/workflow/hooks-store'
@@ -140,7 +140,7 @@ const FormItem: FC<Props> = ({
             <Input
               value={value || ''}
               onChange={e => onChange(e.target.value)}
-              placeholder={t('appDebug.variableConfig.inputPlaceholder')!}
+              placeholder={typeof payload.label === 'object' ? payload.label.variable : payload.label}
               autoFocus={autoFocus}
             />
           )
@@ -152,7 +152,7 @@ const FormItem: FC<Props> = ({
               type="number"
               value={value || ''}
               onChange={e => onChange(e.target.value)}
-              placeholder={t('appDebug.variableConfig.inputPlaceholder')!}
+              placeholder={typeof payload.label === 'object' ? payload.label.variable : payload.label}
               autoFocus={autoFocus}
             />
           )
@@ -163,7 +163,7 @@ const FormItem: FC<Props> = ({
             <Textarea
               value={value || ''}
               onChange={e => onChange(e.target.value)}
-              placeholder={t('appDebug.variableConfig.inputPlaceholder')!}
+              placeholder={typeof payload.label === 'object' ? payload.label.variable : payload.label}
               autoFocus={autoFocus}
             />
           )

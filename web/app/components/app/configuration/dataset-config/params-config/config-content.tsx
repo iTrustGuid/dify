@@ -20,7 +20,7 @@ import type {
   DataSet,
 } from '@/models/datasets'
 import { RerankingModeEnum } from '@/models/datasets'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import { useSelectedDatasetsMode } from '@/app/components/workflow/nodes/knowledge-retrieval/hooks'
 import Switch from '@/app/components/base/switch'
 import Toast from '@/app/components/base/toast'
@@ -368,7 +368,6 @@ const ConfigContent: FC<Props> = ({
             popupClassName='!w-[387px]'
             portalToFollowElemContentClassName='!z-[1002]'
             isAdvancedMode={true}
-            mode={model?.mode}
             provider={model?.provider}
             completionParams={model?.completion_params}
             modelId={model?.name}

@@ -17,13 +17,13 @@ import { getNewVar, hasDuplicateStr } from '@/utils/var'
 import Toast from '@/app/components/base/toast'
 import Confirm from '@/app/components/base/confirm'
 import ConfigContext from '@/context/debug-configuration'
-import { AppType } from '@/types/app'
+import { AppModeEnum } from '@/types/app'
 import type { ExternalDataTool } from '@/models/common'
 import { useModalContext } from '@/context/modal-context'
 import { useEventEmitterContextContext } from '@/context/event-emitter'
 import type { InputVar } from '@/app/components/workflow/types'
 import { InputVarType } from '@/app/components/workflow/types'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 
 export const ADD_EXTERNAL_DATA_TOOL = 'ADD_EXTERNAL_DATA_TOOL'
 
@@ -121,7 +121,9 @@ const ConfigVar: FC<IConfigVarProps> = ({ promptVariables, readonly, onPromptVar
         icon,
         icon_background,
       },
-      onSaveCallback: (newExternalDataTool: ExternalDataTool) => {
+      onSaveCallback: (newExternalDataTool?: ExternalDataTool) => {
+        if (!newExternalDataTool)
+          return
         const newPromptVariables = oldPromptVariables.map((item, i) => {
           if (i === index) {
             return {
@@ -199,7 +201,7 @@ const ConfigVar: FC<IConfigVarProps> = ({ promptVariables, readonly, onPromptVar
   const handleRemoveVar = (index: number) => {
     const removeVar = promptVariables[index]
 
-    if (mode === AppType.completion && dataSets.length > 0 && removeVar.is_context_var) {
+    if (mode === AppModeEnum.COMPLETION && dataSets.length > 0 && removeVar.is_context_var) {
       showDeleteContextVarModal()
       setRemoveIndex(index)
       return

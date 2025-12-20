@@ -19,7 +19,7 @@ import FullScreenDrawer from './common/full-screen-drawer'
 import ChildSegmentDetail from './child-segment-detail'
 import StatusItem from './status-item'
 import Pagination from '@/app/components/base/pagination'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import { formatNumber } from '@/utils/format'
 import Divider from '@/app/components/base/divider'
 import Input from '@/app/components/base/input'
@@ -47,6 +47,7 @@ import {
 } from '@/service/knowledge/use-segment'
 import { useInvalid } from '@/service/use-base'
 import { noop } from 'lodash-es'
+import type { FileEntity } from '@/app/components/datasets/common/image-uploader/types'
 
 const DEFAULT_LIMIT = 10
 
@@ -61,7 +62,7 @@ type CurrChildChunkType = {
   showModal: boolean
 }
 
-type SegmentListContextValue = {
+export type SegmentListContextValue = {
   isCollapsed: boolean
   fullScreen: boolean
   toggleFullScreen: (fullscreen?: boolean) => void
@@ -124,6 +125,7 @@ const Completed: FC<ICompletedProps> = ({
   const [limit, setLimit] = useState(DEFAULT_LIMIT)
   const [fullScreen, setFullScreen] = useState(false)
   const [showNewChildSegmentModal, setShowNewChildSegmentModal] = useState(false)
+  const [isRegenerationModalOpen, setIsRegenerationModalOpen] = useState(false)
 
   const segmentListRef = useRef<HTMLDivElement>(null)
   const childSegmentListRef = useRef<HTMLDivElement>(null)
@@ -317,9 +319,10 @@ const Completed: FC<ICompletedProps> = ({
     question: string,
     answer: string,
     keywords: string[],
+    attachments: FileEntity[],
     needRegenerate = false,
   ) => {
-    const params: SegmentUpdater = { content: '' }
+    const params: SegmentUpdater = { content: '', attachment_ids: [] }
     if (docForm === ChunkingMode.qa) {
       if (!question.trim())
         return notify({ type: 'error', message: t('datasetDocuments.segment.questionEmpty') })
@@ -339,6 +342,13 @@ const Completed: FC<ICompletedProps> = ({
     if (keywords.length)
       params.keywords = keywords
 
+    if (attachments.length) {
+      const notAllUploaded = attachments.some(item => !item.uploadedId)
+      if (notAllUploaded)
+        return notify({ type: 'error', message: t('datasetDocuments.segment.allFilesUploaded') })
+      params.attachment_ids = attachments.map(item => item.uploadedId!)
+    }
+
     if (needRegenerate)
       params.regenerate_child_chunks = needRegenerate
 
@@ -354,6 +364,7 @@ const Completed: FC<ICompletedProps> = ({
             seg.content = res.data.content
             seg.sign_content = res.data.sign_content
             seg.keywords = res.data.keywords
+            seg.attachments = res.data.attachments
             seg.word_count = res.data.word_count
             seg.hit_count = res.data.hit_count
             seg.enabled = res.data.enabled
@@ -669,6 +680,7 @@ const Completed: FC<ICompletedProps> = ({
         onClose={onCloseSegmentDetail}
         showOverlay={false}
         needCheckChunks
+        modal={isRegenerationModalOpen}
       >
         <SegmentDetail
           key={currSegment.segInfo?.id}
@@ -677,6 +689,7 @@ const Completed: FC<ICompletedProps> = ({
           isEditMode={currSegment.isEditMode}
           onUpdate={handleUpdateSegment}
           onCancel={onCloseSegmentDetail}
+          onModalStateChange={setIsRegenerationModalOpen}
         />
       </FullScreenDrawer>
       {/* Create New Segment */}

@@ -11,7 +11,7 @@ import { AuthHeaderPrefix, AuthType } from '../types'
 import GetSchema from './get-schema'
 import ConfigCredentials from './config-credentials'
 import TestApi from './test-api'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import Drawer from '@/app/components/base/drawer-plus'
 import Button from '@/app/components/base/button'
 import Input from '@/app/components/base/input'
@@ -24,6 +24,7 @@ import Toast from '@/app/components/base/toast'
 
 type Props = {
   positionLeft?: boolean
+  dialogClassName?: string
   payload: any
   onHide: () => void
   onAdd?: (payload: CustomCollectionBackend) => void
@@ -33,6 +34,7 @@ type Props = {
 // Add and Edit
 const EditCustomCollectionModal: FC<Props> = ({
   positionLeft,
+  dialogClassName = '',
   payload,
   onHide,
   onAdd,
@@ -186,6 +188,7 @@ const EditCustomCollectionModal: FC<Props> = ({
         positionCenter={isAdd && !positionLeft}
         onHide={onHide}
         title={t(`tools.createTool.${isAdd ? 'title' : 'editTitle'}`)!}
+        dialogClassName={dialogClassName}
         panelClassName='mt-2 !w-[640px]'
         maxWidthClassName='!max-w-[640px]'
         height='calc(100vh - 16px)'
