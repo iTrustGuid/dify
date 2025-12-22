@@ -19,7 +19,6 @@ const translation = {
   intro5: 'можно создать',
   intro6: ' как отдельный плагин индекса ChatGPT для публикации',
   unavailable: 'Недоступно',
-  unavailableTip: 'Модель встраивания недоступна, необходимо настроить модель встраивания по умолчанию',
   datasets: 'БАЗЫ ЗНАНИЙ',
   datasetsApi: 'ДОСТУП К API',
   retrieval: {
@@ -37,11 +36,13 @@ const translation = {
       recommend: 'Рекомендуется',
     },
     invertedIndex: {
-      title: 'Инвертированный индекс',
-      description: 'Инвертированный индекс - это структура, используемая для эффективного поиска. Организованный по терминам, каждый термин указывает на документы или веб-страницы, содержащие его.',
     },
     change: 'Изменить',
     changeRetrievalMethod: 'Изменить метод поиска',
+    keyword_search: {
+      title: 'Инвертированный индекс',
+      description: 'Инвертированный индекс — это структура, используемая для эффективного извлечения. Каждый термин упорядочен по терминам и указывает на документы или веб-страницы, содержащие его.',
+    },
   },
   docsFailedNotice: 'документов не удалось проиндексировать',
   retry: 'Повторить попытку',
@@ -149,6 +150,8 @@ const translation = {
   chunkingMode: {
     general: 'Общее',
     parentChild: 'Родитель-дочерний',
+    graph: 'График',
+    qa: 'Вопросы и ответы',
   },
   parentMode: {
     fullDoc: 'Полный документ',
@@ -217,6 +220,34 @@ const translation = {
     addMetadata: 'Добавить метаданные',
   },
   embeddingModelNotAvailable: 'Модель встраивания недоступна.',
+  updated: 'Обновлено',
+  externalKnowledgeBase: 'Внешняя база знаний',
+  createFromPipeline: 'Создание из конвейера знаний',
+  serviceApi: {
+    card: {
+      apiReference: 'Справочник API',
+      title: 'API бэкенд-сервиса',
+      apiKey: 'API ключ',
+      endpoint: 'Конечная точка API сервиса',
+    },
+    enabled: 'На службе',
+    title: 'Сервисный API',
+    disabled: 'Отключено',
+  },
+  docAllEnabled_one: 'Документ {{count}} включен',
+  docAllEnabled_other: 'Все документы {{count}} включены',
+  partialEnabled_one: 'Всего {{count}} документов, доступно {{num}}',
+  partialEnabled_other: 'Всего {{count}} документов, доступно {{num}}',
+  cornerLabel: {
+    unavailable: 'Недоступно',
+    pipeline: 'Трубопровод',
+  },
+  multimodal: 'Мультимодальный',
+  imageUploader: {
+    button: 'Перетащите файл или папку, или',
+    browse: 'Просматривать',
+    tip: '{{supportTypes}} (макс. {{batchCount}}, {{size}} МБ каждый)',
+  },
 }
 
 export default translation

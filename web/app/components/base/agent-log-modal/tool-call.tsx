@@ -6,7 +6,7 @@ import {
   RiErrorWarningLine,
 } from '@remixicon/react'
 import { useContext } from 'use-context-selector'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import BlockIcon from '@/app/components/workflow/block-icon'
 import CodeEditor from '@/app/components/workflow/nodes/_base/components/editor/code-editor'
 import { CodeLanguage } from '@/app/components/workflow/nodes/code/types'
@@ -33,7 +33,7 @@ const ToolCallItem: FC<Props> = ({ toolCall, isLLM = false, isFinal, tokens, obs
     if (time < 1)
       return `${(time * 1000).toFixed(3)} ms`
     if (time > 60)
-      return `${Number.parseInt(Math.round(time / 60).toString())} m ${(time % 60).toFixed(3)} s`
+      return `${Math.floor(time / 60)} m ${(time % 60).toFixed(3)} s`
     return `${time.toFixed(3)} s`
   }
 

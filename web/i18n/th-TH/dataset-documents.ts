@@ -81,6 +81,10 @@ const translation = {
       ok: 'ตกลง, ได้',
     },
     learnMore: 'ศึกษาเพิ่มเติม',
+    sort: {
+      uploadTime: 'เวลาที่อัปโหลด',
+      hitCount: 'จำนวนการดึงข้อมูล',
+    },
   },
   metadata: {
     title: 'ข้อมูลเมตา',
@@ -98,6 +102,9 @@ const translation = {
       upload_file: 'อัปโหลดไฟล์',
       notion: 'ซิงค์แบบฟอร์ม Notion',
       github: 'แบบฟอร์มซิงค์ Github',
+      online_document: 'เอกสารออนไลน์',
+      local_file: 'ไฟล์ท้องถิ่น',
+      website_crawl: 'รวบรวมข้อมูลเว็บไซต์',
     },
     type: {
       book: 'หนังสือ',
@@ -335,13 +342,13 @@ const translation = {
     parentMaxTokens: 'พ่อแม่',
     pause: 'หยุด',
     hierarchical: 'พ่อแม่ลูก',
+    waiting: 'กำลังรอสัญญาณ...',
   },
   segment: {
     paragraphs: 'ย่อหน้า',
     keywords: 'คําสําคัญ',
     addKeyWord: 'เพิ่มคําสําคัญ',
     keywordError: 'ความยาวสูงสุดของคําหลักคือ 20',
-    characters: 'อักขระ',
     hitCount: 'จํานวนการดึงข้อมูล',
     vectorHash: 'แฮชเวกเตอร์:',
     questionPlaceholder: 'เพิ่มคําถามที่นี่',
@@ -393,6 +400,7 @@ const translation = {
     childChunks_one: 'ก้อนเด็ก',
     keywordDuplicate: 'คำสำคัญมีอยู่แล้ว',
     keywordEmpty: 'คีย์เวิร์ดไม่สามารถว่างเปล่าได้',
+    allFilesUploaded: 'ต้องอัปโหลดไฟล์ทั้งหมดก่อนบันทึก',
   },
 }
 

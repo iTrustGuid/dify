@@ -28,6 +28,7 @@ const translation = {
       description: ' sobre el método de recuperación.',
       longDescription: ' sobre el método de recuperación, puedes cambiar esto en cualquier momento en la configuración del conjunto de datos.',
       method: 'Método de recuperación',
+      multiModalTip: 'Cuando el modelo de incrustación soporte multimodal, seleccione un modelo de reordenamiento multimodal para un mejor rendimiento.',
     },
     save: 'Guardar',
     retrievalSettings: 'Configuración de recuperación',
@@ -37,6 +38,14 @@ const translation = {
     helpText: 'Aprenda a escribir una buena descripción del conjunto de datos.',
     upgradeHighQualityTip: 'Una vez que se actualiza al modo de alta calidad, no está disponible volver al modo económico',
     searchModel: 'Buscar modelo',
+    chunkStructure: {
+      learnMore: 'Aprende más',
+      description: 'sobre la estructura de fragmentos.',
+      title: 'Estructura de fragmentos',
+    },
+    numberOfKeywords: 'Número de palabras clave',
+    nameAndIcon: 'Nombre e icono',
+    onSearchResults: 'Ningún miembro coincide con su consulta de búsqueda.\nIntente su búsqueda nuevamente.',
   },
 }
 

@@ -1,11 +1,11 @@
-import { memo, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FixedSizeList as List, areEqual } from 'react-window'
 import type { ListChildComponentProps } from 'react-window'
 import { RiArrowDownSLine, RiArrowRightSLine } from '@remixicon/react'
 import Checkbox from '../../checkbox'
 import NotionIcon from '../../notion-icon'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import type { DataSourceNotionPage, DataSourceNotionPageMap } from '@/models/common'
 
 type PageSelectorProps = {
@@ -18,6 +18,7 @@ type PageSelectorProps = {
   canPreview?: boolean
   previewPageId?: string
   onPreview?: (selectedPageId: string) => void
+  isMultipleChoice?: boolean
 }
 type NotionPageTreeItem = {
   children: Set<string>
@@ -82,7 +83,19 @@ const ItemComponent = ({ index, style, data }: ListChildComponentProps<{
   pagesMap: DataSourceNotionPageMap
 }>) => {
   const { t } = useTranslation()
-  const { dataList, handleToggle, checkedIds, disabledCheckedIds, handleCheck, canPreview, handlePreview, listMapWithChildrenAndDescendants, searchValue, previewPageId, pagesMap } = data
+  const {
+    dataList,
+    handleToggle,
+    checkedIds,
+    disabledCheckedIds,
+    handleCheck,
+    canPreview,
+    handlePreview,
+    listMapWithChildrenAndDescendants,
+    searchValue,
+    previewPageId,
+    pagesMap,
+  } = data
   const current = dataList[index]
   const currentWithChildrenAndDescendants = listMapWithChildrenAndDescendants[current.page_id]
   const hasChild = currentWithChildrenAndDescendants.descendants.size > 0
@@ -127,8 +140,6 @@ const ItemComponent = ({ index, style, data }: ListChildComponentProps<{
         checked={checkedIds.has(current.page_id)}
         disabled={disabled}
         onCheck={() => {
-          if (disabled)
-            return
           handleCheck(index)
         }}
       />
@@ -182,11 +193,10 @@ const PageSelector = ({
   onPreview,
 }: PageSelectorProps) => {
   const { t } = useTranslation()
-  const [prevDataList, setPrevDataList] = useState(list)
   const [dataList, setDataList] = useState<NotionPageItem[]>([])
   const [localPreviewPageId, setLocalPreviewPageId] = useState('')
-  if (prevDataList !== list) {
-    setPrevDataList(list)
+
+  useEffect(() => {
     setDataList(list.filter(item => item.parent_id === 'root' || !pagesMap[item.parent_id]).map((item) => {
       return {
         ...item,
@@ -194,7 +204,8 @@ const PageSelector = ({
         depth: 0,
       }
     }))
-  }
+  }, [list])
+
   const searchDataList = list.filter((item) => {
     return item.page_name.includes(searchValue)
   }).map((item) => {
@@ -229,7 +240,7 @@ const PageSelector = ({
     if (current.expand) {
       current.expand = false
 
-      newDataList = [...dataList.filter(item => !descendantsIds.includes(item.page_id))]
+      newDataList = dataList.filter(item => !descendantsIds.includes(item.page_id))
     }
     else {
       current.expand = true
@@ -246,7 +257,7 @@ const PageSelector = ({
     setDataList(newDataList)
   }
 
-  const copyValue = new Set([...value])
+  const copyValue = new Set(value)
   const handleCheck = (index: number) => {
     const current = currentDataList[index]
     const pageId = current.page_id
@@ -269,7 +280,7 @@ const PageSelector = ({
       copyValue.add(pageId)
     }
 
-    onSelect(new Set([...copyValue]))
+    onSelect(new Set(copyValue))
   }
 
   const handlePreview = (index: number) => {

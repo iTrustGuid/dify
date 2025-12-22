@@ -4,8 +4,10 @@ from collections.abc import Mapping
 from typing import Any, cast
 
 from httpx import get
+from sqlalchemy import select
 
 from core.entities.provider_entities import ProviderConfig
+from core.helper.tool_provider_cache import ToolProviderListCache
 from core.model_runtime.utils.encoders import jsonable_encoder
 from core.tools.__base.tool_runtime import ToolRuntime
 from core.tools.custom_tool.provider import ApiToolProviderController
@@ -119,7 +121,7 @@ class ApiToolManageService:
         # check if the provider exists
         provider = (
             db.session.query(ApiToolProvider)
-            .filter(
+            .where(
                 ApiToolProvider.tenant_id == tenant_id,
                 ApiToolProvider.name == provider_name,
             )
@@ -147,7 +149,7 @@ class ApiToolManageService:
             description=extra_info.get("description", ""),
             schema_type_str=schema_type,
             tools_str=json.dumps(jsonable_encoder(tool_bundles)),
-            credentials_str={},
+            credentials_str="{}",
             privacy_policy=privacy_policy,
             custom_disclaimer=custom_disclaimer,
         )
@@ -175,6 +177,9 @@ class ApiToolManageService:
 
         # update labels
         ToolLabelManager.update_tool_labels(provider_controller, labels)
+
+        # Invalidate tool providers cache
+        ToolProviderListCache.invalidate_cache(tenant_id)
 
         return {"result": "success"}
 
@@ -210,7 +215,7 @@ class ApiToolManageService:
         """
         provider: ApiToolProvider | None = (
             db.session.query(ApiToolProvider)
-            .filter(
+            .where(
                 ApiToolProvider.tenant_id == tenant_id,
                 ApiToolProvider.name == provider_name,
             )
@@ -257,7 +262,7 @@ class ApiToolManageService:
         # check if the provider exists
         provider = (
             db.session.query(ApiToolProvider)
-            .filter(
+            .where(
                 ApiToolProvider.tenant_id == tenant_id,
                 ApiToolProvider.name == original_provider,
             )
@@ -276,7 +281,7 @@ class ApiToolManageService:
         provider.icon = json.dumps(icon)
         provider.schema = schema
         provider.description = extra_info.get("description", "")
-        provider.schema_type_str = ApiProviderSchemaType.OPENAPI.value
+        provider.schema_type_str = ApiProviderSchemaType.OPENAPI
         provider.tools_str = json.dumps(jsonable_encoder(tool_bundles))
         provider.privacy_policy = privacy_policy
         provider.custom_disclaimer = custom_disclaimer
@@ -299,13 +304,13 @@ class ApiToolManageService:
         )
 
         original_credentials = encrypter.decrypt(provider.credentials)
-        masked_credentials = encrypter.mask_tool_credentials(original_credentials)
+        masked_credentials = encrypter.mask_plugin_credentials(original_credentials)
         # check if the credential has changed, save the original credential
         for name, value in credentials.items():
             if name in masked_credentials and value == masked_credentials[name]:
                 credentials[name] = original_credentials[name]
 
-        credentials = encrypter.encrypt(credentials)
+        credentials = dict(encrypter.encrypt(credentials))
         provider.credentials_str = json.dumps(credentials)
 
         db.session.add(provider)
@@ -317,6 +322,9 @@ class ApiToolManageService:
         # update labels
         ToolLabelManager.update_tool_labels(provider_controller, labels)
 
+        # Invalidate tool providers cache
+        ToolProviderListCache.invalidate_cache(tenant_id)
+
         return {"result": "success"}
 
     @staticmethod
@@ -326,7 +334,7 @@ class ApiToolManageService:
         """
         provider = (
             db.session.query(ApiToolProvider)
-            .filter(
+            .where(
                 ApiToolProvider.tenant_id == tenant_id,
                 ApiToolProvider.name == provider_name,
             )
@@ -338,6 +346,9 @@ class ApiToolManageService:
 
         db.session.delete(provider)
         db.session.commit()
+
+        # Invalidate tool providers cache
+        ToolProviderListCache.invalidate_cache(tenant_id)
 
         return {"result": "success"}
 
@@ -376,7 +387,7 @@ class ApiToolManageService:
 
         db_provider = (
             db.session.query(ApiToolProvider)
-            .filter(
+            .where(
                 ApiToolProvider.tenant_id == tenant_id,
                 ApiToolProvider.name == provider_name,
             )
@@ -392,7 +403,7 @@ class ApiToolManageService:
                 icon="",
                 schema=schema,
                 description="",
-                schema_type_str=ApiProviderSchemaType.OPENAPI.value,
+                schema_type_str=ApiProviderSchemaType.OPENAPI,
                 tools_str=json.dumps(jsonable_encoder(tool_bundles)),
                 credentials_str=json.dumps(credentials),
             )
@@ -416,7 +427,7 @@ class ApiToolManageService:
             )
             decrypted_credentials = encrypter.decrypt(credentials)
             # check if the credential has changed, save the original credential
-            masked_credentials = encrypter.mask_tool_credentials(decrypted_credentials)
+            masked_credentials = encrypter.mask_plugin_credentials(decrypted_credentials)
             for name, value in credentials.items():
                 if name in masked_credentials and value == masked_credentials[name]:
                     credentials[name] = decrypted_credentials[name]
@@ -443,9 +454,7 @@ class ApiToolManageService:
         list api tools
         """
         # get all api providers
-        db_providers: list[ApiToolProvider] = (
-            db.session.query(ApiToolProvider).filter(ApiToolProvider.tenant_id == tenant_id).all() or []
-        )
+        db_providers = db.session.scalars(select(ApiToolProvider).where(ApiToolProvider.tenant_id == tenant_id)).all()
 
         result: list[ToolProviderApiEntity] = []
 

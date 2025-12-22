@@ -9,7 +9,6 @@ const translation = {
   buyPermissionDeniedTip:
     'Skontaktuj się z administratorem swojej firmy, aby zasubskrybować',
   plansCommon: {
-    title: 'Wybierz plan odpowiedni dla siebie',
     yearlyTip: 'Otrzymaj 2 miesiące za darmo, subskrybując rocznie!',
     mostPopular: 'Najpopularniejszy',
     planRange: {
@@ -24,21 +23,15 @@ const translation = {
     contractSales: 'Skontaktuj się z działem sprzedaży',
     contractOwner: 'Skontaktuj się z zarządcą zespołu',
     startForFree: 'Zacznij za darmo',
-    getStartedWith: 'Rozpocznij z ',
     contactSales: 'Kontakt z działem sprzedaży',
     talkToSales: 'Porozmawiaj z działem sprzedaży',
     modelProviders: 'Dostawcy modeli',
-    teamMembers: 'Członkowie zespołu',
     buildApps: 'Twórz aplikacje',
     vectorSpace: 'Przestrzeń wektorowa',
-    vectorSpaceBillingTooltip:
-      'Każdy 1MB może przechowywać około 1,2 miliona znaków z wektoryzowanych danych (szacowane na podstawie OpenAI Embeddings, różni się w zależności od modelu).',
     vectorSpaceTooltip:
       'Przestrzeń wektorowa jest systemem pamięci długoterminowej wymaganym dla LLM, aby zrozumieć Twoje dane.',
-    documentsUploadQuota: 'Limit przesyłanych dokumentów',
     documentProcessingPriority: 'Priorytet przetwarzania dokumentów',
-    documentProcessingPriorityTip:
-      'Dla wyższego priorytetu przetwarzania dokumentów, ulepsz swój plan.',
+    documentProcessingPriorityTip: 'Aby uzyskać wyższy priorytet przetwarzania dokumentów, zaktualizuj swój plan.',
     documentProcessingPriorityUpgrade:
       'Przetwarzaj więcej danych z większą dokładnością i w szybszym tempie.',
     priority: {
@@ -98,7 +91,7 @@ const translation = {
     freeTrialTipPrefix: 'Zarejestruj się i zdobądź',
     teamMember_other: '{{count,number}} członków zespołu',
     teamWorkspace: '{{count,number}} Zespół Workspace',
-    apiRateLimitUnit: '{{count,number}}/dzień',
+    apiRateLimitUnit: '{{count,number}}',
     cloud: 'Usługa chmurowa',
     teamMember_one: '{{count,number}} Członek zespołu',
     priceTip: 'na przestrzeń roboczą/',
@@ -107,26 +100,46 @@ const translation = {
     freeTrialTipSuffix: 'Nie jest wymagana karta kredytowa',
     documentsRequestQuota: '{{count,number}}/min Limit wiedzy na żądanie',
     documentsRequestQuotaTooltip: 'Określa całkowitą liczbę działań, jakie przestrzeń robocza może wykonać na minutę w ramach bazy wiedzy, w tym tworzenie zbiorów danych, usuwanie, aktualizacje, przesyłanie dokumentów, modyfikacje, archiwizowanie i zapytania do bazy wiedzy. Ta metryka jest używana do oceny wydajności zapytań do bazy wiedzy. Na przykład, jeśli użytkownik Sandbox wykona 10 kolejnych testów w ciągu jednej minuty, jego przestrzeń robocza zostanie tymczasowo ograniczona w wykonywaniu następujących działań przez następną minutę: tworzenie zbiorów danych, usuwanie, aktualizacje oraz przesyłanie lub modyfikacje dokumentów.',
+    startBuilding: 'Zacznij budować',
+    taxTip: 'Wszystkie ceny subskrypcji (miesięczne/roczne) nie obejmują obowiązujących podatków (np. VAT, podatek od sprzedaży).',
+    taxTipSecond: 'Jeśli w Twoim regionie nie ma obowiązujących przepisów podatkowych, podatek nie pojawi się podczas realizacji zamówienia i nie zostaną naliczone żadne dodatkowe opłaty przez cały okres subskrypcji.',
+    triggerEvents: {
+      unlimited: 'Nieograniczone zdarzenia wyzwalające',
+      tooltip: 'Liczba zdarzeń, które automatycznie uruchamiają przepływy pracy za pomocą wtyczki, harmonogramu lub wyzwalaczy Webhook.',
+      sandbox: '{{count,number}} Wyzwalacze zdarzeń',
+      professional: '{{count,number}} Wywołania zdarzeń/miesiąc',
+    },
+    workflowExecution: {
+      standard: 'Standardowe wykonywanie przepływu pracy',
+      tooltip: 'Priorytet i szybkość wykonywania kolejki przepływu pracy.',
+      priority: 'Wykonywanie przepływu pracy według priorytetu',
+      faster: 'Szybsze wykonywanie przepływu pracy',
+    },
+    startNodes: {
+      unlimited: 'Nieograniczone wyzwalacze/przepływ pracy',
+      limited: 'Do {{count}} wyzwalaczy/przepływów pracy',
+    },
+    title: {
+      plans: 'plany',
+      description: 'Wybierz plan, który najlepiej odpowiada potrzebom Twojego zespołu.',
+    },
   },
   plans: {
     sandbox: {
       name: 'Sandbox',
       description: '200 razy darmowa próba GPT',
-      includesTitle: 'Zawiera:',
       for: 'Darmowy okres próbny podstawowych funkcji',
     },
     professional: {
       name: 'Profesjonalny',
       description:
         'Dla osób fizycznych i małych zespołów, aby odblokować więcej mocy w przystępnej cenie.',
-      includesTitle: 'Wszystko w darmowym planie, plus:',
       for: 'Dla niezależnych deweloperów/małych zespołów',
     },
     team: {
       name: 'Zespół',
       description:
         'Współpracuj bez ograniczeń i ciesz się najwyższą wydajnością.',
-      includesTitle: 'Wszystko w planie Profesjonalnym, plus:',
       for: 'Dla średniej wielkości zespołów',
     },
     enterprise: {
@@ -134,28 +147,14 @@ const translation = {
       description:
         'Uzyskaj pełne możliwości i wsparcie dla systemów o kluczowym znaczeniu dla misji.',
       includesTitle: 'Wszystko w planie Zespołowym, plus:',
-      features: {
-        3: 'Wiele przestrzeni roboczych i zarządzanie przedsiębiorstwem',
-        5: 'Wynegocjowane SLA przez Dify Partners',
-        0: 'Rozwiązania do wdrożeń na dużą skalę klasy przedsiębiorstw',
-        8: 'Profesjonalne wsparcie techniczne',
-        2: 'Ekskluzywne funkcje przedsiębiorstwa',
-        6: 'Zaawansowane zabezpieczenia i kontrola',
-        7: 'Aktualizacje i konserwacja przez Dify Oficjalnie',
-        4: 'SSO',
-        1: 'Autoryzacja licencji komercyjnej',
-      },
+      features: ['Rozwiązania wdrożeniowe klasy korporacyjnej, skalowalne', 'Autoryzacja licencji komercyjnej', 'Ekskluzywne funkcje dla przedsiębiorstw', 'Wiele przestrzeni roboczych i zarządzanie przedsiębiorstwem', 'SSO', 'Negocjowane umowy SLA przez partnerów Dify', 'Zaawansowane zabezpieczenia i kontrola', 'Aktualizacje i konserwacja przez Dify oficjalnie', 'Profesjonalne wsparcie techniczne'],
       priceTip: 'Tylko roczne fakturowanie',
       btnText: 'Skontaktuj się z działem sprzedaży',
       for: 'Dla dużych zespołów',
       price: 'Niestety, nie mogę przetłumaczyć tego tekstu bez konkretnego zdania do przetłumaczenia.',
     },
     community: {
-      features: {
-        0: 'Wszystkie funkcje podstawowe wydane w publicznym repozytorium',
-        1: 'Jedno Miejsce Pracy',
-        2: 'Zgodne z licencją Dify Open Source',
-      },
+      features: ['Wszystkie podstawowe funkcje udostępnione w publicznym repozytorium', 'Pojedyncza przestrzeń robocza', 'Zgodne z licencją Dify Open Source'],
       includesTitle: 'Darmowe funkcje:',
       name: 'Społeczność',
       price: 'Darmowy',
@@ -164,12 +163,7 @@ const translation = {
       for: 'Dla użytkowników indywidualnych, małych zespołów lub projektów niekomercyjnych',
     },
     premium: {
-      features: {
-        0: 'Samozarządzana niezawodność różnych dostawców chmury',
-        1: 'Jedno miejsce pracy',
-        3: 'Priorytetowe wsparcie przez e-mail i czat',
-        2: 'Logo aplikacji internetowej i dostosowanie marki',
-      },
+      features: ['Niezawodność zarządzana samodzielnie przez różnych dostawców chmury', 'Pojedyncza przestrzeń robocza', 'Dostosowywanie logo i marki aplikacji webowej', 'Priorytetowe wsparcie e-mail i czat'],
       description: 'Dla średnich organizacji i zespołów',
       for: 'Dla średnich organizacji i zespołów',
       name: 'Premium',
@@ -185,8 +179,6 @@ const translation = {
     fullSolution: 'Ulepsz swój plan, aby uzyskać więcej miejsca.',
   },
   apps: {
-    fullTipLine1: 'Ulepsz swój plan, aby',
-    fullTipLine2: 'tworzyć więcej aplikacji.',
     fullTip1des: 'Osiągnąłeś limit tworzenia aplikacji w tym planie.',
     fullTip1: 'Zaktualizuj, aby stworzyć więcej aplikacji',
     fullTip2: 'Osiągnięto limit planu',
@@ -205,8 +197,35 @@ const translation = {
     buildApps: 'Twórz aplikacje',
     annotationQuota: 'Kwota aneksji',
     vectorSpaceTooltip: 'Dokumenty z trybem indeksowania o wysokiej jakości będą zużywać zasoby magazynu danych wiedzy. Gdy magazyn danych wiedzy osiągnie limit, nowe dokumenty nie będą przesyłane.',
+    perMonth: 'miesięcznie',
+    triggerEvents: 'Wydarzenia wyzwalające',
+    resetsIn: 'Resetuje się za {{count,number}} dni',
   },
   teamMembers: 'Członkowie zespołu',
+  triggerLimitModal: {
+    upgrade: 'Uaktualnij',
+    usageTitle: 'WYDARZENIA WYZWALAJĄCE',
+    description: 'Osiągnąłeś limit wyzwalaczy zdarzeń przepływu pracy dla tego planu.',
+    title: 'Uaktualnij, aby odblokować więcej zdarzeń wyzwalających',
+    dismiss: 'Odrzuć',
+  },
+  viewBillingTitle: 'Rozliczenia i subskrypcje',
+  viewBillingDescription: 'Zarządzaj metodami płatności, fakturami i zmianami subskrypcji',
+  viewBillingAction: 'Zarządzać',
+  upgrade: {
+    uploadMultiplePages: {
+      title: 'Przejdź na wyższą wersję, aby przesyłać wiele dokumentów jednocześnie',
+      description: 'Osiągnąłeś limit przesyłania — w ramach obecnego planu można wybrać i przesłać tylko jeden dokument naraz.',
+    },
+    uploadMultipleFiles: {
+      title: 'Uaktualnij, aby odblokować przesyłanie dokumentów wsadowych',
+      description: 'Przesyłaj wiele dokumentów jednocześnie, aby zaoszczędzić czas i zwiększyć wydajność.',
+    },
+    addChunks: {
+      title: 'Uaktualnij, aby kontynuować dodawanie fragmentów',
+      description: 'Osiągnąłeś limit dodawania fragmentów w tym planie.',
+    },
+  },
 }
 
 export default translation

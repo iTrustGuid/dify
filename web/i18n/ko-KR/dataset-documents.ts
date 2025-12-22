@@ -28,7 +28,7 @@ const translation = {
       delete: '삭제',
       enableWarning: '아카이브된 파일은 활성화할 수 없습니다.',
       sync: '동기화',
-      resume: '이력서',
+      resume: '재개',
       pause: '일시 중지',
     },
     index: {
@@ -81,6 +81,10 @@ const translation = {
     },
     addUrl: 'URL 추가',
     learnMore: '더 알아보세요',
+    sort: {
+      uploadTime: '업로드 시간',
+      hitCount: '검색 횟수',
+    },
   },
   metadata: {
     title: '메타데이터',
@@ -98,6 +102,9 @@ const translation = {
       upload_file: '파일 업로드',
       notion: 'Notion 에서 동기화',
       github: 'GitHub 에서 동기화',
+      website_crawl: '웹사이트 크롤링',
+      local_file: '로컬 파일',
+      online_document: '온라인 문서',
     },
     type: {
       book: '도서',
@@ -335,13 +342,13 @@ const translation = {
     parentMaxTokens: '부모',
     pause: '일시 중지',
     hierarchical: '부모 - 자식',
+    waiting: '임베딩 대기 중...',
   },
   segment: {
     paragraphs: '단락',
     keywords: '키워드',
     addKeyWord: '키워드 추가',
     keywordError: '키워드 최대 길이는 20 자입니다',
-    characters: '문자',
     hitCount: '검색 횟수',
     vectorHash: '벡터 해시: ',
     questionPlaceholder: '질문을 입력하세요',
@@ -393,6 +400,7 @@ const translation = {
     regeneratingMessage: '시간이 걸릴 수 있으니 잠시만 기다려 주십시오...',
     keywordDuplicate: '키워드가 이미 존재합니다.',
     keywordEmpty: '키워드는 비워둘 수 없습니다.',
+    allFilesUploaded: '저장하기 전에 모든 파일을 업로드해야 합니다',
   },
 }
 

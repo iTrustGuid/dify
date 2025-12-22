@@ -7,7 +7,7 @@ import { debounce } from 'lodash-es'
 import { useStore } from '../store'
 import { useResizePanel } from '../nodes/_base/hooks/use-resize-panel'
 import Panel from './panel'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 
 const VariableInspectPanel: FC = () => {
   const showVariableInspectPanel = useStore(s => s.showVariableInspectPanel)
@@ -16,15 +16,15 @@ const VariableInspectPanel: FC = () => {
   const setVariableInspectPanelHeight = useStore(s => s.setVariableInspectPanelHeight)
 
   const maxHeight = useMemo(() => {
-      if (!workflowCanvasHeight)
-        return 480
-      return workflowCanvasHeight - 60
-    }, [workflowCanvasHeight])
+    if (!workflowCanvasHeight)
+      return 480
+    return workflowCanvasHeight - 60
+  }, [workflowCanvasHeight])
 
   const handleResize = useCallback((width: number, height: number) => {
     localStorage.setItem('workflow-variable-inpsect-panel-height', `${height}`)
     setVariableInspectPanelHeight(height)
-    }, [setVariableInspectPanelHeight])
+  }, [setVariableInspectPanelHeight])
 
   const {
     triggerRef,

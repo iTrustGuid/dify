@@ -1,26 +1,27 @@
-import { BlockEnum } from '../../types'
-import type { NodeDefault } from '../../types'
+import { genNodeMetaData } from '@/app/components/workflow/utils'
+import { BlockEnum } from '@/app/components/workflow/types'
+import type { NodeDefault, ToolWithProvider, Var } from '../../types'
 import type { ToolNodeType } from './types'
 import { VarType as VarKindType } from '@/app/components/workflow/nodes/tool/types'
-import { ALL_CHAT_AVAILABLE_BLOCKS, ALL_COMPLETION_AVAILABLE_BLOCKS } from '@/app/components/workflow/blocks'
+import { TOOL_OUTPUT_STRUCT } from '../../constants'
+import { CollectionType } from '@/app/components/tools/types'
+import { canFindTool } from '@/utils'
+import { Type } from '../llm/types'
+import { resolveVarType } from './output-schema-utils'
 
 const i18nPrefix = 'workflow.errorMsg'
 
+const metaData = genNodeMetaData({
+  sort: -1,
+  type: BlockEnum.Tool,
+  helpLinkUri: 'tools',
+})
 const nodeDefault: NodeDefault<ToolNodeType> = {
+  metaData,
   defaultValue: {
     tool_parameters: {},
     tool_configurations: {},
     tool_node_version: '2',
-  },
-  getAvailablePrevNodes(isChatMode: boolean) {
-    const nodes = isChatMode
-      ? ALL_CHAT_AVAILABLE_BLOCKS
-      : ALL_COMPLETION_AVAILABLE_BLOCKS.filter(type => type !== BlockEnum.End)
-    return nodes
-  },
-  getAvailableNextNodes(isChatMode: boolean) {
-    const nodes = isChatMode ? ALL_CHAT_AVAILABLE_BLOCKS : ALL_COMPLETION_AVAILABLE_BLOCKS
-    return nodes
   },
   checkValid(payload: ToolNodeType, t: any, moreDataForCheckValid: any) {
     const { toolInputsSchema, toolSettingSchema, language, notAuthed } = moreDataForCheckValid
@@ -65,6 +66,59 @@ const nodeDefault: NodeDefault<ToolNodeType> = {
       isValid: !errorMessages,
       errorMessage: errorMessages,
     }
+  },
+  getOutputVars(payload: ToolNodeType, allPluginInfoList: Record<string, ToolWithProvider[]>, _ragVars: any, { schemaTypeDefinitions } = { schemaTypeDefinitions: [] }) {
+    const { provider_id, provider_type } = payload
+    let currentTools: ToolWithProvider[] = []
+    switch (provider_type) {
+      case CollectionType.builtIn:
+        currentTools = allPluginInfoList.buildInTools ?? []
+        break
+      case CollectionType.custom:
+        currentTools = allPluginInfoList.customTools ?? []
+        break
+      case CollectionType.workflow:
+        currentTools = allPluginInfoList.workflowTools ?? []
+        break
+      case CollectionType.mcp:
+        currentTools = allPluginInfoList.mcpTools ?? []
+        break
+      default:
+        currentTools = []
+    }
+    const currCollection = currentTools.find(item => canFindTool(item.id, provider_id))
+    const currTool = currCollection?.tools.find(tool => tool.name === payload.tool_name)
+    const output_schema = currTool?.output_schema
+    let res: Var[] = []
+    if (!output_schema || !output_schema.properties) {
+      res = TOOL_OUTPUT_STRUCT
+    }
+    else {
+      const outputSchema: Var[] = []
+      Object.keys(output_schema.properties).forEach((outputKey) => {
+        const output = output_schema.properties[outputKey]
+        const { type, schemaType } = resolveVarType(output, schemaTypeDefinitions)
+
+        outputSchema.push({
+          variable: outputKey,
+          type,
+          des: output.description,
+          schemaType,
+          children: output.type === 'object' ? {
+            schema: {
+              type: Type.object,
+              properties: output.properties,
+              additionalProperties: false,
+            },
+          } : undefined,
+        })
+      })
+      res = [
+        ...TOOL_OUTPUT_STRUCT,
+        ...outputSchema,
+      ]
+    }
+    return res
   },
 }
 

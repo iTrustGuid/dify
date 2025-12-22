@@ -10,7 +10,7 @@ import {
   PortalToFollowElemTrigger,
 } from '@/app/components/base/portal-to-follow-elem'
 import Divider from '@/app/components/base/divider'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 
 type FilterProps = {
   filterValue: WorkflowVersionFilterOptions
@@ -70,7 +70,7 @@ const Filter: FC<FilterProps> = ({
               })
             }
           </div>
-          <Divider type='horizontal' className='my-0 h-[1px] bg-divider-subtle' />
+          <Divider type='horizontal' className='my-0 h-px bg-divider-subtle' />
           <FilterSwitch enabled={isOnlyShowNamedVersions} handleSwitch={handleSwitch} />
         </div>
       </PortalToFollowElemContent>

@@ -6,6 +6,8 @@ const translation = {
     tools: 'Instrumente',
     extensions: 'Extensii',
     models: 'Modele',
+    datasources: 'Surse de date',
+    triggers: 'Declanșatori',
   },
   categorySingle: {
     tool: 'Unealtă',
@@ -13,6 +15,8 @@ const translation = {
     extension: 'Extensie',
     agent: 'Strategia agentului',
     model: 'Model',
+    datasource: 'Sursa datelor',
+    trigger: 'Declanșator',
   },
   list: {
     source: {
@@ -43,6 +47,7 @@ const translation = {
       install: 'Instala',
       detail: 'Detalii',
       info: 'Informații despre plugin',
+      back: 'Înapoi',
     },
     toolSelector: {
       unsupportedContent: 'Versiunea de plugin instalată nu oferă această acțiune.',
@@ -84,6 +89,16 @@ const translation = {
     endpointModalDesc: 'Odată configurate, pot fi utilizate funcțiile furnizate de plugin prin intermediul punctelor finale API.',
     modelNum: '{{num}} MODELE INCLUSE',
     configureModel: 'Configurarea modelului',
+    deprecation: {
+      reason: {
+        businessAdjustments: 'ajustări de afaceri',
+        noMaintainer: 'fără întreținător',
+        ownershipTransferred: 'proprietatea transferată',
+      },
+      noReason: 'Acest plugin a fost declarat învechit și nu va mai fi actualizat.',
+      onlyReason: 'Acest plugin a fost depreciat din cauza {{deprecatedReason}} și nu va mai fi actualizat.',
+      fullMessage: 'Acest plugin a fost declarat învechit din cauza {{deprecatedReason}}, și nu va mai fi actualizat. Vă rugăm să folosiți în schimb <CustomLink href=\'https://example.com/\'>{{-alternativePluginId}}</CustomLink>.',
+    },
   },
   debugInfo: {
     viewDocs: 'Vizualizați documentele',
@@ -193,6 +208,11 @@ const translation = {
     installingWithError: 'Instalarea pluginurilor {{installingLength}}, {{successLength}} succes, {{errorLength}} eșuat',
     installingWithSuccess: 'Instalarea pluginurilor {{installingLength}}, {{successLength}} succes.',
     installing: 'Instalarea pluginurilor {{installingLength}}, 0 terminat.',
+    installSuccess: '{{successLength}} plugins installed successfully',
+    installed: 'Installed',
+    runningPlugins: 'Installing Plugins',
+    successPlugins: 'Successfully Installed Plugins',
+    errorPlugins: 'Failed to Install Plugins',
   },
   fromMarketplace: 'Din Marketplace',
   from: 'Din',
@@ -236,6 +256,69 @@ const translation = {
     setupOAuth: 'Configurați clientul OAuth',
     useApiAuthDesc: 'După configurarea acreditivelor, toți membrii din spațiul de lucru pot folosi acest instrument atunci când orchestran aplicații.',
     clientInfo: 'Deoarece nu s-au găsit secretele clientului sistemului pentru acest furnizor de instrumente, este necesară configurarea manuală; pentru redirect_uri, vă rugăm să folosiți',
+    unavailable: 'Necesar',
+    customCredentialUnavailable: 'Credentialele personalizate sunt în prezent indisponibile',
+    credentialUnavailable: 'Credențialele nu sunt disponibile în acest moment. Vă rugăm să contactați administratorul.',
+    credentialUnavailableInButton: 'Credential indisponibil',
+    connectedWorkspace: 'Spațiu de lucru conectat',
+    emptyAuth: 'Vă rugăm să configurați autentificarea',
+  },
+  deprecated: 'Încetat de a mai fi utilizat',
+  autoUpdate: {
+    strategy: {
+      disabled: {
+        description: 'Pluginurile nu se vor actualiza automat',
+        name: 'Dezactivat',
+      },
+      fixOnly: {
+        selectedDescription: 'Actualizare automată doar pentru versiuni patch',
+        name: 'Fix doar',
+        description: 'Actualizare automată doar pentru versiunile de patch (de exemplu, 1.0.1 → 1.0.2). Schimbările de versiune minore nu vor declanșa actualizări.',
+      },
+      latest: {
+        name: 'Ultimul',
+        selectedDescription: 'Actualizați întotdeauna la cea mai recentă versiune',
+        description: 'Actualizați întotdeauna la cea mai recentă versiune',
+      },
+    },
+    upgradeMode: {
+      exclude: 'Excluzi selecția',
+      all: 'Actualizează tot',
+      partial: 'Numai selectat',
+    },
+    upgradeModePlaceholder: {
+      exclude: 'Pluginurile selectate nu se vor actualiza automat.',
+      partial: 'Numai pluginurile selectate se vor actualiza automat. Nu există pluginuri selectate în prezent, așa că niciun plugin nu se va actualiza automat.',
+    },
+    operation: {
+      select: 'Selectați plugin-uri',
+      clearAll: 'Șterge tot',
+    },
+    pluginDowngradeWarning: {
+      title: 'Scădere a pluginului',
+      exclude: 'Exclude de la actualizarea automată',
+      downgrade: 'Oricum, downgradează',
+      description: 'Actualizarea automată este în prezent activată pentru acest plugin. Revenirea la o versiune anterioară poate provoca suprascrierea modificărilor tale în timpul următoarei actualizări automate.',
+    },
+    noPluginPlaceholder: {
+      noFound: 'Nu au fost găsite plugin-uri',
+      noInstalled: 'Niciun plugin instalat',
+    },
+    excludeUpdate: 'Următoarele {{num}} pluginuri nu se vor actualiza automat',
+    updateTimeTitle: 'Timp de actualizare',
+    updateSettings: 'Actualizează setările',
+    changeTimezone: 'Pentru a schimba fusul orar, mergi la <setTimezone>Setări</setTimezone>',
+    automaticUpdates: 'Actualizări automate',
+    specifyPluginsToUpdate: 'Specificați plugin-urile de actualizat',
+    partialUPdate: 'Numai următoarele {{num}} pluginuri se vor actualiza automat',
+    updateTime: 'Timp de actualizare',
+    nextUpdateTime: 'Următoarea actualizare automată: {{time}}',
+  },
+  readmeInfo: {
+    title: 'Citiți-mă',
+    needHelpCheckReadme: 'Ai nevoie de ajutor? Verifică fișierul README.',
+    noReadmeAvailable: 'Nu există fișier README disponibil',
+    failedToFetch: 'Nu s-a putut prelua README',
   },
 }
 

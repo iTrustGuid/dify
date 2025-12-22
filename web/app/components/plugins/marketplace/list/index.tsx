@@ -4,7 +4,7 @@ import type { MarketplaceCollection } from '../types'
 import ListWithCollection from './list-with-collection'
 import CardWrapper from './card-wrapper'
 import Empty from '../empty'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 
 type ListProps = {
   marketplaceCollections: MarketplaceCollection[]
@@ -56,7 +56,7 @@ const List = ({
 
                 return (
                   <CardWrapper
-                    key={plugin.name}
+                    key={`${plugin.org}/${plugin.name}`}
                     plugin={plugin}
                     showInstallButton={showInstallButton}
                     locale={locale}

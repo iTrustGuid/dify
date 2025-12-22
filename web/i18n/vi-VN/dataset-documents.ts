@@ -81,6 +81,10 @@ const translation = {
     },
     addUrl: 'Thêm URL',
     learnMore: 'Tìm hiểu thêm',
+    sort: {
+      uploadTime: 'Thời gian tải lên',
+      hitCount: 'Số lần truy xuất',
+    },
   },
   metadata: {
     title: 'Siêu dữ liệu',
@@ -98,6 +102,9 @@ const translation = {
       upload_file: 'Tải lên tệp',
       notion: 'Đồng bộ từ Notion',
       github: 'Đồng bộ từ Github',
+      online_document: 'Tài liệu trực tuyến',
+      website_crawl: 'Thu thập dữ liệu trang web',
+      local_file: 'Tệp cục bộ',
     },
     type: {
       book: 'Sách',
@@ -335,13 +342,13 @@ const translation = {
     pause: 'Tạm dừng',
     childMaxTokens: 'Con',
     hierarchical: 'Cha mẹ-con cái',
+    waiting: 'Đang chờ nhúng...',
   },
   segment: {
     paragraphs: 'Đoạn văn',
     keywords: 'Từ khóa',
     addKeyWord: 'Thêm từ khóa',
     keywordError: 'Độ dài tối đa của từ khóa là 20',
-    characters: 'ký tự',
     hitCount: 'Số lần truy vấn',
     vectorHash: 'Mã băm vector: ',
     questionPlaceholder: 'thêm câu hỏi ở đây',
@@ -393,6 +400,7 @@ const translation = {
     edited: 'EDITED',
     keywordDuplicate: 'Từ khóa đã tồn tại',
     keywordEmpty: 'Từ khóa không được để trống',
+    allFilesUploaded: 'Tất cả các tệp phải được tải lên trước khi lưu',
   },
 }
 

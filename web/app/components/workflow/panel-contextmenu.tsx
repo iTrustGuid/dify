@@ -16,7 +16,7 @@ import {
 } from './hooks'
 import AddBlock from './operator/add-block'
 import { useOperator } from './operator/hooks'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 
 const PanelContextmenu = () => {
   const { t } = useTranslation()
@@ -112,7 +112,7 @@ const PanelContextmenu = () => {
       <div className='p-1'>
         <div
           className='flex h-8 cursor-pointer items-center justify-between rounded-lg px-3 text-sm text-text-secondary hover:bg-state-base-hover'
-          onClick={() => exportCheck()}
+          onClick={() => exportCheck?.()}
         >
           {t('app.export')}
         </div>

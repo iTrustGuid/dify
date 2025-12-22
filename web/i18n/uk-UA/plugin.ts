@@ -6,6 +6,8 @@ const translation = {
     models: 'Моделі',
     extensions: 'Розширення',
     agents: 'Стратегії агентів',
+    datasources: 'Джерела даних',
+    triggers: 'Тригери',
   },
   categorySingle: {
     agent: 'Стратегія агента',
@@ -13,6 +15,8 @@ const translation = {
     tool: 'Інструмент',
     extension: 'Збільшення',
     model: 'Модель',
+    datasource: 'Джерело даних',
+    trigger: 'Спусковий механізм',
   },
   list: {
     source: {
@@ -43,6 +47,7 @@ const translation = {
       checkUpdate: 'Перевірити Оновлення',
       update: 'Оновлювати',
       info: 'Інформація про плагін',
+      back: 'Назад',
     },
     toolSelector: {
       placeholder: 'Виберіть інструмент...',
@@ -84,6 +89,16 @@ const translation = {
     endpointModalDesc: 'Після налаштування можна використовувати функції, що надаються плагіном через кінцеві точки API.',
     configureTool: 'Інструмент налаштування',
     serviceOk: 'Сервіс працює',
+    deprecation: {
+      reason: {
+        ownershipTransferred: 'право власності передано',
+        businessAdjustments: 'бізнесові корективи',
+        noMaintainer: 'немає супроводжувача',
+      },
+      noReason: 'Цей плагін було застаріло, і він більше не буде оновлюватися.',
+      onlyReason: 'Цей плагін було знято з підтримки через {{deprecatedReason}} і більше не буде оновлюватися.',
+      fullMessage: 'Цей плагін був застарілий через {{deprecatedReason}}, і більше не буде оновлюватися. Будь ласка, використовуйте <CustomLink href=\'https://example.com/\'>{{-alternativePluginId}}</CustomLink> замість цього.',
+    },
   },
   debugInfo: {
     title: 'Налагодження',
@@ -193,6 +208,11 @@ const translation = {
     installError: 'Плагіни {{errorLength}} не вдалося встановити, натисніть, щоб переглянути',
     installing: 'Встановлення плагінів {{installingLength}}, 0 виконано.',
     installingWithSuccess: 'Встановлення плагінів {{installingLength}}, успіх {{successLength}}.',
+    installSuccess: '{{successLength}} plugins installed successfully',
+    installed: 'Installed',
+    runningPlugins: 'Installing Plugins',
+    successPlugins: 'Successfully Installed Plugins',
+    errorPlugins: 'Failed to Install Plugins',
   },
   from: 'Від',
   searchInMarketplace: 'Пошук у Marketplace',
@@ -236,6 +256,69 @@ const translation = {
     oauthClient: 'Клієнт OAuth',
     clientInfo: 'Оскільки не знайдено жодних секретів клієнта системи для цього постачальника інструментів, потрібно налаштувати його вручну; для redirect_uri, будь ласка, використовуйте',
     useApiAuthDesc: 'Після налаштування облікових даних усі учасники робочого простору можуть використовувати цей інструмент під час оркестрації додатків.',
+    unavailable: 'Недоступний',
+    customCredentialUnavailable: 'Індивідуальні облікові дані наразі недоступні',
+    credentialUnavailable: 'Облікові дані наразі недоступні. Будь ласка, зверніться до адміністратора.',
+    credentialUnavailableInButton: 'Облікові дані недоступні',
+    connectedWorkspace: 'Підключене робоче середовище',
+    emptyAuth: 'Будь ласка, налаштуйте аутентифікацію',
+  },
+  deprecated: 'Застарілий',
+  autoUpdate: {
+    strategy: {
+      disabled: {
+        name: 'Вимкнено',
+        description: 'Плагіни не будуть автоматично оновлюватися',
+      },
+      fixOnly: {
+        name: 'Виправити тільки',
+        selectedDescription: 'Автоматичне оновлення лише для версій патчів',
+        description: 'Автооновлення лише для патч-версій (наприклад, 1.0.1 → 1.0.2). Зміни в малих версіях не активують оновлення.',
+      },
+      latest: {
+        name: 'Останні',
+        selectedDescription: 'Завжди оновлюйте до останньої версії',
+        description: 'Завжди оновлюйте до останньої версії',
+      },
+    },
+    upgradeMode: {
+      all: 'Оновити все',
+      partial: 'Тільки вибрані',
+      exclude: 'Виключити вибране',
+    },
+    upgradeModePlaceholder: {
+      exclude: 'Вибрані плагіни не будуть оновлюватися автоматично',
+      partial: 'Тільки вибрані плагіни будуть автоматично оновлюватись. Наразі жоден з плагінів не вибрано, тому жоден плагін не буде автоматично оновлений.',
+    },
+    operation: {
+      clearAll: 'Очистити все',
+      select: 'Виберіть плагіни',
+    },
+    pluginDowngradeWarning: {
+      downgrade: 'Все одно знизити версію',
+      title: 'Пониження плагіна',
+      exclude: 'Виключити з автоматичного оновлення',
+      description: 'Автоматичне оновлення наразі увімкнене для цього плагіна. Пониження версії може призвести до того, що ваші зміни будуть перезаписані під час наступного автоматичного оновлення.',
+    },
+    noPluginPlaceholder: {
+      noFound: 'Плагіни не були знайдені',
+      noInstalled: 'Жодних плагінів не встановлено',
+    },
+    updateTime: 'Час оновлення',
+    automaticUpdates: 'Автоматичні оновлення',
+    updateTimeTitle: 'Час оновлення',
+    nextUpdateTime: 'Наступне автоматичне оновлення: {{time}}',
+    specifyPluginsToUpdate: 'Вкажіть плагіни для оновлення',
+    excludeUpdate: 'Наступні {{num}} плагіни не будуть автоматично оновлюватися',
+    updateSettings: 'Оновити налаштування',
+    changeTimezone: 'Щоб змінити часовий пояс, перейдіть до <setTimezone>Налаштування</setTimezone>',
+    partialUPdate: 'Тільки наступні {{num}} плагіни будуть автоматично оновлюватися',
+  },
+  readmeInfo: {
+    title: 'Прочитай мене',
+    needHelpCheckReadme: 'Потрібна допомога? Перегляньте README.',
+    noReadmeAvailable: 'README недоступний',
+    failedToFetch: 'Не вдалося отримати README',
   },
 }
 

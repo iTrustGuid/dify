@@ -81,6 +81,10 @@ const translation = {
       ok: 'تأیید',
     },
     learnMore: 'بیشتر بدانید',
+    sort: {
+      uploadTime: 'زمان بارگذاری',
+      hitCount: 'تعداد بازیابی',
+    },
   },
   metadata: {
     title: 'اطلاعات متا',
@@ -98,6 +102,9 @@ const translation = {
       upload_file: 'بارگذاری فایل',
       notion: 'همگام‌سازی از Notion',
       github: 'همگام‌سازی از Github',
+      online_document: 'سند آنلاین',
+      website_crawl: 'خزیدن وب سایت',
+      local_file: 'فایل محلی',
     },
     type: {
       book: 'کتاب',
@@ -335,13 +342,13 @@ const translation = {
     pause: 'مکث',
     childMaxTokens: 'کودک',
     hierarchical: 'پدر و مادر و فرزند',
+    waiting: 'در حال انتظار برای جاسازی...',
   },
   segment: {
     paragraphs: 'پاراگراف‌ها',
     keywords: 'کلیدواژه‌ها',
     addKeyWord: 'اضافه کردن کلیدواژه',
     keywordError: 'حداکثر طول کلیدواژه ۲۰ کاراکتر است',
-    characters: 'کاراکترها',
     hitCount: 'تعداد بازیابی',
     vectorHash: 'هش برداری: ',
     questionPlaceholder: 'سؤال را اینجا اضافه کنید',
@@ -393,6 +400,7 @@ const translation = {
     regenerationSuccessMessage: 'می توانید این پنجره را ببندید.',
     keywordEmpty: 'کلمه کلیدی نمی‌تواند خالی باشد',
     keywordDuplicate: 'این کلیدواژه قبلاً وجود دارد',
+    allFilesUploaded: 'تمام فایل‌ها باید قبل از ذخیره شدن بارگذاری شوند',
   },
 }
 

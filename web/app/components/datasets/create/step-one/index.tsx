@@ -9,30 +9,35 @@ import EmptyDatasetCreationModal from '../empty-dataset-creation-modal'
 import Website from '../website'
 import WebsitePreview from '../website/preview'
 import s from './index.module.css'
-import cn from '@/utils/classnames'
 import type { CrawlOptions, CrawlResultItem, FileItem } from '@/models/datasets'
 import type { DataSourceProvider, NotionPage } from '@/models/common'
 import { DataSourceType } from '@/models/datasets'
 import Button from '@/app/components/base/button'
 import { NotionPageSelector } from '@/app/components/base/notion-page-selector'
-import { useDatasetDetailContext } from '@/context/dataset-detail'
+import { useDatasetDetailContextWithSelector } from '@/context/dataset-detail'
 import { useProviderContext } from '@/context/provider-context'
 import VectorSpaceFull from '@/app/components/billing/vector-space-full'
-import classNames from '@/utils/classnames'
-import { Icon3Dots } from '@/app/components/base/icons/src/vender/line/others'
+import { cn } from '@/utils/classnames'
 import { ENABLE_WEBSITE_FIRECRAWL, ENABLE_WEBSITE_JINAREADER, ENABLE_WEBSITE_WATERCRAWL } from '@/config'
+import NotionConnector from '@/app/components/base/notion-connector'
+import type { DataSourceAuth } from '@/app/components/header/account-setting/data-source-page-new/types'
+import PlanUpgradeModal from '@/app/components/billing/plan-upgrade-modal'
+import { useBoolean } from 'ahooks'
+import { Plan } from '@/app/components/billing/type'
+import UpgradeCard from './upgrade-card'
 
 type IStepOneProps = {
   datasetId?: string
   dataSourceType?: DataSourceType
   dataSourceTypeDisable: boolean
-  hasConnection: boolean
   onSetting: () => void
   files: FileItem[]
   updateFileList: (files: FileItem[]) => void
   updateFile: (fileItem: FileItem, progress: number, list: FileItem[]) => void
   notionPages?: NotionPage[]
+  notionCredentialId: string
   updateNotionPages: (value: NotionPage[]) => void
+  updateNotionCredentialId: (credentialId: string) => void
   onStepChange: () => void
   changeType: (type: DataSourceType) => void
   websitePages?: CrawlResultItem[]
@@ -41,28 +46,7 @@ type IStepOneProps = {
   onWebsiteCrawlJobIdChange: (jobId: string) => void
   crawlOptions: CrawlOptions
   onCrawlOptionsChange: (payload: CrawlOptions) => void
-}
-
-type NotionConnectorProps = {
-  onSetting: () => void
-}
-export const NotionConnector = (props: NotionConnectorProps) => {
-  const { onSetting } = props
-  const { t } = useTranslation()
-
-  return (
-    <div className='flex w-[640px] flex-col items-start rounded-2xl bg-workflow-process-bg p-6'>
-      <span className={cn(s.notionIcon, 'mb-2 h-12 w-12 rounded-[10px] border-[0.5px] border-components-card-border p-3 shadow-lg shadow-shadow-shadow-5')} />
-      <div className='mb-1 flex flex-col gap-y-1 pb-3 pt-1'>
-        <span className='system-md-semibold text-text-secondary'>
-          {t('datasetCreation.stepOne.notionSyncTitle')}
-          <Icon3Dots className='relative -left-1.5 -top-2.5 inline h-4 w-4 text-text-secondary' />
-        </span>
-        <div className='system-sm-regular text-text-tertiary'>{t('datasetCreation.stepOne.notionSyncTip')}</div>
-      </div>
-      <Button className='h-8' variant='primary' onClick={onSetting}>{t('datasetCreation.stepOne.connect')}</Button>
-    </div>
-  )
+  authedDataSourceList: DataSourceAuth[]
 }
 
 const StepOne = ({
@@ -70,22 +54,24 @@ const StepOne = ({
   dataSourceType: inCreatePageDataSourceType,
   dataSourceTypeDisable,
   changeType,
-  hasConnection,
   onSetting,
-  onStepChange,
+  onStepChange: doOnStepChange,
   files,
   updateFileList,
   updateFile,
   notionPages = [],
+  notionCredentialId,
   updateNotionPages,
+  updateNotionCredentialId,
   websitePages = [],
   updateWebsitePages,
   onWebsiteCrawlProviderChange,
   onWebsiteCrawlJobIdChange,
   crawlOptions,
   onCrawlOptionsChange,
+  authedDataSourceList,
 }: IStepOneProps) => {
-  const { dataset } = useDatasetDetailContext()
+  const dataset = useDatasetDetailContextWithSelector(state => state.dataset)
   const [showModal, setShowModal] = useState(false)
   const [currentFile, setCurrentFile] = useState<File | undefined>()
   const [currentNotionPage, setCurrentNotionPage] = useState<NotionPage | undefined>()
@@ -127,7 +113,33 @@ const StepOne = ({
   const hasNotin = notionPages.length > 0
   const isVectorSpaceFull = plan.usage.vectorSpace >= plan.total.vectorSpace
   const isShowVectorSpaceFull = (allFileLoaded || hasNotin) && isVectorSpaceFull && enableBilling
-  const notSupportBatchUpload = enableBilling && plan.type === 'sandbox'
+  const supportBatchUpload = !enableBilling || plan.type !== Plan.sandbox
+  const notSupportBatchUpload = !supportBatchUpload
+
+  const [isShowPlanUpgradeModal, {
+    setTrue: showPlanUpgradeModal,
+    setFalse: hidePlanUpgradeModal,
+  }] = useBoolean(false)
+  const onStepChange = useCallback(() => {
+    if (notSupportBatchUpload) {
+      let isMultiple = false
+      if (dataSourceType === DataSourceType.FILE && files.length > 1)
+        isMultiple = true
+
+      if (dataSourceType === DataSourceType.NOTION && notionPages.length > 1)
+        isMultiple = true
+
+      if (dataSourceType === DataSourceType.WEB && websitePages.length > 1)
+        isMultiple = true
+
+      if (isMultiple) {
+        showPlanUpgradeModal()
+        return
+      }
+    }
+    doOnStepChange()
+  }, [dataSourceType, doOnStepChange, files.length, notSupportBatchUpload, notionPages.length, showPlanUpgradeModal, websitePages.length])
+
   const nextDisabled = useMemo(() => {
     if (!files.length)
       return true
@@ -136,15 +148,26 @@ const StepOne = ({
     return isShowVectorSpaceFull
   }, [files, isShowVectorSpaceFull])
 
+  const isNotionAuthed = useMemo(() => {
+    if (!authedDataSourceList) return false
+    const notionSource = authedDataSourceList.find(item => item.provider === 'notion_datasource')
+    if (!notionSource) return false
+    return notionSource.credentials_list.length > 0
+  }, [authedDataSourceList])
+
+  const notionCredentialList = useMemo(() => {
+    return authedDataSourceList.find(item => item.provider === 'notion_datasource')?.credentials_list || []
+  }, [authedDataSourceList])
+
   return (
     <div className='h-full w-full overflow-x-auto'>
       <div className='flex h-full w-full min-w-[1440px]'>
         <div className='relative h-full w-1/2 overflow-y-auto'>
           <div className='flex justify-end'>
-            <div className={classNames(s.form)}>
+            <div className={cn(s.form)}>
               {
                 shouldShowDataSourceTypeList && (
-                  <div className={classNames(s.stepHeader, 'system-md-semibold text-text-secondary')}>
+                  <div className={cn(s.stepHeader, 'system-md-semibold text-text-secondary')}>
                     {t('datasetCreation.steps.one')}
                   </div>
                 )
@@ -235,7 +258,7 @@ const StepOne = ({
                     onFileListUpdate={updateFileList}
                     onFileUpdate={updateFile}
                     onPreview={updateCurrentFile}
-                    notSupportBatchUpload={notSupportBatchUpload}
+                    supportBatchUpload={supportBatchUpload}
                   />
                   {isShowVectorSpaceFull && (
                     <div className='mb-4 max-w-[640px]'>
@@ -243,7 +266,6 @@ const StepOne = ({
                     </div>
                   )}
                   <div className="flex max-w-[640px] justify-end gap-2">
-                    {/* <Button>{t('datasetCreation.stepOne.cancel')}</Button> */}
                     <Button disabled={nextDisabled} variant='primary' onClick={onStepChange}>
                       <span className="flex gap-0.5 px-[10px]">
                         <span className="px-0.5">{t('datasetCreation.stepOne.button')}</span>
@@ -251,18 +273,29 @@ const StepOne = ({
                       </span>
                     </Button>
                   </div>
+                  {
+                    enableBilling && plan.type === Plan.sandbox && files.length > 0 && (
+                      <div className='mt-5'>
+                        <div className='mb-4 h-px bg-divider-subtle'></div>
+                        <UpgradeCard />
+                      </div>
+                    )
+                  }
                 </>
               )}
               {dataSourceType === DataSourceType.NOTION && (
                 <>
-                  {!hasConnection && <NotionConnector onSetting={onSetting} />}
-                  {hasConnection && (
+                  {!isNotionAuthed && <NotionConnector onSetting={onSetting} />}
+                  {isNotionAuthed && (
                     <>
                       <div className='mb-8 w-[640px]'>
                         <NotionPageSelector
                           value={notionPages.map(page => page.page_id)}
                           onSelect={updateNotionPages}
                           onPreview={updateCurrentPage}
+                          credentialList={notionCredentialList}
+                          onSelectCredential={updateNotionCredentialId}
+                          datasetId={datasetId}
                         />
                       </div>
                       {isShowVectorSpaceFull && (
@@ -271,7 +304,6 @@ const StepOne = ({
                         </div>
                       )}
                       <div className="flex max-w-[640px] justify-end gap-2">
-                        {/* <Button>{t('datasetCreation.stepOne.cancel')}</Button> */}
                         <Button disabled={isShowVectorSpaceFull || !notionPages.length} variant='primary' onClick={onStepChange}>
                           <span className="flex gap-0.5 px-[10px]">
                             <span className="px-0.5">{t('datasetCreation.stepOne.button')}</span>
@@ -294,6 +326,7 @@ const StepOne = ({
                       onJobIdChange={onWebsiteCrawlJobIdChange}
                       crawlOptions={crawlOptions}
                       onCrawlOptionsChange={onCrawlOptionsChange}
+                      authedDataSourceList={authedDataSourceList}
                     />
                   </div>
                   {isShowVectorSpaceFull && (
@@ -302,7 +335,6 @@ const StepOne = ({
                     </div>
                   )}
                   <div className="flex max-w-[640px] justify-end gap-2">
-                    {/* <Button>{t('datasetCreation.stepOne.cancel')}</Button> */}
                     <Button disabled={isShowVectorSpaceFull || !websitePages.length} variant='primary' onClick={onStepChange}>
                       <span className="flex gap-0.5 px-[10px]">
                         <span className="px-0.5">{t('datasetCreation.stepOne.button')}</span>
@@ -327,8 +359,22 @@ const StepOne = ({
         </div>
         <div className='h-full w-1/2 overflow-y-auto'>
           {currentFile && <FilePreview file={currentFile} hidePreview={hideFilePreview} />}
-          {currentNotionPage && <NotionPagePreview currentPage={currentNotionPage} hidePreview={hideNotionPagePreview} />}
+          {currentNotionPage && (
+            <NotionPagePreview
+              currentPage={currentNotionPage}
+              hidePreview={hideNotionPagePreview}
+              notionCredentialId={notionCredentialId}
+            />
+          )}
           {currentWebsite && <WebsitePreview payload={currentWebsite} hidePreview={hideWebsitePreview} />}
+          {isShowPlanUpgradeModal && (
+            <PlanUpgradeModal
+              show
+              onClose={hidePlanUpgradeModal}
+              title={t('billing.upgrade.uploadMultiplePages.title')!}
+              description={t('billing.upgrade.uploadMultiplePages.description')!}
+            />
+          )}
         </div>
       </div>
     </div>

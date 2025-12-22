@@ -1,6 +1,6 @@
 import type { Fetcher } from 'swr'
 import { del, get, post } from './base'
-import type { AnnotationEnableStatus, AnnotationItemBasic, EmbeddingModelConfig } from '@/app/components/app/annotation/type'
+import type { AnnotationCreateResponse, AnnotationEnableStatus, AnnotationItemBasic, EmbeddingModelConfig } from '@/app/components/app/annotation/type'
 import { ANNOTATION_DEFAULT } from '@/config'
 
 export const fetchAnnotationConfig = (appId: string) => {
@@ -41,7 +41,7 @@ export const fetchExportAnnotationList = (appId: string) => {
 }
 
 export const addAnnotation = (appId: string, body: AnnotationItemBasic) => {
-  return post(`apps/${appId}/annotations`, { body })
+  return post<AnnotationCreateResponse>(`apps/${appId}/annotations`, { body })
 }
 
 export const annotationBatchImport: Fetcher<{ job_id: string; job_status: string }, { url: string; body: FormData }> = ({ url, body }) => {
@@ -60,6 +60,15 @@ export const delAnnotation = (appId: string, annotationId: string) => {
   return del(`apps/${appId}/annotations/${annotationId}`)
 }
 
+export const delAnnotations = (appId: string, annotationIds: string[]) => {
+  const params = annotationIds.map(id => `annotation_id=${id}`).join('&')
+  return del(`/apps/${appId}/annotations?${params}`)
+}
+
 export const fetchHitHistoryList = (appId: string, annotationId: string, params: Record<string, any>) => {
   return get(`apps/${appId}/annotations/${annotationId}/hit-histories`, { params })
+}
+
+export const clearAllAnnotations = (appId: string): Promise<any> => {
+  return del(`apps/${appId}/annotations`)
 }

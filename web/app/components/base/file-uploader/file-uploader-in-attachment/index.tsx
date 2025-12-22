@@ -16,7 +16,7 @@ import FileInput from '../file-input'
 import { useFile } from '../hooks'
 import FileItem from './file-item'
 import Button from '@/app/components/base/button'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import type { FileUpload } from '@/app/components/base/features/types'
 import { TransferMethod } from '@/types/app'
 
@@ -106,6 +106,8 @@ const FileUploaderInAttachment = ({
               showDownloadAction={false}
               onRemove={() => handleRemoveFile(file.id)}
               onReUpload={() => handleReUploadFile(file.id)}
+              canPreview={fileConfig.preview_config?.file_type_list?.includes(file.type)}
+              previewMode={fileConfig.preview_config?.mode}
             />
           ))
         }
@@ -114,7 +116,7 @@ const FileUploaderInAttachment = ({
   )
 }
 
-type FileUploaderInAttachmentWrapperProps = {
+export type FileUploaderInAttachmentWrapperProps = {
   value?: FileEntity[]
   onChange: (files: FileEntity[]) => void
   fileConfig: FileUpload

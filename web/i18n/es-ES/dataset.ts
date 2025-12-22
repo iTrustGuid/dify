@@ -19,7 +19,6 @@ const translation = {
   intro5: 'se puede crear',
   intro6: ' como un complemento independiente de ChatGPT para publicar',
   unavailable: 'No disponible',
-  unavailableTip: 'El modelo de incrustación no está disponible, es necesario configurar el modelo de incrustación predeterminado',
   datasets: 'CONOCIMIENTO',
   datasetsApi: 'ACCESO A LA API',
   retrieval: {
@@ -37,11 +36,13 @@ const translation = {
       recommend: 'Recomendar',
     },
     invertedIndex: {
-      title: 'Índice Invertido',
-      description: 'El Índice Invertido es una estructura utilizada para la recuperación eficiente. Organizado por términos, cada término apunta a documentos o páginas web que lo contienen.',
     },
     change: 'Cambiar',
     changeRetrievalMethod: 'Cambiar método de recuperación',
+    keyword_search: {
+      title: 'Índice invertido',
+      description: 'El índice invertido es una estructura utilizada para una recuperación eficiente. Organizado por términos, cada término apunta a documentos o páginas web que lo contienen.',
+    },
   },
   docsFailedNotice: 'no se pudieron indexar los documentos',
   retry: 'Reintentar',
@@ -149,6 +150,8 @@ const translation = {
   chunkingMode: {
     parentChild: 'Padre-hijo',
     general: 'General',
+    graph: 'gráfico',
+    qa: 'Preguntas y respuestas',
   },
   parentMode: {
     fullDoc: 'Documento completo',
@@ -204,6 +207,7 @@ const translation = {
       name: 'Nombre',
       description: 'Puedes gestionar todos los metadatos en este conocimiento aquí. Las modificaciones se sincronizarán en todos los documentos.',
       disabled: 'desactivar',
+      builtIn: 'Integrado',
     },
     documentMetadata: {
       technicalParameters: 'Parámetros técnicos',
@@ -216,6 +220,34 @@ const translation = {
     addMetadata: 'Agregar Metadatos',
   },
   embeddingModelNotAvailable: 'El modelo de embeddings no está disponible.',
+  externalKnowledgeBase: 'Base de conocimientos externa',
+  createFromPipeline: 'Crear desde Knowledge Pipeline',
+  updated: 'Actualizado',
+  serviceApi: {
+    card: {
+      apiReference: 'Referencia de la API',
+      apiKey: 'Clave API',
+      endpoint: 'Punto de enlace de la API de servicio',
+      title: 'API del servicio de backend',
+    },
+    enabled: 'En servicio',
+    title: 'API de servicios',
+    disabled: 'Discapacitado',
+  },
+  docAllEnabled_one: 'Documento {{count}} activado',
+  docAllEnabled_other: 'Todos los documentos {{count}} habilitados',
+  partialEnabled_one: 'Total de {{count}} documentos, {{num}} disponibles',
+  partialEnabled_other: 'Total de {{count}} documentos, {{num}} disponibles',
+  cornerLabel: {
+    unavailable: 'No disponible',
+    pipeline: 'Tubería',
+  },
+  multimodal: 'Multimodal',
+  imageUploader: {
+    button: 'Arrastra y suelta el archivo o la carpeta, o',
+    browse: 'Examinar',
+    tip: '{{supportTypes}} (Máx. {{batchCount}}, {{size}} MB cada uno)',
+  },
 }
 
 export default translation

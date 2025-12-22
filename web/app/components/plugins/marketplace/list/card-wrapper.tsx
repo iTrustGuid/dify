@@ -1,4 +1,5 @@
 'use client'
+import React, { useMemo } from 'react'
 import { useTheme } from 'next-themes'
 import { RiArrowRightUpLine } from '@remixicon/react'
 import { getPluginDetailLinkInMarketplace, getPluginLinkInMarketplace } from '../utils'
@@ -17,7 +18,7 @@ type CardWrapperProps = {
   showInstallButton?: boolean
   locale?: string
 }
-const CardWrapper = ({
+const CardWrapperComponent = ({
   plugin,
   showInstallButton,
   locale,
@@ -29,7 +30,19 @@ const CardWrapper = ({
     setFalse: hideInstallFromMarketplace,
   }] = useBoolean(false)
   const { locale: localeFromLocale } = useI18N()
-  const { tagsMap } = useTags(t)
+  const { getTagLabel } = useTags(t)
+
+  // Memoize marketplace link params to prevent unnecessary re-renders
+  const marketplaceLinkParams = useMemo(() => ({
+    language: localeFromLocale,
+    theme,
+  }), [localeFromLocale, theme])
+
+  // Memoize tag labels to prevent recreating array on every render
+  const tagLabels = useMemo(() =>
+    plugin.tags.map(tag => getTagLabel(tag.name)),
+  [plugin.tags, getTagLabel],
+  )
 
   if (showInstallButton) {
     return (
@@ -43,12 +56,12 @@ const CardWrapper = ({
           footer={
             <CardMoreInfo
               downloadCount={plugin.install_count}
-              tags={plugin.tags.map(tag => tagsMap[tag.name].label)}
+              tags={tagLabels}
             />
           }
         />
         {
-          <div className='absolute bottom-0 hidden w-full items-center space-x-2 rounded-b-xl bg-gradient-to-tr from-components-panel-on-panel-item-bg to-background-gradient-mask-transparent px-4 pb-4 pt-8 group-hover:flex'>
+          <div className='absolute bottom-0 hidden w-full items-center space-x-2 rounded-b-xl bg-gradient-to-tr from-components-panel-on-panel-item-bg to-background-gradient-mask-transparent px-4 pb-4 pt-4 group-hover:flex'>
             <Button
               variant='primary'
               className='w-[calc(50%-4px)]'
@@ -56,7 +69,7 @@ const CardWrapper = ({
             >
               {t('plugin.detailPanel.operation.install')}
             </Button>
-            <a href={getPluginLinkInMarketplace(plugin, { language: localeFromLocale, theme })} target='_blank' className='block w-[calc(50%-4px)] flex-1 shrink-0'>
+            <a href={getPluginLinkInMarketplace(plugin, marketplaceLinkParams)} target='_blank' className='block w-[calc(50%-4px)] flex-1 shrink-0'>
               <Button
                 className='w-full gap-0.5'
               >
@@ -92,12 +105,15 @@ const CardWrapper = ({
         footer={
           <CardMoreInfo
             downloadCount={plugin.install_count}
-            tags={plugin.tags.map(tag => tagsMap[tag.name].label)}
+            tags={tagLabels}
           />
         }
       />
     </a>
   )
 }
+
+// Memoize the component to prevent unnecessary re-renders when props haven't changed
+const CardWrapper = React.memo(CardWrapperComponent)
 
 export default CardWrapper

@@ -33,6 +33,7 @@ const translation = {
       longDescription:
         ' sul metodo di recupero, puoi cambiare questo in qualsiasi momento nelle impostazioni della Conoscenza.',
       method: 'Metodo di recupero',
+      multiModalTip: 'Quando il modello di embedding supporta il multi-modale, seleziona un modello di riordinamento multi-modale per ottenere migliori prestazioni.',
     },
     save: 'Salva',
     retrievalSettings: 'Impostazioni di recupero',
@@ -42,6 +43,14 @@ const translation = {
     upgradeHighQualityTip: 'Una volta effettuato l\'aggiornamento alla modalità Alta qualità, il ripristino della modalità Risparmio non è disponibile',
     indexMethodChangeToEconomyDisabledTip: 'Non disponibile per il downgrade da HQ a ECO',
     searchModel: 'Cerca modello',
+    chunkStructure: {
+      learnMore: 'Ulteriori informazioni',
+      title: 'Struttura a blocchi',
+      description: 'sulla struttura a blocchi.',
+    },
+    numberOfKeywords: 'Numero di parole chiave',
+    nameAndIcon: 'Nome e icona',
+    onSearchResults: 'Nessun membro corrisponde alla query di ricerca.\nRiprova la ricerca.',
   },
 }
 

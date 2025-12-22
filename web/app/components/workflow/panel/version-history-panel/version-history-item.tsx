@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
 import ContextMenu from './context-menu'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import type { VersionHistory } from '@/types/workflow'
 import { type VersionHistoryContextMenuOptions, WorkflowVersion } from '../../types'
 
@@ -55,7 +55,6 @@ const VersionHistoryItem: React.FC<VersionHistoryItemProps> = ({
   useEffect(() => {
     if (isDraft)
       onClick(item)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleClickItem = () => {

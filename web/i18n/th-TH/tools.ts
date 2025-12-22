@@ -3,7 +3,6 @@ const translation = {
   createCustomTool: 'สร้างเครื่องมือที่กําหนดเอง',
   customToolTip: 'เรียนรู้เพิ่มเติมเกี่ยวกับเครื่องมือแบบกําหนดเองของ Dify',
   type: {
-    all: 'ทั้งหมด',
     builtIn: 'ในตัว',
     custom: 'ธรรมเนียม',
     workflow: 'เวิร์กโฟลว์',
@@ -21,13 +20,10 @@ const translation = {
     setupModalTitleDescription: 'หลังจากกําหนดค่าข้อมูลประจําตัวแล้ว สมาชิกทั้งหมดภายในพื้นที่ทํางานสามารถใช้เครื่องมือนี้เมื่อประสานงานแอปพลิเคชันได้',
   },
   includeToolNum: '{{num}} รวมเครื่องมือ',
-  addTool: 'เพิ่มเครื่องมือ',
   addToolModal: {
     type: 'ประเภท',
     category: 'ประเภท',
-    add: 'เพิ่ม',
     added: 'เพิ่ม',
-    manageInTools: 'จัดการในเครื่องมือ',
     custom: {
       title: 'ไม่มีเครื่องมือกำหนดเอง',
       tip: 'สร้างเครื่องมือกำหนดเอง',
@@ -82,7 +78,6 @@ const translation = {
       keyTooltip: 'Http Header Key คุณสามารถปล่อยให้เป็น "การอนุญาต" ได้หากคุณไม่รู้ว่ามันคืออะไรหรือตั้งค่าเป็นค่าที่กําหนดเอง',
       types: {
         none: 'ไม่มีใคร',
-        api_key: 'คีย์ API',
         apiKeyPlaceholder: 'ชื่อส่วนหัว HTTP สําหรับคีย์ API',
         apiValuePlaceholder: 'ป้อนคีย์ API',
         api_key_header: 'หัวเรื่อง',
@@ -124,6 +119,13 @@ const translation = {
     confirmTip: 'แอปที่ใช้เครื่องมือนี้จะได้รับผลกระทบ',
     deleteToolConfirmTitle: 'ลบเครื่องมือนี้?',
     deleteToolConfirmContent: 'การลบเครื่องมือนั้นไม่สามารถย้อนกลับได้ ผู้ใช้จะไม่สามารถเข้าถึงเครื่องมือของคุณได้อีกต่อไป',
+    toolOutput: {
+      title: 'เอาต์พุตของเครื่องมือ',
+      name: 'ชื่อ',
+      reserved: 'สงวน',
+      reservedParameterDuplicateTip: 'text, json และ files เป็นตัวแปรที่สงวนไว้ ไม่สามารถใช้ชื่อตัวแปรเหล่านี้ในโครงสร้างผลลัพธ์ได้',
+      description: 'คำอธิบาย',
+    },
   },
   test: {
     title: 'ทดสอบ',
@@ -192,6 +194,25 @@ const translation = {
       cancel: 'ยกเลิก',
       save: 'บันทึก',
       confirm: 'เพิ่มและอนุญาต',
+      timeout: 'หมดเวลา',
+      sseReadTimeout: 'หมดเวลาการอ่าน SSE',
+      timeoutPlaceholder: 'สามสิบ',
+      headerValue: 'ค่าหัวข้อ',
+      addHeader: 'เพิ่มหัวเรื่อง',
+      headerKey: 'ชื่อหัวเรื่อง',
+      headerKeyPlaceholder: 'เช่น การอนุญาต',
+      headerValuePlaceholder: 'ตัวอย่าง: รหัสตัวแทน token123',
+      headers: 'หัวเรื่อง',
+      noHeaders: 'ไม่มีการกำหนดหัวข้อที่กำหนดเอง',
+      headersTip: 'HTTP header เพิ่มเติมที่จะส่งไปกับคำขอ MCP server',
+      maskedHeadersTip: 'ค่าหัวถูกปกปิดเพื่อความปลอดภัย การเปลี่ยนแปลงจะปรับปรุงค่าที่แท้จริง',
+      clientSecret: 'รหัสลับของลูกค้า',
+      configurations: 'การตั้งค่า',
+      authentication: 'การตรวจสอบตัวตน',
+      clientSecretPlaceholder: 'รหัสลับของลูกค้า',
+      useDynamicClientRegistration: 'ใช้การลงทะเบียนลูกค้าแบบไดนามิก',
+      clientID: 'รหัสลูกค้า',
+      redirectUrlWarning: 'กรุณากำหนด URL การเปลี่ยนเส้นทาง OAuth ของคุณเป็น:',
     },
     delete: 'ลบเซิร์ฟเวอร์ MCP',
     deleteConfirmTitle: 'คุณต้องการลบ {mcp} หรือไม่?',
@@ -232,7 +253,12 @@ const translation = {
       },
       publishTip: 'แอปไม่ถูกเผยแพร่ กรุณาเผยแพร่แอปก่อน',
     },
+    toolItem: {
+      noDescription: 'ไม่มีคำอธิบาย',
+      parameters: 'พารามิเตอร์',
+    },
   },
+  allTools: 'เครื่องมือทั้งหมด',
 }
 
 export default translation

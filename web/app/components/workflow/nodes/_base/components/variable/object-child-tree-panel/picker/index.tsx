@@ -3,13 +3,13 @@ import type { FC } from 'react'
 import React, { useRef } from 'react'
 import type { StructuredOutput } from '../../../../../llm/types'
 import Field from './field'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import { useHover } from 'ahooks'
 import type { ValueSelector } from '@/app/components/workflow/types'
 
 type Props = {
   className?: string
-  root: { nodeId?: string, nodeName?: string, attrName: string }
+  root: { nodeId?: string, nodeName?: string, attrName: string, attrAlias?: string }
   payload: StructuredOutput
   readonly?: boolean
   onSelect?: (valueSelector: ValueSelector) => void
@@ -52,8 +52,7 @@ export const PickerPanelMain: FC<Props> = ({
           )}
           <div className='system-sm-medium text-text-secondary'>{root.attrName}</div>
         </div>
-        {/* It must be object */}
-        <div className='system-xs-regular ml-2 shrink-0 text-text-tertiary'>object</div>
+        <div className='system-xs-regular ml-2 truncate text-text-tertiary' title={root.attrAlias || 'object'}>{root.attrAlias || 'object'}</div>
       </div>
       {fieldNames.map(name => (
         <Field

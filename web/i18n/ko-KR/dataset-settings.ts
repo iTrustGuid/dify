@@ -26,6 +26,7 @@ const translation = {
       description: ' 검색 방법에 대한 자세한 정보',
       longDescription: ' 검색 방법에 대한 자세한 내용은 언제든지 지식 설정에서 변경할 수 있습니다.',
       method: '검색 방법',
+      multiModalTip: '임베딩 모델이 멀티모달을 지원할 경우, 더 나은 성능을 위해 멀티모달 재순위 모델을 선택하세요.',
     },
     save: '저장',
     permissionsInvitedMembers: '부분 팀 구성원',
@@ -37,6 +38,14 @@ const translation = {
     indexMethodChangeToEconomyDisabledTip: 'HQ 에서 ECO 로 다운그레이드할 수 없습니다.',
     helpText: '좋은 데이터 세트 설명을 작성하는 방법을 알아보세요.',
     searchModel: '모델 검색',
+    chunkStructure: {
+      title: '청크 구조',
+      learnMore: '더 알아보세요',
+      description: '청크 구조에 대해.',
+    },
+    numberOfKeywords: '키워드 수',
+    nameAndIcon: '이름 & 아이콘',
+    onSearchResults: '검색어와 일치하는 구성원이 없습니다.\n검색을 다시 시도합니다.',
   },
 }
 

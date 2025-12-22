@@ -24,7 +24,7 @@ import type {
 } from '@/models/debug'
 import AppIcon from '@/app/components/base/app-icon'
 import Badge from '@/app/components/base/badge'
-import { changeLanguage } from '@/i18n/i18next-config'
+import { changeLanguage } from '@/i18n-config/i18next-config'
 import Loading from '@/app/components/base/loading'
 import { userInputsFormToPromptVariables } from '@/utils/model-config'
 import Res from '@/app/components/share/text-generation/result'
@@ -36,7 +36,7 @@ import type { VisionFile, VisionSettings } from '@/types/app'
 import { Resolution, TransferMethod } from '@/types/app'
 import { useAppFavicon } from '@/hooks/use-app-favicon'
 import DifyLogo from '@/app/components/base/logo/dify-logo'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import { AccessMode } from '@/models/access-control'
 import { useGlobalPublicStore } from '@/context/global-public-context'
 import useDocumentTitle from '@/hooks/use-document-title'
@@ -125,6 +125,12 @@ const TextGeneration: FC<IMainProps> = ({
     transfer_methods: [TransferMethod.local_file],
   })
   const [completionFiles, setCompletionFiles] = useState<VisionFile[]>([])
+  const [runControl, setRunControl] = useState<{ onStop: () => Promise<void> | void; isStopping: boolean } | null>(null)
+
+  useEffect(() => {
+    if (isCallBatchAPI)
+      setRunControl(null)
+  }, [isCallBatchAPI])
 
   const handleSend = () => {
     setIsCallBatchAPI(false)
@@ -151,10 +157,9 @@ const TextGeneration: FC<IMainProps> = ({
   const pendingTaskList = allTaskList.filter(task => task.status === TaskStatus.pending)
   const noPendingTask = pendingTaskList.length === 0
   const showTaskList = allTaskList.filter(task => task.status !== TaskStatus.pending)
-  const [currGroupNum, doSetCurrGroupNum] = useState(0)
   const currGroupNumRef = useRef(0)
+
   const setCurrGroupNum = (num: number) => {
-    doSetCurrGroupNum(num)
     currGroupNumRef.current = num
   }
   const getCurrGroupNum = () => {
@@ -164,10 +169,8 @@ const TextGeneration: FC<IMainProps> = ({
   const allFailedTaskList = allTaskList.filter(task => task.status === TaskStatus.failed)
   const allTasksFinished = allTaskList.every(task => task.status === TaskStatus.completed)
   const allTasksRun = allTaskList.every(task => [TaskStatus.completed, TaskStatus.failed].includes(task.status))
-  const [batchCompletionRes, doSetBatchCompletionRes] = useState<Record<string, string>>({})
   const batchCompletionResRef = useRef<Record<string, string>>({})
   const setBatchCompletionRes = (res: Record<string, string>) => {
-    doSetBatchCompletionRes(res)
     batchCompletionResRef.current = res
   }
   const getBatchCompletionRes = () => batchCompletionResRef.current
@@ -366,12 +369,13 @@ const TextGeneration: FC<IMainProps> = ({
     (async () => {
       if (!appData || !appParams)
         return
-      !isWorkflow && fetchSavedMessage()
+      if (!isWorkflow)
+        fetchSavedMessage()
       const { app_id: appId, site: siteInfo, custom_config } = appData
       setAppId(appId)
       setSiteInfo(siteInfo as SiteInfo)
       setCustomConfig(custom_config)
-      changeLanguage(siteInfo.default_language)
+      await changeLanguage(siteInfo.default_language)
 
       const { user_input_form, more_like_this, file_upload, text_to_speech }: any = appParams
       setVisionConfig({
@@ -419,6 +423,7 @@ const TextGeneration: FC<IMainProps> = ({
     isPC={isPC}
     isMobile={!isPC}
     isInstalledApp={isInstalledApp}
+    appId={appId}
     installedAppInfo={installedAppInfo}
     isError={task?.status === TaskStatus.failed}
     promptConfig={promptConfig}
@@ -436,6 +441,8 @@ const TextGeneration: FC<IMainProps> = ({
     isShowTextToSpeech={!!textToSpeechConfig?.enabled}
     siteInfo={siteInfo}
     onRunStart={() => setResultExisted(true)}
+    onRunControlChange={!isCallBatchAPI ? setRunControl : undefined}
+    hideInlineStopButton={!isCallBatchAPI}
   />)
 
   const renderBatchRes = () => {
@@ -567,6 +574,7 @@ const TextGeneration: FC<IMainProps> = ({
               onSend={handleSend}
               visionConfig={visionConfig}
               onVisionFilesChange={setCompletionFiles}
+              runControl={runControl}
             />
           </div>
           <div className={cn(isInBatchTab ? 'block' : 'hidden')}>

@@ -28,6 +28,7 @@ const translation = {
       description: ' geri alım yöntemi hakkında.',
       longDescription: ' geri alım yöntemi hakkında, bunu Bilgi ayarlarında istediğiniz zaman değiştirebilirsiniz.',
       method: 'Retrieval Yöntemi',
+      multiModalTip: 'Embedding modeli çok modlu destekliyorsa, daha iyi performans için çok modlu bir yeniden sıralama modeli seçin.',
     },
     save: 'Kaydet',
     retrievalSettings: 'Alma Ayarları',
@@ -37,6 +38,14 @@ const translation = {
     indexMethodChangeToEconomyDisabledTip: 'Genel Merkezden ECO\'ya düşürme için mevcut değil',
     helpText: 'İyi bir veri kümesi açıklamasının nasıl yazılacağını öğrenin.',
     searchModel: 'Model Ara',
+    chunkStructure: {
+      learnMore: 'Daha fazla bilgi edinin',
+      description: 'Yığın Yapısı hakkında.',
+      title: 'Yığın Yapısı',
+    },
+    nameAndIcon: 'İsim ve Simge',
+    numberOfKeywords: 'Anahtar Kelime Sayısı',
+    onSearchResults: 'Arama sorgunuzla eşleşen üye yok.\nAramanızı tekrar deneyin.',
   },
 }
 

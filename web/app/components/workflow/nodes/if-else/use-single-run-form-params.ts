@@ -1,4 +1,4 @@
-import type { MutableRefObject } from 'react'
+import type { RefObject } from 'react'
 import type { InputVar, ValueSelector, Variable } from '@/app/components/workflow/types'
 import { useCallback } from 'react'
 import type { CaseItem, Condition, IfElseNodeType } from './types'
@@ -7,7 +7,7 @@ type Params = {
   id: string,
   payload: IfElseNodeType,
   runInputData: Record<string, any>
-  runInputDataRef: MutableRefObject<Record<string, any>>
+  runInputDataRef: RefObject<Record<string, any>>
   getInputVars: (textList: string[]) => InputVar[]
   setRunInputData: (data: Record<string, any>) => void
   toVarInputs: (variables: Variable[]) => InputVar[]
@@ -89,15 +89,6 @@ const useSingleRunFormParams = ({
         inputVarsFromValue.push(...getInputVarsFromCase(caseItem))
       })
     }
-
-    if (payload.conditions && payload.conditions.length) {
-      payload.conditions.forEach((condition) => {
-        const conditionVars = getVarSelectorsFromCondition(condition)
-        allInputs.push(...conditionVars)
-        inputVarsFromValue.push(...getInputVarsFromConditionValue(condition))
-      })
-    }
-
     const varInputs = [...varSelectorsToVarInputs(allInputs), ...inputVarsFromValue]
     // remove duplicate inputs
     const existVarsKey: Record<string, boolean> = {}
@@ -146,13 +137,6 @@ const useSingleRunFormParams = ({
       payload.cases.forEach((caseItem) => {
         const caseVars = getVarFromCaseItem(caseItem)
         vars.push(...caseVars)
-      })
-    }
-
-    if (payload.conditions && payload.conditions.length) {
-      payload.conditions.forEach((condition) => {
-        const conditionVars = getVarFromCondition(condition)
-        vars.push(...conditionVars)
       })
     }
     return vars

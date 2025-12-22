@@ -1,9 +1,5 @@
 'use client'
 import { useState } from 'react'
-import useSWR from 'swr'
-import dayjs from 'dayjs'
-import 'dayjs/locale/zh-cn'
-import relativeTime from 'dayjs/plugin/relativeTime'
 import { useContext } from 'use-context-selector'
 import { RiUserAddLine } from '@remixicon/react'
 import { useTranslation } from 'react-i18next'
@@ -13,7 +9,6 @@ import EditWorkspaceModal from './edit-workspace-modal'
 import TransferOwnershipModal from './transfer-ownership-modal'
 import Operation from './operation'
 import TransferOwnership from './operation/transfer-ownership'
-import { fetchMembers } from '@/service/common'
 import I18n from '@/context/i18n'
 import { useAppContext } from '@/context/app-context'
 import Avatar from '@/app/components/base/avatar'
@@ -23,12 +18,13 @@ import { Plan } from '@/app/components/billing/type'
 import Button from '@/app/components/base/button'
 import UpgradeBtn from '@/app/components/billing/upgrade-btn'
 import { NUM_INFINITE } from '@/app/components/billing/config'
-import { LanguagesSupported } from '@/i18n/language'
-import cn from '@/utils/classnames'
+import { LanguagesSupported } from '@/i18n-config/language'
+import { cn } from '@/utils/classnames'
 import Tooltip from '@/app/components/base/tooltip'
 import { RiPencilLine } from '@remixicon/react'
 import { useGlobalPublicStore } from '@/context/global-public-context'
-dayjs.extend(relativeTime)
+import { useFormatTimeFromNow } from '@/hooks/use-format-time-from-now'
+import { useMembers } from '@/service/use-common'
 
 const MembersPage = () => {
   const { t } = useTranslation()
@@ -42,14 +38,9 @@ const MembersPage = () => {
   const { locale } = useContext(I18n)
 
   const { userProfile, currentWorkspace, isCurrentWorkspaceOwner, isCurrentWorkspaceManager } = useAppContext()
-  const { data, mutate } = useSWR(
-    {
-      url: '/workspaces/current/members',
-      params: {},
-    },
-    fetchMembers,
-  )
+  const { data, refetch } = useMembers()
   const { systemFeatures } = useGlobalPublicStore()
+  const { formatTimeFromNow } = useFormatTimeFromNow()
   const [inviteModalVisible, setInviteModalVisible] = useState(false)
   const [invitationResults, setInvitationResults] = useState<InvitationResult[]>([])
   const [invitedModalVisible, setInvitedModalVisible] = useState(false)
@@ -133,7 +124,7 @@ const MembersPage = () => {
                       <div className='system-xs-regular text-text-tertiary'>{account.email}</div>
                     </div>
                   </div>
-                  <div className='system-sm-regular flex w-[104px] shrink-0 items-center py-2 text-text-secondary'>{dayjs(Number((account.last_active_at || account.created_at)) * 1000).locale(locale === 'zh-Hans' ? 'zh-cn' : 'en').fromNow()}</div>
+                  <div className='system-sm-regular flex w-[104px] shrink-0 items-center py-2 text-text-secondary'>{formatTimeFromNow(Number((account.last_active_at || account.created_at)) * 1000)}</div>
                   <div className='flex w-[96px] shrink-0 items-center'>
                     {isCurrentWorkspaceOwner && account.role === 'owner' && isAllowTransferWorkspace && (
                       <TransferOwnership onOperate={() => setShowTransferOwnershipModal(true)}></TransferOwnership>
@@ -142,7 +133,7 @@ const MembersPage = () => {
                       <div className='system-sm-regular px-3 text-text-secondary'>{RoleMap[account.role] || RoleMap.normal}</div>
                     )}
                     {isCurrentWorkspaceOwner && account.role !== 'owner' && (
-                      <Operation member={account} operatorRole={currentWorkspace.role} onOperate={mutate} />
+                      <Operation member={account} operatorRole={currentWorkspace.role} onOperate={refetch} />
                     )}
                     {!isCurrentWorkspaceOwner && (
                       <div className='system-sm-regular px-3 text-text-secondary'>{RoleMap[account.role] || RoleMap.normal}</div>
@@ -162,7 +153,7 @@ const MembersPage = () => {
             onSend={(invitationResults) => {
               setInvitedModalVisible(true)
               setInvitationResults(invitationResults)
-              mutate()
+              refetch()
             }}
           />
         )

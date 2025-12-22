@@ -19,7 +19,7 @@ import Citation from '@/app/components/base/chat/chat/citation'
 import { EditTitle } from '@/app/components/app/annotation/edit-annotation-modal/edit-item'
 import type { AppData } from '@/models/share'
 import AnswerIcon from '@/app/components/base/answer-icon'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import { FileList } from '@/app/components/base/file-uploader'
 import ContentSwitch from '../content-switch'
 
@@ -101,11 +101,17 @@ const Answer: FC<AnswerProps> = ({
   }, [])
 
   const handleSwitchSibling = useCallback((direction: 'prev' | 'next') => {
-    if (direction === 'prev')
-      item.prevSibling && switchSibling?.(item.prevSibling)
-    else
-      item.nextSibling && switchSibling?.(item.nextSibling)
+    if (direction === 'prev') {
+      if (item.prevSibling)
+        switchSibling?.(item.prevSibling)
+    }
+    else {
+      if (item.nextSibling)
+        switchSibling?.(item.nextSibling)
+    }
   }, [switchSibling, item.prevSibling, item.nextSibling])
+
+  const contentIsEmpty = content.trim() === ''
 
   return (
     <div className='mb-2 flex last:mb-0'>
@@ -137,36 +143,26 @@ const Answer: FC<AnswerProps> = ({
                 />
               )
             }
-            {/** Render the normal steps */}
+            {/** Render workflow process */}
             {
-              workflowProcess && !hideProcessDetail && (
+              workflowProcess && (
                 <WorkflowProcessItem
                   data={workflowProcess}
                   item={item}
                   hideProcessDetail={hideProcessDetail}
-                />
-              )
-            }
-            {/** Hide workflow steps by it's settings in siteInfo */}
-            {
-              workflowProcess && hideProcessDetail && appData && (
-                <WorkflowProcessItem
-                  data={workflowProcess}
-                  item={item}
-                  hideProcessDetail={hideProcessDetail}
-                  readonly={!appData.site.show_workflow_steps}
+                  readonly={hideProcessDetail && appData ? !appData.site.show_workflow_steps : undefined}
                 />
               )
             }
             {
-              responding && !content && !hasAgentThoughts && (
+              responding && contentIsEmpty && !hasAgentThoughts && (
                 <div className='flex h-5 w-6 items-center justify-center'>
                   <LoadingAnim type='text' />
                 </div>
               )
             }
             {
-              content && !hasAgentThoughts && (
+              !contentIsEmpty && !hasAgentThoughts && (
                 <BasicContent item={item} />
               )
             }

@@ -2,12 +2,11 @@ const translation = {
   title: 'Prueba de recuperación',
   desc: 'Prueba del efecto de impacto del conocimiento basado en el texto de consulta proporcionado.',
   dateTimeFormat: 'MM/DD/YYYY hh:mm A',
-  recents: 'Recientes',
   table: {
     header: {
       source: 'Fuente',
-      text: 'Texto',
       time: 'Tiempo',
+      queryContent: 'Contenido de la consulta',
     },
   },
   input: {
@@ -30,6 +29,12 @@ const translation = {
   chunkDetail: 'Detalle de fragmentos',
   keyword: 'Palabras clave',
   hitChunks: 'Golpea {{num}} fragmentos secundarios',
+  imageUploader: {
+    tip: 'Sube o arrastra imágenes (Máx. {{batchCount}}, {{size}}MB cada una)',
+    tooltip: 'Sube imágenes (Máx. {{batchCount}}, {{size}} MB cada una)',
+    dropZoneTip: 'Arrastra el archivo aquí para subirlo',
+    singleChunkAttachmentLimitTooltip: 'El número de archivos adjuntos de un solo bloque no puede superar {{limit}}',
+  },
 }
 
 export default translation

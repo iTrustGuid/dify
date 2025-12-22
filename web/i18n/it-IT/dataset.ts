@@ -21,8 +21,6 @@ const translation = {
   intro5: 'può essere creata',
   intro6: ' come un plug-in di indicizzazione ChatGPT autonomo da pubblicare',
   unavailable: 'Non disponibile',
-  unavailableTip:
-    'Il modello di embedding non è disponibile, è necessario configurare il modello di embedding predefinito',
   datasets: 'CONOSCENZA',
   datasetsApi: 'ACCESSO API',
   retrieval: {
@@ -43,12 +41,13 @@ const translation = {
       recommend: 'Consigliato',
     },
     invertedIndex: {
-      title: 'Indice Invertito',
-      description:
-        'L\'Indice Invertito è una struttura utilizzata per il recupero efficiente. Organizzato per termini, ogni termine punta ai documenti o alle pagine web che lo contengono.',
     },
     change: 'Cambia',
     changeRetrievalMethod: 'Cambia metodo di recupero',
+    keyword_search: {
+      title: 'Indice invertito',
+      description: 'L\'indice invertito è una struttura utilizzata per un recupero efficiente. Organizzato per termini, ogni termine rimanda a documenti o pagine web che lo contengono.',
+    },
   },
   docsFailedNotice: 'documenti non riusciti a essere indicizzati',
   retry: 'Riprova',
@@ -156,6 +155,8 @@ const translation = {
   chunkingMode: {
     general: 'Generale',
     parentChild: 'Genitore-figlio',
+    graph: 'Grafico',
+    qa: 'Domande e risposte',
   },
   parentMode: {
     paragraph: 'Paragrafo',
@@ -211,6 +212,7 @@ const translation = {
       deleteContent: 'Sei sicuro di voler eliminare i metadati "{{name}}"?',
       builtInDescription: 'I metadati incorporati vengono estratti e generati automaticamente. Devono essere abilitati prima dell\'uso e non possono essere modificati.',
       description: 'Puoi gestire tutti i metadati in questa conoscenza qui. Le modifiche saranno sincronizzate con ogni documento.',
+      builtIn: 'Integrato',
     },
     documentMetadata: {
       documentInformation: 'Informazioni sul documento',
@@ -223,6 +225,34 @@ const translation = {
     chooseTime: 'Scegli un orario...',
   },
   embeddingModelNotAvailable: 'Il modello di embedding non è disponibile.',
+  updated: 'Aggiornato',
+  externalKnowledgeBase: 'Base di conoscenza esterna',
+  createFromPipeline: 'Creazione da pipeline di conoscenza',
+  serviceApi: {
+    card: {
+      endpoint: 'Endpoint dell\'API di servizio',
+      apiKey: 'Chiave API',
+      title: 'API del servizio backend',
+      apiReference: 'Riferimento API',
+    },
+    disabled: 'Disabilitato',
+    title: 'API di servizio',
+    enabled: 'In servizio',
+  },
+  docAllEnabled_one: '{{count}} documento abilitato',
+  docAllEnabled_other: 'Tutti i documenti {{count}} abilitati',
+  partialEnabled_one: 'Totale di {{count}} documenti, {{num}} disponibili',
+  partialEnabled_other: 'Totale di {{count}} documenti, {{num}} disponibili',
+  cornerLabel: {
+    unavailable: 'Non disponibile',
+    pipeline: 'Infrastruttura',
+  },
+  multimodal: 'Multimodale',
+  imageUploader: {
+    button: 'Trascina e rilascia file o cartella, oppure',
+    browse: 'Sfoglia',
+    tip: '{{supportTypes}} (Max {{batchCount}}, {{size}}MB ciascuno)',
+  },
 }
 
 export default translation

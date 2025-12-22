@@ -1,7 +1,7 @@
 import React, { type FC, useCallback, useEffect, useMemo, useRef } from 'react'
 import useTheme from '@/hooks/use-theme'
 import { Theme } from '@/types/app'
-import classNames from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import { Editor } from '@monaco-editor/react'
 import { RiClipboardLine, RiIndentIncrease } from '@remixicon/react'
 import copy from 'copy-to-clipboard'
@@ -15,6 +15,9 @@ type CodeEditorProps = {
   editorWrapperClassName?: string
   readOnly?: boolean
   hideTopMenu?: boolean
+  onFocus?: () => void
+  onBlur?: () => void
+  topContent?: React.ReactNode
 } & React.HTMLAttributes<HTMLDivElement>
 
 const CodeEditor: FC<CodeEditorProps> = ({
@@ -24,7 +27,10 @@ const CodeEditor: FC<CodeEditorProps> = ({
   editorWrapperClassName,
   readOnly = false,
   hideTopMenu = false,
+  topContent,
   className,
+  onFocus,
+  onBlur,
 }) => {
   const { t } = useTranslation()
   const { theme } = useTheme()
@@ -45,6 +51,14 @@ const CodeEditor: FC<CodeEditorProps> = ({
   const handleEditorDidMount = useCallback((editor: any, monaco: any) => {
     editorRef.current = editor
     monacoRef.current = monaco
+
+    editor.onDidFocusEditorText(() => {
+      onFocus?.()
+    })
+    editor.onDidBlurEditorText(() => {
+      onBlur?.()
+    })
+
     monaco.editor.defineTheme('light-theme', {
       base: 'vs',
       inherit: true,
@@ -98,7 +112,7 @@ const CodeEditor: FC<CodeEditorProps> = ({
   }, [])
 
   return (
-    <div className={classNames('flex h-full flex-col overflow-hidden bg-components-input-bg-normal', hideTopMenu && 'pt-2', className)}>
+    <div className={cn('flex h-full flex-col overflow-hidden bg-components-input-bg-normal', hideTopMenu && 'pt-2', className)}>
       {!hideTopMenu && (
         <div className='flex items-center justify-between pl-2 pr-1 pt-1'>
           <div className='system-xs-semibold-uppercase py-0.5 text-text-secondary'>
@@ -127,7 +141,8 @@ const CodeEditor: FC<CodeEditorProps> = ({
           </div>
         </div>
       )}
-      <div className={classNames('relative overflow-hidden', editorWrapperClassName)}>
+      {topContent}
+      <div className={cn('relative overflow-hidden', editorWrapperClassName)}>
         <Editor
           defaultLanguage='json'
           theme={isMounted ? editorTheme : 'default-theme'} // sometimes not load the default theme

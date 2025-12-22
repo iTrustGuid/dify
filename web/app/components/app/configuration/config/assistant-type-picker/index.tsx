@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RiArrowDownSLine } from '@remixicon/react'
 import AgentSetting from '../agent/agent-setting'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import {
   PortalToFollowElem,
   PortalToFollowElemContent,
@@ -81,7 +81,7 @@ const AssistantTypePicker: FC<Props> = ({
 
   const agentConfigUI = (
     <>
-      <div className='my-4 h-[1px] bg-gray-100'></div>
+      <div className='my-4 h-px bg-gray-100'></div>
       <div
         className={cn(isAgent ? 'group cursor-pointer hover:bg-primary-50' : 'opacity-30', 'rounded-xl bg-gray-50 p-3 pr-4 ')}
         onClick={() => {

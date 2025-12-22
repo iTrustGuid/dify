@@ -66,7 +66,7 @@ const Icon = (
     ref,
     ...props
   }: React.SVGProps<SVGSVGElement> & {
-    ref?: React.RefObject<React.MutableRefObject<HTMLOrSVGElement>>;
+    ref?: React.RefObject<React.RefObject<HTMLOrSVGElement>>;
   },
 ) => <IconBase {...props} ref={ref} data={data as IconData} />
 
@@ -75,7 +75,7 @@ Icon.displayName = '<%= svgName %>'
 export default Icon
 `.trim())
 
-  await writeFile(path.resolve(currentPath, `${fileName}.json`), JSON.stringify(svgData, '', '\t'))
+  await writeFile(path.resolve(currentPath, `${fileName}.json`), `${JSON.stringify(svgData, '', '\t')}\n`)
   await writeFile(path.resolve(currentPath, `${fileName}.tsx`), `${componentRender({ svgName: fileName })}\n`)
 
   const indexingRender = template(`
@@ -113,7 +113,7 @@ const generateImageComponent = async (entry, pathList) => {
 // DON NOT EDIT IT MANUALLY
 
 import * as React from 'react'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import s from './<%= fileName %>.module.css'
 
 const Icon = (

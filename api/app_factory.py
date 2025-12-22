@@ -1,9 +1,13 @@
 import logging
 import time
 
+from opentelemetry.trace import get_current_span
+
 from configs import dify_config
 from contexts.wrapper import RecyclableContextVar
 from dify_app import DifyApp
+
+logger = logging.getLogger(__name__)
 
 
 # ----------------------------
@@ -16,12 +20,33 @@ def create_flask_app_with_configs() -> DifyApp:
     """
     dify_app = DifyApp(__name__)
     dify_app.config.from_mapping(dify_config.model_dump())
+    dify_app.config["RESTX_INCLUDE_ALL_MODELS"] = True
 
     # add before request hook
     @dify_app.before_request
     def before_request():
         # add an unique identifier to each request
         RecyclableContextVar.increment_thread_recycles()
+
+    # add after request hook for injecting X-Trace-Id header from OpenTelemetry span context
+    @dify_app.after_request
+    def add_trace_id_header(response):
+        try:
+            span = get_current_span()
+            ctx = span.get_span_context() if span else None
+            if ctx and ctx.is_valid:
+                trace_id_hex = format(ctx.trace_id, "032x")
+                # Avoid duplicates if some middleware added it
+                if "X-Trace-Id" not in response.headers:
+                    response.headers["X-Trace-Id"] = trace_id_hex
+        except Exception:
+            # Never break the response due to tracing header injection
+            logger.warning("Failed to add trace ID to response header", exc_info=True)
+        return response
+
+    # Capture the decorator's return value to avoid pyright reportUnusedFunction
+    _ = before_request
+    _ = add_trace_id_header
 
     return dify_app
 
@@ -32,7 +57,7 @@ def create_app() -> DifyApp:
     initialize_extensions(app)
     end_time = time.perf_counter()
     if dify_config.DEBUG:
-        logging.info(f"Finished create_app ({round((end_time - start_time) * 1000, 2)} ms)")
+        logger.info("Finished create_app (%s ms)", round((end_time - start_time) * 1000, 2))
     return app
 
 
@@ -45,17 +70,21 @@ def initialize_extensions(app: DifyApp):
         ext_commands,
         ext_compress,
         ext_database,
+        ext_forward_refs,
         ext_hosting_provider,
         ext_import_modules,
         ext_logging,
         ext_login,
+        ext_logstore,
         ext_mail,
         ext_migrate,
+        ext_orjson,
         ext_otel,
         ext_proxy_fix,
         ext_redis,
         ext_request_logging,
         ext_sentry,
+        ext_session_factory,
         ext_set_secretkey,
         ext_storage,
         ext_timezone,
@@ -67,6 +96,8 @@ def initialize_extensions(app: DifyApp):
         ext_logging,
         ext_warnings,
         ext_import_modules,
+        ext_orjson,
+        ext_forward_refs,
         ext_set_secretkey,
         ext_compress,
         ext_code_based_extension,
@@ -75,6 +106,7 @@ def initialize_extensions(app: DifyApp):
         ext_migrate,
         ext_redis,
         ext_storage,
+        ext_logstore,  # Initialize logstore after storage, before celery
         ext_celery,
         ext_login,
         ext_mail,
@@ -85,20 +117,21 @@ def initialize_extensions(app: DifyApp):
         ext_commands,
         ext_otel,
         ext_request_logging,
+        ext_session_factory,
     ]
     for ext in extensions:
         short_name = ext.__name__.split(".")[-1]
         is_enabled = ext.is_enabled() if hasattr(ext, "is_enabled") else True
         if not is_enabled:
             if dify_config.DEBUG:
-                logging.info(f"Skipped {short_name}")
+                logger.info("Skipped %s", short_name)
             continue
 
         start_time = time.perf_counter()
         ext.init_app(app)
         end_time = time.perf_counter()
         if dify_config.DEBUG:
-            logging.info(f"Loaded {short_name} ({round((end_time - start_time) * 1000, 2)} ms)")
+            logger.info("Loaded %s (%s ms)", short_name, round((end_time - start_time) * 1000, 2))
 
 
 def create_migrations_app():

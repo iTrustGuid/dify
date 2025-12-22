@@ -4,7 +4,7 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RiMoreFill } from '@remixicon/react'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import ShortcutsName from '@/app/components/workflow/shortcuts-name'
 import {
   PortalToFollowElem,
@@ -71,7 +71,7 @@ const Operator = ({
               <ShortcutsName keys={['ctrl', 'd']} />
             </div>
           </div>
-          <div className='h-[1px] bg-divider-subtle'></div>
+          <div className='h-px bg-divider-subtle'></div>
           <div className='p-1'>
             <div
               className='flex h-8 cursor-pointer items-center justify-between rounded-md px-3 text-sm text-text-secondary hover:bg-state-base-hover'
@@ -85,7 +85,7 @@ const Operator = ({
               />
             </div>
           </div>
-          <div className='h-[1px] bg-divider-subtle'></div>
+          <div className='h-px bg-divider-subtle'></div>
           <div className='p-1'>
             <div
               className='flex h-8 cursor-pointer items-center justify-between rounded-md px-3 text-sm text-text-secondary hover:bg-state-destructive-hover hover:text-text-destructive'

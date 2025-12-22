@@ -13,7 +13,7 @@ import { useSegmentListContext } from './index'
 import type { ChildChunkDetail, ChunkingMode } from '@/models/datasets'
 import { useEventEmitterContextContext } from '@/context/event-emitter'
 import { formatNumber } from '@/utils/format'
-import classNames from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import Divider from '@/app/components/base/divider'
 import { formatTime } from '@/utils/time'
 
@@ -60,7 +60,6 @@ const ChildSegmentDetail: FC<IChildSegmentDetailProps> = ({
   const wordCountText = useMemo(() => {
     const count = content.length
     return `${formatNumber(count)} ${t('datasetDocuments.segment.characters', { count })}`
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content.length])
 
   const EditTimeText = useMemo(() => {
@@ -69,12 +68,11 @@ const ChildSegmentDetail: FC<IChildSegmentDetailProps> = ({
       dateFormat: `${t('datasetDocuments.segment.dateTimeFormat')}`,
     })
     return `${t('datasetDocuments.segment.editedAt')} ${timeText}`
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [childChunkInfo?.updated_at])
 
   return (
     <div className={'flex h-full flex-col'}>
-      <div className={classNames('flex items-center justify-between', fullScreen ? 'border border-divider-subtle py-3 pl-6 pr-4' : 'pl-4 pr-3 pt-3')}>
+      <div className={cn('flex items-center justify-between', fullScreen ? 'border border-divider-subtle py-3 pl-6 pr-4' : 'pl-4 pr-3 pt-3')}>
         <div className='flex flex-col'>
           <div className='system-xl-semibold text-text-primary'>{t('datasetDocuments.segment.editChildChunk')}</div>
           <div className='flex items-center gap-x-2'>
@@ -107,8 +105,8 @@ const ChildSegmentDetail: FC<IChildSegmentDetailProps> = ({
           </div>
         </div>
       </div>
-      <div className={classNames('flex w-full grow', fullScreen ? 'flex-row justify-center px-6 pt-6' : 'px-4 py-3')}>
-        <div className={classNames('h-full overflow-hidden whitespace-pre-line break-all', fullScreen ? 'w-1/2' : 'w-full')}>
+      <div className={cn('flex w-full grow', fullScreen ? 'flex-row justify-center px-6 pt-6' : 'px-4 py-3')}>
+        <div className={cn('h-full overflow-hidden whitespace-pre-line break-all', fullScreen ? 'w-1/2' : 'w-full')}>
           <ChunkContent
             docForm={docForm}
             question={content}

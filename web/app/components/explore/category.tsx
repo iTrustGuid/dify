@@ -2,7 +2,7 @@
 import type { FC } from 'react'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import exploreI18n from '@/i18n/en-US/explore'
 import type { AppCategory } from '@/models/explore'
 import { ThumbsUp } from '@/app/components/base/icons/src/vender/line/alertsAndFeedback'
@@ -36,7 +36,7 @@ const Category: FC<ICategoryProps> = ({
   )
 
   return (
-    <div className={cn(className, 'flex flex-wrap space-x-1 text-[13px]')}>
+    <div className={cn(className, 'flex flex-wrap gap-1 text-[13px]')}>
       <div
         className={itemClassName(isAllCategories)}
         onClick={() => onChange(allCategoriesEn)}

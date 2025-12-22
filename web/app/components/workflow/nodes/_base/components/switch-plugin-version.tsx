@@ -8,7 +8,7 @@ import type { ReactNode } from 'react'
 import { type FC, useCallback, useState } from 'react'
 import { useBoolean } from 'ahooks'
 import { useCheckInstalled, useUpdatePackageFromMarketPlace } from '@/service/use-plugins'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import PluginMutationModel from '@/app/components/plugins/plugin-mutation-model'
 import useGetIcon from '@/app/components/plugins/install-plugin/base/use-get-icon'
 import { pluginManifestToCardPluginProps } from '@/app/components/plugins/install-plugin/utils'
@@ -26,7 +26,8 @@ export type SwitchPluginVersionProps = {
 
 export const SwitchPluginVersion: FC<SwitchPluginVersionProps> = (props) => {
   const { uniqueIdentifier, tooltip, onChange, className } = props
-  const [pluginId] = uniqueIdentifier.split(':')
+
+  const [pluginId] = uniqueIdentifier?.split(':') || ['']
   const [isShow, setIsShow] = useState(false)
   const [isShowUpdateModal, { setTrue: showUpdateModal, setFalse: hideUpdateModal }] = useBoolean(false)
   const [target, setTarget] = useState<{
@@ -60,6 +61,11 @@ export const SwitchPluginVersion: FC<SwitchPluginVersionProps> = (props) => {
       })
   }
   const { t } = useTranslation()
+
+  // Guard against null/undefined uniqueIdentifier to prevent app crash
+  if (!uniqueIdentifier || !pluginId)
+    return null
+
   return <Tooltip popupContent={!isShow && !isShowUpdateModal && tooltip} triggerMethod='hover'>
     <div className={cn('flex w-fit items-center justify-center', className)} onClick={e => e.stopPropagation()}>
       {isShowUpdateModal && pluginDetail && <PluginMutationModel

@@ -19,7 +19,6 @@ const translation = {
   intro5: 'به عنوان یک افزونه مستقل ChatGPT برای انتشار',
   intro6: 'ایجاد شود',
   unavailable: 'در دسترس نیست',
-  unavailableTip: 'مدل جاسازی در دسترس نیست، نیاز است مدل جاسازی پیش‌فرض پیکربندی شود',
   datasets: 'دانش',
   datasetsApi: 'دسترسی API',
   retrieval: {
@@ -37,11 +36,13 @@ const translation = {
       recommend: 'توصیه',
     },
     invertedIndex: {
-      title: 'فهرست معکوس',
-      description: 'فهرست معکوس یک ساختار برای بازیابی کارآمد است. توسط اصطلاحات سازماندهی شده، هر اصطلاح به اسناد یا صفحات وب حاوی آن اشاره می‌کند.',
     },
     change: 'تغییر',
     changeRetrievalMethod: 'تغییر روش بازیابی',
+    keyword_search: {
+      title: 'شاخص معکوس',
+      description: 'شاخص معکوس ساختاری است که برای بازیابی کارآمد استفاده می شود. هر اصطلاح که بر اساس اصطلاحات سازماندهی شده است، به اسناد یا صفحات وب حاوی آن اشاره می کند.',
+    },
   },
   docsFailedNotice: 'اسناد نتوانستند فهرست‌بندی شوند',
   retry: 'تلاش مجدد',
@@ -149,6 +150,8 @@ const translation = {
   chunkingMode: {
     parentChild: 'پدر و مادر و فرزند',
     general: 'عمومی',
+    graph: 'گراف',
+    qa: 'پرسش و پاسخ',
   },
   parentMode: {
     fullDoc: 'مستند کامل',
@@ -217,6 +220,34 @@ const translation = {
     metadata: 'متادیتا',
   },
   embeddingModelNotAvailable: 'مدل جاسازی در دسترس نیست.',
+  updated: 'بروز رسانی',
+  createFromPipeline: 'ایجاد از پایپ لاین دانش',
+  externalKnowledgeBase: 'پایگاه دانش خارجی',
+  serviceApi: {
+    card: {
+      apiKey: 'کلید API',
+      title: 'رابط برنامه‌نویسی سرویس پشتیبان',
+      apiReference: 'مرجع API',
+      endpoint: 'نقطه انتهایی رابط برنامه‌نویسی سرویس',
+    },
+    disabled: 'معلول',
+    enabled: 'در حال خدمت',
+    title: 'رابط برنامه‌نویسی سرویس',
+  },
+  docAllEnabled_one: 'سند {{count}} فعال شد',
+  docAllEnabled_other: 'تمام اسناد {{count}} فعال شدند',
+  partialEnabled_one: 'مجموعاً {{count}} سند، {{num}} موجود',
+  partialEnabled_other: 'مجموع {{count}} سند، {{num}} موجود',
+  cornerLabel: {
+    unavailable: 'غیر قابل دسترسی',
+    pipeline: 'خط لوله',
+  },
+  multimodal: 'چندوجهی',
+  imageUploader: {
+    button: 'کشیدن و رها کردن فایل یا پوشه، یا',
+    browse: 'مرور کردن',
+    tip: '{{supportTypes}} (حداکثر {{batchCount}}، هر کدام {{size}} مگابایت)',
+  },
 }
 
 export default translation

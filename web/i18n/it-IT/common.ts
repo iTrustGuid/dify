@@ -5,6 +5,7 @@ const translation = {
     saved: 'Salvato',
     create: 'Creato',
     remove: 'Rimosso',
+    actionFailed: 'Azione non riuscita',
   },
   operation: {
     create: 'Crea',
@@ -60,6 +61,17 @@ const translation = {
     format: 'Formato',
     selectAll: 'Seleziona tutto',
     deSelectAll: 'Deseleziona tutto',
+    config: 'Config',
+    no: 'No',
+    yes: 'Sì',
+    confirmAction: 'Per favore conferma la tua azione.',
+    deleteConfirmTitle: 'Eliminare?',
+    noSearchResults: 'Nessun {{content}} è stato trovato',
+    resetKeywords: 'Reimposta parole chiave',
+    selectCount: '{{count}} Selezionato',
+    searchCount: 'Trova {{count}} {{content}}',
+    noSearchCount: '0 {{content}}',
+    now: 'Adesso',
   },
   errorMsg: {
     fieldRequired: '{{field}} è obbligatorio',
@@ -68,6 +80,7 @@ const translation = {
   placeholder: {
     input: 'Per favore inserisci',
     select: 'Per favore seleziona',
+    search: 'Cerca...',
   },
   voice: {
     language: {
@@ -91,6 +104,8 @@ const translation = {
       hiIN: 'Hindi',
       trTR: 'Turco',
       faIR: 'Persiano',
+      slSI: 'Sloveno',
+      arTN: 'Arabo tunisino',
     },
   },
   unit: {
@@ -165,7 +180,6 @@ const translation = {
     workspace: 'Workspace',
     createWorkspace: 'Crea Workspace',
     helpCenter: 'Aiuto',
-    communityFeedback: 'Feedback',
     roadmap: 'Tabella di marcia',
     community: 'Comunità',
     about: 'Informazioni',
@@ -173,6 +187,8 @@ const translation = {
     support: 'Supporto',
     compliance: 'Conformità',
     github: 'GitHub',
+    contactUs: 'Contattaci',
+    forum: 'Forum',
   },
   settings: {
     accountGroup: 'ACCOUNT',
@@ -208,8 +224,6 @@ const translation = {
     delete: 'Elimina Account',
     deleteTip:
       'Eliminando il tuo account cancellerai permanentemente tutti i tuoi dati e non sarà possibile recuperarli.',
-    deleteConfirmTip:
-      'Per confermare, invia il seguente messaggio dalla tua email registrata a ',
     myAccount: 'Il mio account',
     account: 'Conto',
     studio: 'Dify Studio',
@@ -249,6 +263,7 @@ const translation = {
       content4: 'Ti abbiamo appena inviato un codice di verifica temporaneo a <email>{{email}}</email>.',
       content1: 'Se continui, invieremo un codice di verifica a <email>{{email}}</email> per la riautenticazione.',
       sendVerifyCode: 'Invia codice di verifica',
+      unAvailableEmail: 'Questa email è temporaneamente non disponibile.',
     },
   },
   members: {
@@ -495,6 +510,39 @@ const translation = {
     emptyProviderTip: 'Si prega di installare prima un fornitore di modelli.',
     discoverMore: 'Scopri di più in',
     emptyProviderTitle: 'Provider di modelli non configurato',
+    auth: {
+      apiKeyModal: {
+        addModel: 'Aggiungi modello',
+        title: 'Configurazione dell\'autorizzazione della chiave API',
+        desc: 'Dopo aver configurato le credenziali, tutti i membri all\'interno dello spazio di lavoro possono utilizzare questo modello quando orchestrano applicazioni.',
+      },
+      modelCredentials: 'Credenziali del modello',
+      providerManaged: 'Fornitore gestito',
+      apiKeys: 'Chiavi API',
+      authRemoved: 'Autore rimosso',
+      specifyModelCredential: 'Specifica le credenziali del modello',
+      addApiKey: 'Aggiungi la chiave API',
+      addModelCredential: 'Aggiungi le credenziali del modello',
+      addNewModel: 'Aggiungi un nuovo modello',
+      providerManagedTip: 'La configurazione attuale è ospitata dal fornitore.',
+      addCredential: 'Aggiungi credenziali',
+      authorizationError: 'Errore di autorizzazione',
+      configLoadBalancing: 'Configurazione del bilanciamento del carico',
+      unAuthorized: 'Non autorizzato',
+      specifyModelCredentialTip: 'Usa una credenziale di modello configurato.',
+      configModel: 'Configura modello',
+      addNewModelCredential: 'Aggiungere nuove credenziali del modello',
+      selectModelCredential: 'Seleziona una credenziale del modello',
+      customModelCredentials: 'Credenziali del modello personalizzato',
+      manageCredentials: 'Gestisci credenziali',
+      customModelCredentialsDeleteTip: 'La credenziale è in uso e non può essere eliminata',
+      addModel: 'Aggiungi modello',
+      modelCredential: 'Credenziale del modello',
+      removeModel: 'Rimuovi modello',
+      editModelCredential: 'Modificare le credenziali del modello',
+    },
+    parametersInvalidRemoved: 'Alcuni parametri non sono validi e sono stati rimossi.',
+    installDataSourceProvider: 'Installa i fornitori di sorgenti dati',
   },
   dataSource: {
     add: 'Aggiungi una fonte di dati',
@@ -596,6 +644,7 @@ const translation = {
     viewDoc: 'Visualizza documentazione',
     relatedApp: 'app collegate',
     noRelatedApp: 'Nessuna app collegata',
+    pipeline: 'Oleodotto',
   },
   voiceInput: {
     speaking: 'Parla ora...',
@@ -717,6 +766,8 @@ const translation = {
     uploadFromComputerUploadError: 'Caricamento del file non riuscito, carica di nuovo.',
     pasteFileLink: 'Incolla il collegamento del file',
     uploadFromComputerReadError: 'Lettura del file non riuscita, riprovare.',
+    fileExtensionBlocked: 'Questo tipo di file è bloccato per motivi di sicurezza',
+    uploadDisabled: 'Il caricamento dei file è disabilitato',
   },
   license: {
     expiring_plural: 'Scadenza tra {{count}} giorni',
@@ -746,6 +797,26 @@ const translation = {
     dropImageHere: 'Trascina la tua immagine qui, oppure',
   },
   you: 'Tu',
+  avatar: {
+    deleteTitle: 'Rimuovi avatar',
+    deleteDescription: 'Sei sicuro di voler rimuovere la tua immagine del profilo? Il tuo account utilizzerà l\'avatar iniziale predefinito.',
+  },
+  feedback: {
+    title: 'Fornire feedback',
+    content: 'Contenuto del feedback',
+    subtitle: 'Per favore, dicci cosa è andato storto con questa risposta.',
+    placeholder: 'Per favore descrivi cosa è andato storto o come possiamo migliorare...',
+  },
+  label: {
+    optional: '(Facoltativo)',
+  },
+  noData: 'Nessun dato',
+  dynamicSelect: {
+    error: 'Caricamento delle opzioni non riuscito',
+    noData: 'Nessuna opzione disponibile',
+    loading: 'Caricamento opzioni...',
+    selected: '{{count}} selezionato',
+  },
 }
 
 export default translation

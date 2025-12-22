@@ -1,18 +1,16 @@
 import type { FC } from 'react'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import useSWR from 'swr'
 import { useContext } from 'use-context-selector'
 import { useTranslation } from 'react-i18next'
-import { omit } from 'lodash-es'
 import { RiLoader2Line, RiPauseCircleLine, RiPlayCircleLine } from '@remixicon/react'
 import Image from 'next/image'
 import { FieldInfo } from '../metadata'
-import { useDocumentContext } from '../index'
+import { useDocumentContext } from '../context'
 import { IndexingType } from '../../../create/step-two'
 import { indexMethodIcon, retrievalIcon } from '../../../create/icons'
 import EmbeddingSkeleton from './skeleton'
 import { RETRIEVE_METHOD } from '@/types/app'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import Divider from '@/app/components/base/divider'
 import { ToastContext } from '@/app/components/base/toast'
 import type { IndexingStatusResponse } from '@/models/datasets'
@@ -21,10 +19,10 @@ import type { CommonResponse } from '@/models/common'
 import { asyncRunSafe, sleep } from '@/utils'
 import {
   fetchIndexingStatus as doFetchIndexingStatus,
-  fetchProcessRule,
   pauseDocIndexing,
   resumeDocIndexing,
 } from '@/service/datasets'
+import { useProcessRule } from '@/service/knowledge/use-dataset'
 
 type IEmbeddingDetailProps = {
   datasetId?: string
@@ -101,7 +99,6 @@ const RuleDetail: FC<IRuleDetailProps> = React.memo(({
         break
     }
     return value
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceData])
 
   return <div className='py-3'>
@@ -132,7 +129,7 @@ const RuleDetail: FC<IRuleDetailProps> = React.memo(({
     />
     <FieldInfo
       label={t('datasetSettings.form.retrievalSetting.title')}
-      displayedValue={t(`dataset.retrieval.${indexingType === IndexingType.ECONOMICAL ? 'invertedIndex' : retrievalMethod}.title`) as string}
+      displayedValue={t(`dataset.retrieval.${indexingType === IndexingType.ECONOMICAL ? 'keyword_search' : retrievalMethod}.title`) as string}
       valueIcon={
         <Image
           className='size-4'
@@ -198,7 +195,6 @@ const EmbeddingDetail: FC<IEmbeddingDetailProps> = ({
       await sleep(2500)
       await startQueryStatus()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stopQueryStatus])
 
   useEffect(() => {
@@ -209,12 +205,7 @@ const EmbeddingDetail: FC<IEmbeddingDetailProps> = ({
     }
   }, [startQueryStatus, stopQueryStatus])
 
-  const { data: ruleDetail } = useSWR({
-    action: 'fetchProcessRule',
-    params: { documentId: localDocumentId },
-  }, apiParams => fetchProcessRule(omit(apiParams, 'action')), {
-    revalidateOnFocus: false,
-  })
+  const { data: ruleDetail } = useProcessRule(localDocumentId)
 
   const isEmbedding = useMemo(() => ['indexing', 'splitting', 'parsing', 'cleaning'].includes(indexingStatusDetail?.indexing_status || ''), [indexingStatusDetail])
   const isEmbeddingCompleted = useMemo(() => ['completed'].includes(indexingStatusDetail?.indexing_status || ''), [indexingStatusDetail])
@@ -288,7 +279,7 @@ const EmbeddingDetail: FC<IEmbeddingDetailProps> = ({
         {/* progress bar */}
         <div className={cn(
           'flex h-2 w-full items-center overflow-hidden rounded-md border border-components-progress-bar-border',
-          isEmbedding ? 'bg-components-progress-bar-bg bg-opacity-50' : 'bg-components-progress-bar-bg',
+          isEmbedding ? 'bg-components-progress-bar-bg/50' : 'bg-components-progress-bar-bg',
         )}>
           <div
             className={cn(

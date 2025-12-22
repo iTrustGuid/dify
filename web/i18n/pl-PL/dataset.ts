@@ -20,8 +20,6 @@ const translation = {
   intro5: 'może być utworzona',
   intro6: ' jako samodzielny wtyczka indeksująca ChatGPT do publikacji',
   unavailable: 'Niedostępny',
-  unavailableTip:
-    'Model osadzający jest niedostępny, domyślny model osadzający musi być skonfigurowany',
   datasets: 'WIEDZA',
   datasetsApi: 'DOSTĘP DO API',
   retrieval: {
@@ -42,12 +40,13 @@ const translation = {
       recommend: 'Polecany',
     },
     invertedIndex: {
-      title: 'Indeks odwrócony',
-      description:
-        'Indeks odwrócony to struktura używana do efektywnego odzyskiwania informacji. Zorganizowane według terminów, każdy termin wskazuje na dokumenty lub strony internetowe zawierające go.',
     },
     change: 'Zmień',
     changeRetrievalMethod: 'Zmień metodę odzyskiwania',
+    keyword_search: {
+      title: 'Odwrócony indeks',
+      description: 'Inverted Index to struktura używana do efektywnego wyszukiwania. Uporządkowany według terminów, każdy termin wskazuje dokumenty lub strony internetowe, które go zawierają.',
+    },
   },
   docsFailedNotice: 'nie udało się zindeksować dokumentów',
   retry: 'Ponów',
@@ -155,6 +154,8 @@ const translation = {
   chunkingMode: {
     parentChild: 'Rodzic-dziecko',
     general: 'Ogólne',
+    graph: 'Wykres',
+    qa: 'Pytania i odpowiedziQ&A',
   },
   parentMode: {
     fullDoc: 'Pełna wersja dokumentu',
@@ -223,6 +224,34 @@ const translation = {
     chooseTime: 'Wybierz czas...',
   },
   embeddingModelNotAvailable: 'Model osadzający jest niedostępny.',
+  updated: 'Aktualizowano',
+  createFromPipeline: 'Tworzenie na podstawie potoku wiedzy',
+  externalKnowledgeBase: 'Zewnętrzna baza wiedzy',
+  serviceApi: {
+    card: {
+      apiKey: 'Klucz API',
+      title: 'Usługa backendowa API',
+      apiReference: 'Dokumentacja API',
+      endpoint: 'Punkt końcowy API usługi',
+    },
+    title: 'Interfejs API usługi',
+    disabled: 'Niepełnosprawny',
+    enabled: 'W serwisie',
+  },
+  docAllEnabled_one: 'Dokument {{count}} włączony',
+  docAllEnabled_other: 'Wszystkie dokumenty {{count}} włączone',
+  partialEnabled_one: 'Łącznie {{count}} dokumentów, {{num}} dostępnych',
+  partialEnabled_other: 'Łącznie {{count}} dokumentów, {{num}} dostępnych',
+  cornerLabel: {
+    unavailable: 'Niedostępne',
+    pipeline: 'Rurociąg',
+  },
+  multimodal: 'Multimodalny',
+  imageUploader: {
+    button: 'Przeciągnij i upuść plik lub folder, lub',
+    browse: 'Przeglądaj',
+    tip: '{{supportTypes}} (maks. {{batchCount}}, {{size}} MB każdy)',
+  },
 }
 
 export default translation

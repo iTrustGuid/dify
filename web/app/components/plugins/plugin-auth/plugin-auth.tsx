@@ -3,7 +3,7 @@ import Authorize from './authorize'
 import Authorized from './authorized'
 import type { PluginPayload } from './types'
 import { usePluginAuth } from './hooks/use-plugin-auth'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 
 type PluginAuthProps = {
   pluginPayload: PluginPayload
@@ -22,6 +22,7 @@ const PluginAuth = ({
     credentials,
     disabled,
     invalidPluginCredentialInfo,
+    notAllowCustomCredential,
   } = usePluginAuth(pluginPayload, !!pluginPayload.provider)
 
   return (
@@ -34,6 +35,7 @@ const PluginAuth = ({
             canApiKey={canApiKey}
             disabled={disabled}
             onUpdate={invalidPluginCredentialInfo}
+            notAllowCustomCredential={notAllowCustomCredential}
           />
         )
       }
@@ -46,6 +48,7 @@ const PluginAuth = ({
             canApiKey={canApiKey}
             disabled={disabled}
             onUpdate={invalidPluginCredentialInfo}
+            notAllowCustomCredential={notAllowCustomCredential}
           />
         )
       }

@@ -4,18 +4,20 @@ import { useTranslation } from 'react-i18next'
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import Loading from '@/app/components/base/loading'
 import s from './index.module.css'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import type { NotionPage } from '@/models/common'
 import NotionIcon from '@/app/components/base/notion-icon'
 import { fetchNotionPagePreview } from '@/service/datasets'
 
 type IProps = {
   currentPage?: NotionPage
+  notionCredentialId: string
   hidePreview: () => void
 }
 
 const NotionPagePreview = ({
   currentPage,
+  notionCredentialId,
   hidePreview,
 }: IProps) => {
   const { t } = useTranslation()
@@ -27,9 +29,9 @@ const NotionPagePreview = ({
       return
     try {
       const res = await fetchNotionPagePreview({
-        workspaceID: currentPage.workspace_id,
         pageID: currentPage.page_id,
         pageType: currentPage.type,
+        credentialID: notionCredentialId,
       })
       setPreviewContent(res.content)
       setLoading(false)

@@ -4,7 +4,7 @@ import type { FC } from 'react'
 import React, { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RiEqualizer2Line } from '@remixicon/react'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import { ChevronRight } from '@/app/components/base/icons/src/vender/line/arrows'
 const I18N_PREFIX = 'datasetCreation.stepOne.website'
 
@@ -29,7 +29,6 @@ const OptionsWrap: FC<Props> = ({
   useEffect(() => {
     if (controlFoldOptions)
       foldHide()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controlFoldOptions])
   return (
     <div className={cn(className, !fold ? 'mb-0' : 'mb-3')}>

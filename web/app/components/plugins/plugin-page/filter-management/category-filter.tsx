@@ -11,7 +11,7 @@ import {
   PortalToFollowElemTrigger,
 } from '@/app/components/base/portal-to-follow-elem'
 import Checkbox from '@/app/components/base/checkbox'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import Input from '@/app/components/base/input'
 import { useCategories } from '../../hooks'
 import { useTranslation } from 'react-i18next'
@@ -90,7 +90,7 @@ const CategoriesFilter = ({
         </div>
       </PortalToFollowElemTrigger>
       <PortalToFollowElemContent className='z-10'>
-        <div className='w-[240px] rounded-xl border-[0.5px] border-components-panel-border bg-components-panel-bg-blur shadow-lg'>
+        <div className='w-[240px] rounded-xl border-[0.5px] border-components-panel-border bg-components-panel-bg-blur shadow-lg backdrop-blur-sm'>
           <div className='p-2 pb-1'>
             <Input
               showLeftIcon

@@ -3,7 +3,6 @@ const translation = {
   createCustomTool: 'Ustvari prilagojeno orodje',
   customToolTip: 'Izvedite več o prilagojenih orodjih Dify',
   type: {
-    all: 'Vsa',
     builtIn: 'Vgrajena',
     custom: 'Prilagojena',
     workflow: 'Potek dela',
@@ -21,13 +20,10 @@ const translation = {
     setupModalTitleDescription: 'Po konfiguraciji poverilnic bodo vsi člani znotraj delovnega prostora lahko uporabljali to orodje pri orkestraciji aplikacij.',
   },
   includeToolNum: 'Vključeno {{num}} orodij',
-  addTool: 'Dodaj orodje',
   addToolModal: {
     type: 'tip',
     category: 'kategorija',
-    add: 'dodaj',
     added: 'dodano',
-    manageInTools: 'Upravljaj v Orodjih',
     custom: {
       title: 'Žiadne prispôsobené nástroje nie sú k dispozícii',
       tip: 'Vytvorte prispôsobený nástroj',
@@ -82,7 +78,6 @@ const translation = {
       keyTooltip: 'Ključ HTTP glave, pustite kot "Authorization", če ne veste, kaj je to, ali pa nastavite na vrednost po meri',
       types: {
         none: 'Brez',
-        api_key: 'API ključ',
         apiKeyPlaceholder: 'Ime HTTP glave za API ključ',
         apiValuePlaceholder: 'Vnesite API ključ',
         api_key_query: 'Vprašanje Param',
@@ -124,6 +119,13 @@ const translation = {
     confirmTip: 'Aplikacije, ki uporabljajo to orodje, bodo vplivane',
     deleteToolConfirmTitle: 'Izbrisati to orodje?',
     deleteToolConfirmContent: 'Brisanje orodja je nepovratno. Uporabniki ne bodo več imeli dostopa do vašega orodja.',
+    toolOutput: {
+      title: 'Izhod orodja',
+      name: 'Ime',
+      reserved: 'Rezervirano',
+      reservedParameterDuplicateTip: 'text, json in datoteke so rezervirane spremenljivke. Spremenljivke s temi imeni se ne smejo pojaviti v izhodni shemi.',
+      description: 'Opis',
+    },
   },
   test: {
     title: 'Test',
@@ -192,6 +194,25 @@ const translation = {
       cancel: 'Prekliči',
       save: 'Shrani',
       confirm: 'Dodaj in avtoriziraj',
+      timeout: 'Časovna omejitev',
+      sseReadTimeout: 'SSE časovna omejitev branja',
+      timeoutPlaceholder: '30',
+      headers: 'Glave',
+      headerKeyPlaceholder: 'npr., Authorization',
+      headerValue: 'Vrednost glave',
+      headerKey: 'Ime glave',
+      addHeader: 'Dodaj glavo',
+      headersTip: 'Dodatni HTTP glavi za poslati z zahtevami MCP strežnika',
+      headerValuePlaceholder: 'npr., Bearer žeton123',
+      noHeaders: 'Nobena prilagojena glava ni konfigurirana',
+      maskedHeadersTip: 'Vrednosti glave so zakrite zaradi varnosti. Spremembe bodo posodobile dejanske vrednosti.',
+      authentication: 'Avtentikacija',
+      configurations: 'Konfiguracije',
+      clientSecret: 'Skrivnost odjemalca',
+      useDynamicClientRegistration: 'Uporabi dinamično registracijo odjemalca',
+      clientID: 'ID odjemalca',
+      clientSecretPlaceholder: 'Skrivnost odjemalca',
+      redirectUrlWarning: 'Prosimo, nastavite URL za preusmeritev OAuth na:',
     },
     delete: 'Odstrani strežnik MCP',
     deleteConfirmTitle: 'Odstraniti {mcp}?',
@@ -232,7 +253,12 @@ const translation = {
       },
       publishTip: 'Aplikacija ni objavljena. Najprej objavite aplikacijo.',
     },
+    toolItem: {
+      parameters: 'Parametri',
+      noDescription: 'Brez opisa',
+    },
   },
+  allTools: 'Vsa orodja',
 }
 
 export default translation

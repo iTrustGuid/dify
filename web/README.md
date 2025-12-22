@@ -13,6 +13,7 @@ docker build . -t dify-web-1
 docker compose up -d
 
 Before starting the web frontend service, please make sure the following environment is ready.
+
 - [Node.js](https://nodejs.org) >= v22.11.x
 - [pnpm](https://pnpm.io) v10.x
 
@@ -37,6 +38,7 @@ NEXT_PUBLIC_EDITION=SELF_HOSTED
 # different from api or web app domain.
 # example: http://cloud.dify.ai/console/api
 NEXT_PUBLIC_API_PREFIX=http://localhost:5001/console/api
+NEXT_PUBLIC_COOKIE_DOMAIN=
 # The URL for Web APP, refers to the Web App base URL of WEB service if web app domain is different from
 # console or api domain.
 # example: http://udify.app/api
@@ -45,6 +47,11 @@ NEXT_PUBLIC_PUBLIC_API_PREFIX=http://localhost:5001/api
 # SENTRY
 NEXT_PUBLIC_SENTRY_DSN=
 ```
+
+> [!IMPORTANT]
+>
+> 1. When the frontend and backend run on different subdomains, set NEXT_PUBLIC_COOKIE_DOMAIN=1. The frontend and backend must be under the same top-level domain in order to share authentication cookies.
+> 1. It's necessary to set NEXT_PUBLIC_API_PREFIX and NEXT_PUBLIC_PUBLIC_API_PREFIX to the correct backend API URL.
 
 Finally, run the development server:
 
@@ -98,9 +105,9 @@ If your IDE is VSCode, rename `web/.vscode/settings.example.json` to `web/.vscod
 
 ## Test
 
-We start to use [Jest](https://jestjs.io/) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for Unit Testing.
+We use [Jest](https://jestjs.io/) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for Unit Testing.
 
-You can create a test file with a suffix of `.spec` beside the file that to be tested. For example, if you want to test a file named `util.ts`. The test file name should be `util.spec.ts`.
+**📖 Complete Testing Guide**: See [web/testing/testing.md](./testing/testing.md) for detailed testing specifications, best practices, and examples.
 
 Run test:
 
@@ -108,12 +115,22 @@ Run test:
 pnpm run test
 ```
 
-If you are not familiar with writing tests, here is some code to refer to:
-* [classnames.spec.ts](./utils/classnames.spec.ts)
-* [index.spec.tsx](./app/components/base/button/index.spec.tsx)
+### Example Code
 
+If you are not familiar with writing tests, refer to:
 
+- [classnames.spec.ts](./utils/classnames.spec.ts) - Utility function test example
+- [index.spec.tsx](./app/components/base/button/index.spec.tsx) - Component test example
 
+### Analyze Component Complexity
+
+Before writing tests, use the script to analyze component complexity:
+
+```bash
+pnpm analyze-component app/components/your-component/index.tsx
+```
+
+This will help you determine the testing strategy. See [web/testing/testing.md](./testing/testing.md) for details.
 
 ## Documentation
 

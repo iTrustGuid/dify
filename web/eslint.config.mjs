@@ -9,6 +9,7 @@ import tailwind from 'eslint-plugin-tailwindcss'
 import reactHooks from 'eslint-plugin-react-hooks'
 import sonar from 'eslint-plugin-sonarjs'
 import oxlint from 'eslint-plugin-oxlint'
+import next from '@next/eslint-plugin-next'
 
 // import reactRefresh from 'eslint-plugin-react-refresh'
 
@@ -63,18 +64,21 @@ export default combine(
   }),
   unicorn(),
   node(),
-  // use nextjs config will break @eslint/config-inspector
-  // use `ESLINT_CONFIG_INSPECTOR=true pnpx @eslint/config-inspector` to check the config
-  // ...process.env.ESLINT_CONFIG_INSPECTOR
-  //   ? []
+  // Next.js configuration
   {
+    plugins: {
+      '@next/next': next,
+    },
     rules: {
+      ...next.configs.recommended.rules,
+      ...next.configs['core-web-vitals'].rules,
       // performance issue, and not used.
       '@next/next/no-html-link-for-pages': 'off',
     },
   },
   {
     ignores: [
+      'storybook-static/**',
       '**/node_modules/*',
       '**/dist/',
       '**/build/',
@@ -82,6 +86,7 @@ export default combine(
       '**/.next/',
       '**/public/*',
       '**/*.json',
+      '**/*.js',
     ],
   },
   {
@@ -90,7 +95,6 @@ export default combine(
       // orignal ts/no-var-requires
       'ts/no-require-imports': 'off',
       'no-console': 'off',
-      'react-hooks/exhaustive-deps': 'warn',
       'react/display-name': 'off',
       'array-callback-return': ['error', {
         allowImplicit: false,
@@ -162,7 +166,7 @@ export default combine(
       'sonarjs/single-char-in-character-classes': 'off',
       'sonarjs/anchor-precedence': 'warn',
       'sonarjs/updated-loop-counter': 'off',
-      'sonarjs/no-dead-store': 'warn',
+      'sonarjs/no-dead-store': 'error',
       'sonarjs/no-duplicated-branches': 'warn',
       'sonarjs/max-lines': 'warn', // max 1000 lines
       'sonarjs/no-variable-usage-before-declaration': 'error',
@@ -181,6 +185,14 @@ export default combine(
       sonarjs: sonar,
     },
   },
+  // allow generated i18n files (like i18n/*/workflow.ts) to exceed max-lines
+  {
+    files: ['i18n/**'],
+    rules: {
+      'sonarjs/max-lines': 'off',
+      'max-lines': 'off',
+    },
+  },
   // need further research
   {
     rules: {
@@ -189,11 +201,17 @@ export default combine(
       'node/prefer-global/process': 'off',
       'node/prefer-global/buffer': 'off',
       'node/no-callback-literal': 'off',
+      'eslint-comments/no-unused-disable': 'off',
+      'tailwindcss/no-arbitrary-value': 'off',
+      'tailwindcss/classnames-order': 'off',
+      'style/indent': ['error', 2, {
+        SwitchCase: 1,
+        ignoreComments: true,
 
+      }],
       // useful, but big change
       'unicorn/prefer-number-properties': 'warn',
       'unicorn/no-new-array': 'warn',
-      'style/indent': 'off',
     },
   },
   // suppress error for `no-undef` rule
@@ -246,5 +264,5 @@ export default combine(
       'tailwindcss/migration-from-tailwind-2': 'warn',
     },
   },
-  oxlint.configs['flat/recommended'],
+  ...oxlint.buildFromOxlintConfigFile('./.oxlintrc.json'),
 )

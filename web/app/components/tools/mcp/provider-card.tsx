@@ -6,13 +6,13 @@ import { useAppContext } from '@/context/app-context'
 import { RiHammerFill } from '@remixicon/react'
 import Indicator from '@/app/components/header/indicator'
 import Icon from '@/app/components/plugins/card/base/card-icon'
-import { useFormatTimeFromNow } from './hooks'
+import { useFormatTimeFromNow } from '@/hooks/use-format-time-from-now'
 import type { ToolWithProvider } from '../../workflow/types'
 import Confirm from '@/app/components/base/confirm'
 import MCPModal from './modal'
 import OperationDropdown from './detail/operation-dropdown'
 import { useDeleteMCP, useUpdateMCP } from '@/service/use-tools'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 
 type Props = {
   currentProvider?: ToolWithProvider

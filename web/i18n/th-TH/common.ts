@@ -5,6 +5,7 @@ const translation = {
     saved: 'บันทึก',
     create: 'สร้าง',
     remove: 'ถูก เอา ออก',
+    actionFailed: 'การดำเนินการล้มเหลว',
   },
   operation: {
     create: 'สร้าง',
@@ -60,6 +61,17 @@ const translation = {
     downloadSuccess: 'ดาวน์โหลดเสร็จสิ้นแล้ว.',
     selectAll: 'เลือกทั้งหมด',
     deSelectAll: 'ยกเลิกการเลือกทั้งหมด',
+    config: 'การตั้งค่า',
+    no: 'ไม่',
+    deleteConfirmTitle: 'ลบหรือไม่?',
+    confirmAction: 'กรุณายืนยันการกระทำของคุณ',
+    yes: 'ใช่',
+    noSearchResults: 'ไม่พบ {{content}}',
+    resetKeywords: 'รีเซ็ตคำสำคัญ',
+    selectCount: '{{count}} ที่เลือก',
+    searchCount: 'ค้นหา {{count}} {{content}}',
+    noSearchCount: '0 {{content}}',
+    now: 'ตอนนี้',
   },
   errorMsg: {
     fieldRequired: '{{field}} เป็นสิ่งจําเป็น',
@@ -68,6 +80,7 @@ const translation = {
   placeholder: {
     input: 'กรุณากรอก',
     select: 'กรุณาเลือก',
+    search: 'ค้นหา...',
   },
   voice: {
     language: {
@@ -91,6 +104,8 @@ const translation = {
       hiIN: 'ฮินดี',
       trTR: 'ตุรกี',
       faIR: 'ภาษาเปอร์เซีย',
+      slSI: 'ภาษาสโลเวเนีย',
+      arTN: 'ภาษาอาหรับตูนิเซีย',
     },
   },
   unit: {
@@ -137,7 +152,7 @@ const translation = {
   menus: {
     status: 'Beta',
     explore: 'สํารวจ',
-    apps: 'เรียน',
+    apps: 'สตูดิโอ',
     plugins: 'ปลั๊กอิน',
     pluginsTips: 'รวมปลั๊กอินของบุคคลที่สามหรือสร้างปลั๊กอิน AI ที่เข้ากันได้กับ ChatGPT',
     datasets: 'ความรู้',
@@ -155,7 +170,6 @@ const translation = {
     workspace: 'พื้นที่',
     createWorkspace: 'สร้างพื้นที่ทํางาน',
     helpCenter: 'วิธีใช้',
-    communityFeedback: 'การตอบสนอง',
     roadmap: 'แผนงาน',
     community: 'ชุมชน',
     about: 'ประมาณ',
@@ -163,6 +177,8 @@ const translation = {
     github: 'GitHub',
     compliance: 'การปฏิบัติตามข้อกำหนด',
     support: 'การสนับสนุน',
+    contactUs: 'ติดต่อเรา',
+    forum: 'ฟอรั่ม',
   },
   settings: {
     accountGroup: 'ทั่วไป',
@@ -199,7 +215,6 @@ const translation = {
     showAppLength: 'แสดง {{length}} แอป',
     delete: 'ลบบัญชี',
     deleteTip: 'การลบบัญชีของคุณจะเป็นการลบข้อมูลทั้งหมดของคุณอย่างถาวรและไม่สามารถกู้คืนได้',
-    deleteConfirmTip: 'เพื่อยืนยัน โปรดส่งข้อมูลต่อไปนี้จากอีเมลที่ลงทะเบียนไว้ที่',
     deletePrivacyLinkTip: 'สําหรับข้อมูลเพิ่มเติมเกี่ยวกับวิธีที่เราจัดการกับข้อมูลของคุณ โปรดดูที่',
     deletePrivacyLink: 'นโยบายความเป็นส่วนตัว',
     deleteLabel: 'เพื่อยืนยัน โปรดพิมพ์อีเมลของคุณด้านล่าง',
@@ -236,6 +251,7 @@ const translation = {
       resendCount: 'ส่งอีกครั้งใน {{count}} วินาที',
       authTip: 'เมื่ออีเมลของคุณถูกเปลี่ยนแปลง บัญชี Google หรือบัญชี GitHub ที่เชื่อมโยงกับอีเมลเก่าของคุณจะไม่สามารถเข้าสู่ระบบบัญชีนี้ได้อีกต่อไป.',
       title: 'เปลี่ยนอีเมล',
+      unAvailableEmail: 'อีเมลนี้ไม่สามารถใช้งานได้ชั่วคราว.',
     },
   },
   members: {
@@ -467,6 +483,39 @@ const translation = {
     toBeConfigured: 'ต้องกําหนดค่า',
     installProvider: 'ติดตั้งผู้ให้บริการโมเดล',
     configureTip: 'ตั้งค่า api-key หรือเพิ่มโมเดลเพื่อใช้',
+    auth: {
+      apiKeyModal: {
+        addModel: 'เพิ่มโมเดล',
+        title: 'การกำหนดค่าการอนุญาตคีย์ API',
+        desc: 'หลังจากตั้งค่าข้อมูลประจำตัวแล้ว สมาชิกทุกคนภายในพื้นที่ทำงานสามารถใช้โมเดลนี้เมื่อจัดการแอปพลิเคชันได้',
+      },
+      configModel: 'กำหนดโมเดล',
+      unAuthorized: 'ไม่ได้รับอนุญาต',
+      addCredential: 'เพิ่มข้อมูลรับรอง',
+      addNewModel: 'เพิ่มโมเดลใหม่',
+      authRemoved: 'ผู้แต่งถูกลบออก',
+      providerManaged: 'ผู้ให้บริการจัดการ',
+      addApiKey: 'เพิ่มคีย์ API',
+      apiKeys: 'คีย์ API',
+      modelCredentials: 'ข้อมูลรับรองโมเดล',
+      specifyModelCredential: 'ระบุข้อมูลประจำตัวของโมเดล',
+      configLoadBalancing: 'การตั้งค่าการโหลดสมดุล',
+      addModelCredential: 'เพิ่มข้อมูลรับรองโมเดล',
+      authorizationError: 'ข้อผิดพลาดในการอนุญาต',
+      specifyModelCredentialTip: 'ใช้ข้อมูลรับรองโมเดลที่กำหนดไว้',
+      providerManagedTip: 'การกำหนดค่าปัจจุบันถูกโฮสต์โดยผู้ให้บริการ.',
+      customModelCredentialsDeleteTip: 'ข้อมูลรับรองกำลังถูกใช้งานและไม่สามารถลบได้',
+      addModel: 'เพิ่มรุ่น',
+      removeModel: 'ลบโมเดล',
+      manageCredentials: 'จัดการข้อมูลประจําตัว',
+      modelCredential: 'ข้อมูลประจําตัวของรุ่น',
+      editModelCredential: 'แก้ไขข้อมูลประจําตัวของโมเดล',
+      selectModelCredential: 'เลือกข้อมูลประจําตัวของโมเดล',
+      customModelCredentials: 'ข้อมูลประจําตัวของโมเดลแบบกําหนดเอง',
+      addNewModelCredential: 'เพิ่มข้อมูลประจําตัวของโมเดลใหม่',
+    },
+    parametersInvalidRemoved: 'บางพารามิเตอร์ไม่ถูกต้องและถูกนำออก',
+    installDataSourceProvider: 'ติดตั้งผู้ให้บริการแหล่งข้อมูล',
   },
   dataSource: {
     add: 'เพิ่มแหล่งข้อมูล',
@@ -565,6 +614,7 @@ const translation = {
     viewDoc: 'ดูเอกสารประกอบ',
     relatedApp: 'แอปที่เชื่อมโยง',
     noRelatedApp: 'ไม่มีแอปที่เชื่อมโยง',
+    pipeline: 'ท่อ',
   },
   voiceInput: {
     speaking: 'พูดเดี๋ยวนี้...',
@@ -666,6 +716,8 @@ const translation = {
     uploadFromComputerLimit: 'อัปโหลด {{type}} ต้องไม่เกิน {{size}}',
     pasteFileLinkInvalid: 'ลิงก์ไฟล์ไม่ถูกต้อง',
     fileExtensionNotSupport: 'ไม่รองรับนามสกุลไฟล์',
+    fileExtensionBlocked: 'ประเภทไฟล์นี้ถูกบล็อกด้วยเหตุผลด้านความปลอดภัย',
+    uploadDisabled: 'การอัปโหลดไฟล์ถูกปิดใช้งาน',
   },
   tag: {
     placeholder: 'แท็กทั้งหมด',
@@ -710,6 +762,26 @@ const translation = {
     supportedFormats: 'รองรับ PNG, JPG, JPEG, WEBP และ GIF',
   },
   you: 'คุณ',
+  avatar: {
+    deleteTitle: 'ลบอวตาร',
+    deleteDescription: 'คุณแน่ใจหรือไม่ว่าต้องการลบรูปโปรไฟล์ของคุณ? บัญชีของคุณจะใช้รูปโปรไฟล์เริ่มต้นตามค่าเริ่มต้น.',
+  },
+  feedback: {
+    content: 'เนื้อหาข้อเสนอแนะ',
+    title: 'ให้ข้อเสนอแนะ',
+    placeholder: 'กรุณาบรรยายสิ่งที่ผิดพลาดหรือวิธีที่เราสามารถปรับปรุงได้...',
+    subtitle: 'กรุณาบอกเราว่าเกิดอะไรขึ้นผิดพลาดกับการตอบนี้',
+  },
+  label: {
+    optional: '(ไม่บังคับ)',
+  },
+  noData: 'ไม่มีข้อมูล',
+  dynamicSelect: {
+    error: 'การโหลดตัวเลือกล้มเหลว',
+    noData: 'ไม่มีตัวเลือก available',
+    loading: 'กำลังโหลดตัวเลือก...',
+    selected: '{{count}} ที่ถูกเลือก',
+  },
 }
 
 export default translation

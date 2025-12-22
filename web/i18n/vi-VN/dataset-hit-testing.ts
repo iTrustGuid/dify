@@ -2,12 +2,11 @@ const translation = {
   title: 'Kiểm tra truy vấn',
   desc: 'Kiểm tra hiệu quả truy xuất của Kiến thức dựa trên văn bản truy vấn đã cho.',
   dateTimeFormat: 'MM/DD/YYYY hh:mm A',
-  recents: 'Gần đây',
   table: {
     header: {
       source: 'Nguồn',
-      text: 'Văn bản',
       time: 'Thời gian',
+      queryContent: 'Nội dung truy vấn',
     },
   },
   input: {
@@ -30,6 +29,12 @@ const translation = {
   keyword: 'Từ khoá',
   hitChunks: 'Nhấn {{num}} đoạn con',
   chunkDetail: 'Chi tiết khối',
+  imageUploader: {
+    tip: 'Tải lên hoặc thả hình ảnh (Tối đa {{batchCount}}, {{size}}MB mỗi ảnh)',
+    tooltip: 'Tải hình ảnh lên (Tối đa {{batchCount}}, {{size}}MB mỗi ảnh)',
+    dropZoneTip: 'Kéo tệp vào đây để tải lên',
+    singleChunkAttachmentLimitTooltip: 'Số lượng phụ kiện khối đơn không được vượt quá {{limit}}',
+  },
 }
 
 export default translation

@@ -28,6 +28,7 @@ const translation = {
       description: ' o metodi pridobivanja.',
       longDescription: ' o metodi pridobivanja, to lahko kadar koli spremenite v nastavitvah znanja.',
       method: 'Metoda pridobivanja',
+      multiModalTip: 'Ko vgrajeni model podpira več modalnosti, izberite model za ponovno razvrščanje z več modalnostmi za boljše delovanje.',
     },
     externalKnowledgeAPI: 'Zunanji API za znanje',
     externalKnowledgeID: 'ID zunanjega znanja',
@@ -37,6 +38,14 @@ const translation = {
     upgradeHighQualityTip: 'Ko nadgradite na način visoke kakovosti, vrnitev v ekonomični način ni na voljo',
     helpText: 'Naučite se napisati dober opis nabora podatkov.',
     searchModel: 'Išči model',
+    chunkStructure: {
+      learnMore: 'Izvedi več',
+      description: 'o strukturi Chunk.',
+      title: 'Struktura kosov',
+    },
+    nameAndIcon: 'Ime in ikona',
+    numberOfKeywords: 'Število ključnih besed',
+    onSearchResults: 'Noben član se ne ujema z vašo iskalno poizvedbo.\nPoskusite znova iskati.',
   },
 }
 

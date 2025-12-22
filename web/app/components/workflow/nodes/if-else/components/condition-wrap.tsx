@@ -15,7 +15,7 @@ import { useGetAvailableVars } from '../../variable-assigner/hooks'
 import { SUB_VARIABLES } from '../../constants'
 import ConditionList from './condition-list'
 import ConditionAdd from './condition-add'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import Button from '@/app/components/base/button'
 import { PortalSelect as Select } from '@/app/components/base/select'
 import { noop } from 'lodash-es'
@@ -204,7 +204,7 @@ const ConditionWrap: FC<Props> = ({
                 </div>
               </div>
               {!isSubVariable && (
-                <div className='mx-3 my-2 h-[1px] bg-divider-subtle'></div>
+                <div className='mx-3 my-2 h-px bg-divider-subtle'></div>
               )}
             </div>
           ))

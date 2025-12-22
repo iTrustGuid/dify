@@ -40,6 +40,10 @@ const translation = {
       enableTip: '该文件可以被索引',
       disableTip: '该文件无法被索引',
     },
+    sort: {
+      uploadTime: '上传时间',
+      hitCount: '召回次数',
+    },
     status: {
       queuing: '排队中',
       indexing: '索引中',
@@ -98,6 +102,9 @@ const translation = {
       upload_file: '文件上传',
       notion: '从 Notion 同步的文档',
       github: '从 Github 同步的代码',
+      local_file: '本地文件',
+      website_crawl: '网站爬取',
+      online_document: '在线文档',
     },
     type: {
       book: '书籍',
@@ -314,6 +321,7 @@ const translation = {
     },
   },
   embedding: {
+    waiting: '嵌入等待中...',
     processing: '嵌入处理中...',
     paused: '嵌入已停止',
     completed: '嵌入已完成',
@@ -367,6 +375,7 @@ const translation = {
     answerEmpty: '答案不能为空',
     contentPlaceholder: '在这里添加内容',
     contentEmpty: '内容不能为空',
+    allFilesUploaded: '所有文件必须上传完成才能保存',
     newTextSegment: '新文本分段',
     newQaSegment: '新问答分段',
     addChunk: '新增分段',

@@ -81,6 +81,10 @@ const translation = {
     },
     addUrl: 'Додати URL-адресу',
     learnMore: 'Дізнатися більше',
+    sort: {
+      uploadTime: 'Час завантаження',
+      hitCount: 'Кількість отримань',
+    },
   },
   metadata: {
     title: 'Метадані',
@@ -98,6 +102,9 @@ const translation = {
       upload_file: 'Завантажити файл',
       notion: 'Синхронізувати з Notion',
       github: 'Синхронізувати з Github',
+      online_document: 'Онлайн-документ',
+      local_file: 'Локальний файл',
+      website_crawl: 'Сканування веб-сайту',
     },
     type: {
       book: 'Книга',
@@ -253,7 +260,6 @@ const translation = {
       cs: 'Чеська',
       th: 'Тайська',
       id: 'Індонезійська',
-      uk: 'Українська',
     },
     categoryMap: {
       book: {
@@ -336,13 +342,13 @@ const translation = {
     pause: 'Пауза',
     parentMaxTokens: 'Родитель',
     hierarchical: 'Батьки-діти',
+    waiting: 'Виконання очікує...',
   },
   segment: {
     paragraphs: 'Параграфи',
     keywords: 'Ключові слова',
     addKeyWord: 'Додати ключове слово',
     keywordError: 'Максимальна довжина ключового слова – 20 символів',
-    characters: 'символів',
     hitCount: 'Кількість пошуку',
     vectorHash: 'Векторний хеш: ',
     questionPlaceholder: 'додайте запитання тут',
@@ -394,6 +400,7 @@ const translation = {
     regenerationConfirmTitle: 'Хочете регенерувати дитячі шматки?',
     keywordEmpty: 'Ключове слово не може бути порожнім',
     keywordDuplicate: 'Ключове слово вже існує',
+    allFilesUploaded: 'Усі файли повинні бути завантажені перед збереженням',
   },
 }
 

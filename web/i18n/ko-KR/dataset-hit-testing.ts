@@ -2,12 +2,11 @@ const translation = {
   title: '검색 테스트',
   desc: '주어진 쿼리 텍스트에 기반하여 지식의 검색 효과를 테스트합니다.',
   dateTimeFormat: 'YYYY/MM/DD HH:mm',
-  recents: '최근 결과',
   table: {
     header: {
       source: '소스',
-      text: '텍스트',
       time: '시간',
+      queryContent: '질의 내용',
     },
   },
   input: {
@@ -30,6 +29,12 @@ const translation = {
   hitChunks: '{{num}}개의 자식 청크를 히트했습니다.',
   keyword: '키워드',
   chunkDetail: '청크 디테일 (Chunk Detail)',
+  imageUploader: {
+    tip: '이미지를 업로드하거나 드래그하세요 (최대 {{batchCount}}장, 장당 {{size}}MB)',
+    tooltip: '이미지 업로드 (최대 {{batchCount}}개, 개당 {{size}}MB)',
+    dropZoneTip: '업로드할 파일을 여기에 끌어놓으세요',
+    singleChunkAttachmentLimitTooltip: '단일 청크 첨부 파일의 수는 {{limit}}를 초과할 수 없습니다',
+  },
 }
 
 export default translation

@@ -2,6 +2,7 @@ import type { FC } from 'react'
 import {
   memo,
   useEffect,
+  useState,
 } from 'react'
 import {
   Background,
@@ -13,7 +14,7 @@ import { IterationStartNodeDumb } from '../iteration-start'
 import { useNodeIterationInteractions } from './use-interactions'
 import type { IterationNodeType } from './types'
 import AddBlock from './add-block'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import type { NodeProps } from '@/app/components/workflow/types'
 import Toast from '@/app/components/base/toast'
 
@@ -27,19 +28,20 @@ const Node: FC<NodeProps<IterationNodeType>> = ({
   const nodesInitialized = useNodesInitialized()
   const { handleNodeIterationRerender } = useNodeIterationInteractions()
   const { t } = useTranslation()
+  const [showTips, setShowTips] = useState(data._isShowTips)
 
   useEffect(() => {
     if (nodesInitialized)
       handleNodeIterationRerender(id)
-    if (data.is_parallel && data._isShowTips) {
+    if (data.is_parallel && showTips) {
       Toast.notify({
         type: 'warning',
         message: t(`${i18nPrefix}.answerNodeWarningDesc`),
         duration: 5000,
       })
-      data._isShowTips = false
+      setShowTips(false)
     }
-  }, [nodesInitialized, id, handleNodeIterationRerender, data, t])
+  }, [nodesInitialized, id, handleNodeIterationRerender, data.is_parallel, showTips, t])
 
   return (
     <div className={cn(

@@ -3,9 +3,9 @@
 import type { ChangeEvent, FC } from 'react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { varHighlightHTML } from '../../app/configuration/base/var-highlight'
+import VarHighlight from '../../app/configuration/base/var-highlight'
 import Toast from '../toast'
-import classNames from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import { checkKeys } from '@/utils/var'
 
 // regex to match the {{}} and replace it with a span
@@ -61,16 +61,29 @@ const BlockInput: FC<IBlockInputProps> = ({
     }
   }, [isEditing])
 
-  const style = classNames({
+  const style = cn({
     'block px-4 py-2 w-full h-full text-sm text-gray-900 outline-0 border-0 break-all': true,
     'block-input--editing': isEditing,
   })
 
-  const coloredContent = (currentValue || '')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(regex, varHighlightHTML({ name: '$1' })) // `<span class="${highLightClassName}">{{$1}}</span>`
-    .replace(/\n/g, '<br />')
+  const renderSafeContent = (value: string) => {
+    const parts = value.split(/(\{\{[^}]+\}\}|\n)/g)
+    return parts.map((part, index) => {
+      const variableMatch = part.match(/^\{\{([^}]+)\}\}$/)
+      if (variableMatch) {
+        return (
+          <VarHighlight
+            key={`var-${index}`}
+            name={variableMatch[1]}
+          />
+        )
+      }
+      if (part === '\n')
+        return <br key={`br-${index}`} />
+
+      return <span key={`text-${index}`}>{part}</span>
+    })
+  }
 
   // Not use useCallback. That will cause out callback get old data.
   const handleSubmit = (value: string) => {
@@ -96,23 +109,23 @@ const BlockInput: FC<IBlockInputProps> = ({
 
   // Prevent rerendering caused cursor to jump to the start of the contentEditable element
   const TextAreaContentView = () => {
-    return <div
-      className={classNames(style, className)}
-      dangerouslySetInnerHTML={{ __html: coloredContent }}
-      suppressContentEditableWarning={true}
-    />
+    return (
+      <div className={cn(style, className)}>
+        {renderSafeContent(currentValue || '')}
+      </div>
+    )
   }
 
   const placeholder = ''
   const editAreaClassName = 'focus:outline-none bg-transparent text-sm'
 
   const textAreaContent = (
-    <div className={classNames(readonly ? 'max-h-[180px] pb-5' : 'h-[180px]', ' overflow-y-auto')} onClick={() => !readonly && setIsEditing(true)}>
+    <div className={cn(readonly ? 'max-h-[180px] pb-5' : 'h-[180px]', ' overflow-y-auto')} onClick={() => !readonly && setIsEditing(true)}>
       {isEditing
         ? <div className='h-full px-4 py-2'>
           <textarea
             ref={contentEditableRef}
-            className={classNames(editAreaClassName, 'block w-full h-full resize-none')}
+            className={cn(editAreaClassName, 'block h-full w-full resize-none')}
             placeholder={placeholder}
             onChange={onValueChange}
             value={currentValue}
@@ -130,7 +143,7 @@ const BlockInput: FC<IBlockInputProps> = ({
     </div>)
 
   return (
-    <div className={classNames('block-input w-full overflow-y-auto bg-white border-none rounded-xl')}>
+    <div className={cn('block-input w-full overflow-y-auto rounded-xl border-none bg-white')}>
       {textAreaContent}
       {/* footer */}
       {!readonly && (

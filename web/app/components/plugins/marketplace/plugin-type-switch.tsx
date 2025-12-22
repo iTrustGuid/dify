@@ -1,44 +1,42 @@
 'use client'
+import { Trigger as TriggerIcon } from '@/app/components/base/icons/src/vender/plugin'
+import { cn } from '@/utils/classnames'
 import {
   RiArchive2Line,
   RiBrain2Line,
+  RiDatabase2Line,
   RiHammerLine,
   RiPuzzle2Line,
   RiSpeakAiLine,
 } from '@remixicon/react'
-import { PluginType } from '../types'
-import { useMarketplaceContext } from './context'
-import {
-  useMixedTranslation,
-  useSearchBoxAutoAnimate,
-} from './hooks'
-import cn from '@/utils/classnames'
 import { useCallback, useEffect } from 'react'
+import { PluginCategoryEnum } from '../types'
+import { useMarketplaceContext } from './context'
+import { useMixedTranslation } from './hooks'
 
 export const PLUGIN_TYPE_SEARCH_MAP = {
   all: 'all',
-  model: PluginType.model,
-  tool: PluginType.tool,
-  agent: PluginType.agent,
-  extension: PluginType.extension,
+  model: PluginCategoryEnum.model,
+  tool: PluginCategoryEnum.tool,
+  agent: PluginCategoryEnum.agent,
+  extension: PluginCategoryEnum.extension,
+  datasource: PluginCategoryEnum.datasource,
+  trigger: PluginCategoryEnum.trigger,
   bundle: 'bundle',
 }
 type PluginTypeSwitchProps = {
   locale?: string
   className?: string
-  searchBoxAutoAnimate?: boolean
   showSearchParams?: boolean
 }
 const PluginTypeSwitch = ({
   locale,
   className,
-  searchBoxAutoAnimate,
   showSearchParams,
 }: PluginTypeSwitchProps) => {
   const { t } = useMixedTranslation(locale)
   const activePluginType = useMarketplaceContext(s => s.activePluginType)
   const handleActivePluginTypeChange = useMarketplaceContext(s => s.handleActivePluginTypeChange)
-  const { searchBoxCanAnimate } = useSearchBoxAutoAnimate(searchBoxAutoAnimate)
 
   const options = [
     {
@@ -55,6 +53,16 @@ const PluginTypeSwitch = ({
       value: PLUGIN_TYPE_SEARCH_MAP.tool,
       text: t('plugin.category.tools'),
       icon: <RiHammerLine className='mr-1.5 h-4 w-4' />,
+    },
+    {
+      value: PLUGIN_TYPE_SEARCH_MAP.datasource,
+      text: t('plugin.category.datasources'),
+      icon: <RiDatabase2Line className='mr-1.5 h-4 w-4' />,
+    },
+    {
+      value: PLUGIN_TYPE_SEARCH_MAP.trigger,
+      text: t('plugin.category.triggers'),
+      icon: <TriggerIcon className='mr-1.5 h-4 w-4' />,
     },
     {
       value: PLUGIN_TYPE_SEARCH_MAP.agent,
@@ -82,9 +90,7 @@ const PluginTypeSwitch = ({
   }, [showSearchParams, handleActivePluginTypeChange])
 
   useEffect(() => {
-    window.addEventListener('popstate', () => {
-      handlePopState()
-    })
+    window.addEventListener('popstate', handlePopState)
     return () => {
       window.removeEventListener('popstate', handlePopState)
     }
@@ -93,7 +99,6 @@ const PluginTypeSwitch = ({
   return (
     <div className={cn(
       'flex shrink-0 items-center justify-center space-x-2 bg-background-body py-3',
-      searchBoxCanAnimate && 'sticky top-[56px] z-10',
       className,
     )}>
       {

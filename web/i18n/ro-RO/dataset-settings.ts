@@ -26,6 +26,7 @@ const translation = {
       description: ' despre metoda de recuperare.',
       longDescription: ' despre metoda de recuperare, o puteți schimba în orice moment în setările cunoștințelor.',
       method: 'Metoda de recuperare',
+      multiModalTip: 'Când modelul de încorporare suportă multi-modal, vă rugăm să selectați un model de reordonare multi-modal pentru o performanță mai bună.',
     },
     save: 'Salvare',
     permissionsInvitedMembers: 'Membri parțiali ai echipei',
@@ -37,6 +38,14 @@ const translation = {
     upgradeHighQualityTip: 'După ce faceți upgrade la modul Înaltă calitate, revenirea la modul Economic nu este disponibilă',
     helpText: 'Aflați cum să scrieți o descriere bună a setului de date.',
     searchModel: 'Căutare model',
+    chunkStructure: {
+      learnMore: 'Află mai multe',
+      title: 'Structura bucății',
+      description: 'despre Chunk Structure.',
+    },
+    nameAndIcon: 'Nume și pictogramă',
+    onSearchResults: 'Niciun membru nu corespunde interogării de căutare.\nÎncercați din nou căutarea.',
+    numberOfKeywords: 'Număr de cuvinte cheie',
   },
 }
 

@@ -28,7 +28,7 @@ const translation = {
       delete: 'Usuń',
       enableWarning: 'Zarchiwizowany plik nie może zostać włączony',
       sync: 'Synchronizuj',
-      resume: 'Wznawiać',
+      resume: 'Wznów',
       pause: 'Pauza',
     },
     index: {
@@ -82,6 +82,10 @@ const translation = {
     },
     addUrl: 'Dodaj adres URL',
     learnMore: 'Dowiedz się więcej',
+    sort: {
+      uploadTime: 'Czas przesyłania',
+      hitCount: 'Liczba wyszukiwań',
+    },
   },
   metadata: {
     title: 'Metadane',
@@ -100,6 +104,9 @@ const translation = {
       upload_file: 'Wgraj plik',
       notion: 'Synchronizuj z Notion',
       github: 'Synchronizuj z Github',
+      online_document: 'Dokument online',
+      local_file: 'Plik lokalny',
+      website_crawl: 'Indeksowanie witryny',
     },
     type: {
       book: 'Książka',
@@ -337,13 +344,13 @@ const translation = {
     hierarchical: 'Rodzic-dziecko',
     childMaxTokens: 'Dziecko',
     pause: 'Pauza',
+    waiting: 'Oczekiwanie na osadzenie...',
   },
   segment: {
     paragraphs: 'Akapity',
     keywords: 'Słowa kluczowe',
     addKeyWord: 'Dodaj słowo kluczowe',
     keywordError: 'Maksymalna długość słowa kluczowego wynosi 20',
-    characters: 'znaków',
     hitCount: 'Liczba odwołań',
     vectorHash: 'Wektor hash: ',
     questionPlaceholder: 'dodaj pytanie tutaj',
@@ -395,6 +402,7 @@ const translation = {
     childChunks_one: 'FRAGMENT POTOMNY',
     keywordDuplicate: 'Słowo kluczowe już istnieje',
     keywordEmpty: 'Słowo kluczowe nie może być puste',
+    allFilesUploaded: 'Wszystkie pliki muszą zostać przesłane przed zapisaniem',
   },
 }
 

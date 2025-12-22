@@ -6,6 +6,8 @@ const translation = {
     bundles: 'Pacchetti',
     models: 'Modelli',
     all: 'Tutto',
+    datasources: 'Fonti dei dati',
+    triggers: 'Trigger',
   },
   categorySingle: {
     bundle: 'Fascio',
@@ -13,6 +15,8 @@ const translation = {
     agent: 'Strategia dell\'agente',
     extension: 'Estensione',
     tool: 'Strumento',
+    datasource: 'Origine dati',
+    trigger: 'Innescare',
   },
   list: {
     source: {
@@ -43,6 +47,7 @@ const translation = {
       viewDetail: 'vedi dettagli',
       checkUpdate: 'Controlla l\'aggiornamento',
       info: 'Informazioni sul plugin',
+      back: 'Indietro',
     },
     toolSelector: {
       paramsTip1: 'Controlla i parametri di inferenza LLM.',
@@ -84,6 +89,16 @@ const translation = {
     endpointDeleteTip: 'Rimuovi punto finale',
     endpointsEmpty: 'Fare clic sul pulsante \'+\' per aggiungere un punto finale',
     actionNum: '{{num}} {{azione}} INCLUSO',
+    deprecation: {
+      reason: {
+        noMaintainer: 'nessun manutentore',
+        ownershipTransferred: 'proprietà trasferita',
+        businessAdjustments: 'adeguamenti aziendali',
+      },
+      onlyReason: 'Questo plugin è stato deprecato a causa di {{deprecatedReason}} e non verrà più aggiornato.',
+      fullMessage: 'Questo plugin è stato deprecato a causa di {{deprecatedReason}} e non verrà più aggiornato. Si prega di utilizzare <CustomLink href=\'https://example.com/\'>{{-alternativePluginId}}</CustomLink> invece.',
+      noReason: 'Questo plugin è stato deprecato e non sarà più aggiornato.',
+    },
   },
   debugInfo: {
     title: 'Debug',
@@ -193,6 +208,11 @@ const translation = {
     installedError: 'Impossibile installare i plugin di {{errorLength}}',
     installingWithError: 'Installazione dei plugin {{installingLength}}, {{successLength}} successo, {{errorLength}} fallito',
     installingWithSuccess: 'Installazione dei plugin {{installingLength}}, {{successLength}} successo.',
+    installSuccess: '{{successLength}} plugins installed successfully',
+    installed: 'Installed',
+    runningPlugins: 'Installing Plugins',
+    successPlugins: 'Successfully Installed Plugins',
+    errorPlugins: 'Failed to Install Plugins',
   },
   searchInMarketplace: 'Cerca nel Marketplace',
   endpointsEnabled: '{{num}} set di endpoint abilitati',
@@ -236,6 +256,69 @@ const translation = {
     oauthClientSettings: 'Impostazioni del client OAuth',
     useApiAuth: 'Configurazione dell\'autorizzazione della chiave API',
     clientInfo: 'Poiché non sono stati trovati segreti client di sistema per questo fornitore di strumenti, è necessario configurarlo manualmente. Per redirect_uri, si prega di utilizzare',
+    unavailable: 'Non disponibile',
+    customCredentialUnavailable: 'Le credenziali personalizzate attualmente non sono disponibili',
+    credentialUnavailable: 'Credenziali attualmente non disponibili. Si prega di contattare l\'amministratore.',
+    credentialUnavailableInButton: 'Credenziali non disponibili',
+    emptyAuth: 'Configurare l\'autenticazione',
+    connectedWorkspace: 'Area di lavoro connessa',
+  },
+  deprecated: 'Deprecato',
+  autoUpdate: {
+    strategy: {
+      disabled: {
+        name: 'Disabile',
+        description: 'I plugin non si aggiorneranno automaticamente',
+      },
+      fixOnly: {
+        name: 'Ripara solo',
+        selectedDescription: 'Aggiornamento automatico solo per versioni patch',
+        description: 'Aggiornamento automatico solo per le versioni patch (ad es., 1.0.1 → 1.0.2). Le modifiche delle versioni minori non attiveranno aggiornamenti.',
+      },
+      latest: {
+        selectedDescription: 'Aggiorna sempre all\'ultima versione',
+        description: 'Aggiorna sempre all\'ultima versione',
+        name: 'Ultimo',
+      },
+    },
+    upgradeMode: {
+      exclude: 'Escludi selezionato',
+      all: 'Aggiorna tutto',
+      partial: 'Solo selezionati',
+    },
+    upgradeModePlaceholder: {
+      exclude: 'I plugin selezionati non verranno aggiornati automaticamente',
+      partial: 'Solo i plugin selezionati si aggiorneranno automaticamente. Attualmente non ci sono plugin selezionati, quindi nessun plugin si aggiornerà automaticamente.',
+    },
+    operation: {
+      clearAll: 'Cancella tutto',
+      select: 'Seleziona i plugin',
+    },
+    pluginDowngradeWarning: {
+      title: 'Downgrade del plugin',
+      downgrade: 'Comunque esegui il downgrade',
+      exclude: 'Escludi dall\'aggiornamento automatico',
+      description: 'L\'aggiornamento automatico è attualmente abilitato per questo plugin. Il downgrade della versione potrebbe causare la sovrascrittura delle tue modifiche durante il prossimo aggiornamento automatico.',
+    },
+    noPluginPlaceholder: {
+      noFound: 'Nessun plugin trovato',
+      noInstalled: 'Nessun plugin installato',
+    },
+    specifyPluginsToUpdate: 'Specifica i plugin da aggiornare',
+    updateTime: 'Tempo di aggiornamento',
+    automaticUpdates: 'Aggiornamenti automatici',
+    updateSettings: 'Aggiorna impostazioni',
+    nextUpdateTime: 'Prossimo aggiornamento automatico: {{time}}',
+    partialUPdate: 'Solo i seguenti {{num}} plugin si aggiorneranno automaticamente',
+    changeTimezone: 'Per cambiare il fuso orario, vai su <setTimezone>Impostazioni</setTimezone>',
+    excludeUpdate: 'I seguenti {{num}} plugin non si aggiorneranno automaticamente',
+    updateTimeTitle: 'Tempo di aggiornamento',
+  },
+  readmeInfo: {
+    title: 'LEGGIMI',
+    needHelpCheckReadme: 'Hai bisogno di aiuto? Controlla il README.',
+    noReadmeAvailable: 'Nessun README disponibile',
+    failedToFetch: 'Impossibile recuperare il README',
   },
 }
 

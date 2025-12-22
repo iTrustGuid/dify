@@ -20,7 +20,6 @@ const translation = {
   intro5: 'можна створити',
   intro6: ' як автономний плагін індексу ChatGPT для публікації',
   unavailable: 'Недоступно',
-  unavailableTip: 'Модель вбудовування недоступна, необхідно налаштувати модель вбудовування за замовчуванням',
   datasets: 'ЗНАННЯ',
   datasetsApi: 'API',
   retrieval: {
@@ -38,11 +37,13 @@ const translation = {
       recommend: 'Рекомендовано',
     },
     invertedIndex: {
-      title: 'Інвертований індекс',
-      description: 'Інвертований індекс – це структура, яка використовується для ефективного пошуку. Організований за термінами, кожен термін вказує на документи або веб-сторінки, що його містять.',
     },
     change: 'Змінити',
     changeRetrievalMethod: 'Змінити метод пошуку',
+    keyword_search: {
+      title: 'Перевернутий індекс',
+      description: 'Перевернутий індекс — це структура, яка використовується для ефективного пошуку. Упорядкований за термінами, кожен термін вказує на документи або веб-сторінки, що містять його.',
+    },
   },
   docsFailedNotice: 'документи не вдалося проіндексувати',
   retry: 'Повторити спробу',
@@ -150,6 +151,8 @@ const translation = {
   chunkingMode: {
     parentChild: 'Батьки-діти',
     general: 'Загальне',
+    graph: 'Графік',
+    qa: 'Питання та відповіді',
   },
   parentMode: {
     fullDoc: 'Повний документ',
@@ -218,6 +221,34 @@ const translation = {
     addMetadata: 'Додати метадані',
   },
   embeddingModelNotAvailable: 'Модель вбудовування недоступна.',
+  updated: 'Оновлено',
+  createFromPipeline: 'Створюйте на основі Knowledge Pipeline',
+  externalKnowledgeBase: 'Зовнішня база знань',
+  serviceApi: {
+    card: {
+      title: 'API бекенд-сервіс',
+      apiReference: 'Посилання на API',
+      apiKey: 'Ключ API',
+      endpoint: 'Кінцева точка API сервісу',
+    },
+    disabled: 'Вимкнено',
+    enabled: 'У службі',
+    title: 'Сервісний API',
+  },
+  docAllEnabled_one: '{{count}} документ увімкнено',
+  docAllEnabled_other: 'Усі документи {{count}} увімкнено',
+  partialEnabled_one: 'Всього {{count}} документів, доступно {{num}}',
+  partialEnabled_other: 'Всього {{count}} документів, доступно {{num}}',
+  cornerLabel: {
+    unavailable: 'Немає у наявності',
+    pipeline: 'Трубопровід',
+  },
+  multimodal: 'Мультимодальний',
+  imageUploader: {
+    button: 'Перетягніть файл або папку, або',
+    browse: 'Перегляд',
+    tip: '{{supportTypes}} (Макс {{batchCount}}, по {{size}} МБ кожен)',
+  },
 }
 
 export default translation

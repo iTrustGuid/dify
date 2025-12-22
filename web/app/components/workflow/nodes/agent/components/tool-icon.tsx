@@ -1,6 +1,6 @@
 import Tooltip from '@/app/components/base/tooltip'
 import Indicator from '@/app/components/header/indicator'
-import classNames from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import { memo, useMemo, useRef, useState } from 'react'
 import { useAllBuiltInTools, useAllCustomTools, useAllMCPTools, useAllWorkflowTools } from '@/service/use-tools'
 import { getIconFromMarketPlace } from '@/utils/get-icon'
@@ -60,38 +60,34 @@ export const ToolIcon = memo(({ providerName }: ToolIconProps) => {
     disabled={!notSuccess}
   >
     <div
-      className={classNames(
-        'relative flex size-5 items-center justify-center rounded-[6px] border-[0.5px] border-components-panel-border-subtle bg-background-default-dodge',
-      )}
+      className={cn('relative')}
       ref={containerRef}
     >
-      {(() => {
-        if (iconFetchError || !icon)
+      <div className="flex size-5 items-center justify-center overflow-hidden rounded-[6px] border-[0.5px] border-components-panel-border-subtle bg-background-default-dodge">
+        {(() => {
+          if (iconFetchError || !icon)
+            return <Group className="h-3 w-3 opacity-35" />
+          if (typeof icon === 'string') {
+            return <img
+              src={icon}
+              alt='tool icon'
+              className={cn('size-3.5 h-full w-full object-cover',
+                notSuccess && 'opacity-50')}
+              onError={() => setIconFetchError(true)}
+            />
+          }
+          if (typeof icon === 'object') {
+            return <AppIcon
+              className={cn('size-3.5 h-full w-full object-cover',
+                notSuccess && 'opacity-50')}
+              icon={icon?.content}
+              background={icon?.background}
+            />
+          }
           return <Group className="h-3 w-3 opacity-35" />
-        if (typeof icon === 'string') {
-          return <img
-            src={icon}
-            alt='tool icon'
-            className={classNames(
-              'size-3.5 h-full w-full object-cover',
-              notSuccess && 'opacity-50',
-            )}
-            onError={() => setIconFetchError(true)}
-          />
-        }
-        if (typeof icon === 'object') {
-          return <AppIcon
-            className={classNames(
-              'size-3.5 h-full w-full object-cover',
-              notSuccess && 'opacity-50',
-            )}
-            icon={icon?.content}
-            background={icon?.background}
-          />
-        }
-        return <Group className="h-3 w-3 opacity-35" />
-      })()}
-      {indicator && <Indicator color={indicator} className="absolute right-[-1px] top-[-1px]" />}
+        })()}
+      </div>
+      {indicator && <Indicator color={indicator} className="absolute -right-[1px] -top-[1px]" />}
     </div>
   </Tooltip>
 })

@@ -5,7 +5,7 @@ import { useContext } from 'use-context-selector'
 import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 import { useProviderContext } from '@/context/provider-context'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import type { Member } from '@/models/common'
 import { deleteMemberOrCancelInvitation, updateMemberRole } from '@/service/common'
 import { ToastContext } from '@/app/components/base/toast'
@@ -33,13 +33,13 @@ const Operation = ({
   const roleList = useMemo(() => {
     if (operatorRole === 'owner') {
       return [
-        ...['admin', 'editor', 'normal'],
+        'admin', 'editor', 'normal',
         ...(datasetOperatorEnabled ? ['dataset_operator'] : []),
       ]
     }
     if (operatorRole === 'admin') {
       return [
-        ...['editor', 'normal'],
+        'editor', 'normal',
         ...(datasetOperatorEnabled ? ['dataset_operator'] : []),
       ]
     }

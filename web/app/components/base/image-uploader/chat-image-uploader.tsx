@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Uploader from './uploader'
 import ImageLinkInput from './image-link-input'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import { ImagePlus } from '@/app/components/base/icons/src/vender/line/images'
 import { TransferMethod } from '@/types/app'
 import {
@@ -93,9 +93,9 @@ const UploaderButton: FC<UploaderButtonProps> = ({
           {hasUploadFromLocal && (
             <>
               <div className="mt-2 flex items-center px-2 text-xs font-medium text-gray-400">
-                <div className="mr-3 h-[1px] w-[93px] bg-gradient-to-l from-[#F3F4F6]" />
+                <div className="mr-3 h-px w-[93px] bg-gradient-to-l from-[#F3F4F6]" />
                 OR
-                <div className="ml-3 h-[1px] w-[93px] bg-gradient-to-r from-[#F3F4F6]" />
+                <div className="ml-3 h-px w-[93px] bg-gradient-to-r from-[#F3F4F6]" />
               </div>
               <Uploader
                 onUpload={handleUpload}

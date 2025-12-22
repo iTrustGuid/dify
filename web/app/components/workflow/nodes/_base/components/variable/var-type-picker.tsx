@@ -2,7 +2,7 @@
 import type { FC } from 'react'
 import React, { useCallback, useState } from 'react'
 import { RiArrowDownSLine } from '@remixicon/react'
-import cn from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 import {
   PortalToFollowElem,
   PortalToFollowElemContent,
@@ -18,7 +18,7 @@ type Props = {
   onChange: (value: string) => void
 }
 
-const TYPES = [VarType.string, VarType.number, VarType.arrayNumber, VarType.arrayString, VarType.arrayObject, VarType.object]
+const TYPES = [VarType.string, VarType.number, VarType.boolean, VarType.arrayNumber, VarType.arrayString, VarType.arrayBoolean, VarType.arrayObject, VarType.object]
 const VarReferencePicker: FC<Props> = ({
   readonly,
   className,
