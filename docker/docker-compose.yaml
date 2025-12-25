@@ -770,7 +770,8 @@ services:
   # Frontend web application.
   web:
     # image: langgenius/dify-web:1.7.2
-    image: langgenius/dify-web:1.11.1
+    # image: langgenius/dify-web:1.11.1
+    image: dify-web-1:latest
     restart: always
     environment:
       CONSOLE_API_URL: ${CONSOLE_API_URL:-}

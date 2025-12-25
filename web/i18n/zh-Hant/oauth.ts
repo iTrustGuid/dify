@@ -1,7 +1,7 @@
 const translation = {
   tips: {
-    notLoggedIn: '想要訪問您的 Dify 雲端帳戶',
-    loggedIn: '想要訪問您 Dify Cloud 帳戶中的以下資訊。',
+    notLoggedIn: '想要訪問您的 Escon 雲端帳戶',
+    loggedIn: '想要訪問您 Escon Cloud 帳戶中的以下資訊。',
     common: '我們尊重您的隱私，只會使用這些信息來提升您使用我們開發者工具的體驗。',
     needLogin: '請登錄以進行授權',
   },

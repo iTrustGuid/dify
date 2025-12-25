@@ -299,7 +299,7 @@ const translation = {
     sendInvite: '发送邀请',
     invitedAsRole: '邀请为{{role}}用户',
     invitationSent: '邀请已发送',
-    invitationSentTip: '邀请已发送，对方登录 Dify 后即可访问你的团队数据。',
+    invitationSentTip: '邀请已发送，对方登录 Escon 后即可访问你的团队数据。',
     invitationLink: '邀请链接',
     failedInvitationEmails: '邀请以下邮箱失败',
     ok: '好的',
@@ -370,7 +370,7 @@ const translation = {
       openaiHosted: '托管 OpenAI',
       onTrial: '体验',
       exhausted: '超出限额',
-      desc: '托管 OpenAI 由 Dify 提供的托管 OpenAI 服务，你可以使用 GPT-3.5 等模型，在体验额度消耗完毕前你需要设置其它模型供应商。',
+      desc: '托管 OpenAI 由 Escon 提供的托管 OpenAI 服务，你可以使用 GPT-3.5 等模型，在体验额度消耗完毕前你需要设置其它模型供应商。',
       callTimes: '调用次数',
       usedUp: '试用额度已用完，请在下方添加自己的模型供应商',
       useYourModel: '当前正在使用你自己的模型供应商。',
@@ -578,7 +578,7 @@ const translation = {
     },
   },
   apiBasedExtension: {
-    title: 'API 扩展提供了一个集中式的 API 管理，在此统一添加 API 配置后，方便在 Dify 上的各类应用中直接使用。',
+    title: 'API 扩展提供了一个集中式的 API 管理，在此统一添加 API 配置后，方便在 Escon 上的各类应用中直接使用。',
     link: '了解如何开发您自己的 API 扩展。',
     add: '新增 API 扩展',
     selector: {
@@ -608,8 +608,8 @@ const translation = {
   about: {
     changeLog: '更新日志',
     updateNow: '现在更新',
-    nowAvailable: 'Dify {{version}} 现已可用。',
-    latestAvailable: 'Dify {{version}} 已是最新版本。',
+    nowAvailable: 'Escon {{version}} 现已可用。',
+    latestAvailable: 'Escon {{version}} 已是最新版本。',
   },
   appMenus: {
     overview: '监测',

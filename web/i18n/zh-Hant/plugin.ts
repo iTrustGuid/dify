@@ -196,10 +196,10 @@ const translation = {
     and: '和',
     sortBy: '排序方式',
     viewMore: '查看更多',
-    difyMarketplace: 'Dify 市場',
+    difyMarketplace: 'Escon 市場',
     pluginsResult: '{{num}} 個結果',
-    verifiedTip: '由 Dify 驗證',
-    partnerTip: '由 Dify 合作夥伴驗證',
+    verifiedTip: '由 Escon 驗證',
+    partnerTip: '由 Escon 合作夥伴驗證',
   },
   task: {
     installingWithError: '安裝 {{installingLength}} 個插件，{{successLength}} 成功，{{errorLength}} 失敗',
@@ -233,7 +233,7 @@ const translation = {
   metadata: {
     title: '插件',
   },
-  difyVersionNotCompatible: '當前的 Dify 版本與此插件不兼容，請升級至所需的最低版本：{{minimalDifyVersion}}',
+  difyVersionNotCompatible: '當前的 Escon 版本與此插件不兼容，請升級至所需的最低版本：{{minimalEsconVersion}}',
   auth: {
     setDefault: '設置為默認',
     useOAuth: '使用 OAuth',

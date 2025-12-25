@@ -110,7 +110,7 @@ const translation = {
       title: '使用 OAuth 創建',
       authorization: {
         title: 'OAuth 授權',
-        description: '授權 Dify 存取您的帳戶',
+        description: '授權 Escon 存取您的帳戶',
         redirectUrl: '重新導向網址',
         redirectUrlHelp: '在您的 OAuth 應用程式設定中使用此 URL',
         authorizeButton: '使用 {{provider}} 授權',
