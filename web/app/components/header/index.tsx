@@ -98,7 +98,7 @@ const Header = () => {
         {enableBilling ? <PlanBadge allowHover sandboxAsUpgrade plan={plan.type} onClick={handlePlanClick} /> : <LicenseNav />}
       </div>
       <div className='flex items-center space-x-2'>
-        {!isCurrentWorkspaceDatasetOperator && <ExploreNav className={navClassName} />}
+        {/* {!isCurrentWorkspaceDatasetOperator && <ExploreNav className={navClassName} />} */}
         {!isCurrentWorkspaceDatasetOperator && <AppNav />}
         {(isCurrentWorkspaceEditor || isCurrentWorkspaceDatasetOperator) && <DatasetNav />}
         {!isCurrentWorkspaceDatasetOperator && <ToolsNav className={navClassName} />}

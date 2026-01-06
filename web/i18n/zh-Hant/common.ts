@@ -150,7 +150,7 @@ const translation = {
   menus: {
     status: 'beta',
     explore: '探索',
-    apps: '工作室',
+    apps: '应用中心',
     appDetail: '應用詳情',
     account: '我的帳戶',
     plugins: '外掛',
@@ -212,7 +212,7 @@ const translation = {
     deleteTip: '刪除您的帳戶將永久刪除您的所有資料並且無法恢復。',
     account: '帳戶',
     myAccount: '我的帳戶',
-    studio: '工作室',
+    studio: '应用中心',
     deletePrivacyLinkTip: '有關我們如何處理您的數據的更多資訊，請參閱我們的',
     deletePrivacyLink: '隱私策略。',
     deleteSuccessTip: '您的帳戶需要時間才能完成刪除。完成後，我們會給您發送電子郵件。',
