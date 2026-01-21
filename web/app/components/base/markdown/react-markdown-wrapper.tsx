@@ -57,7 +57,8 @@ export const ReactMarkdownWrapper: FC<ReactMarkdownWrapperProps> = (props) => {
         },
       ]}
       urlTransform={customUrlTransform}
-      disallowedElements={['iframe', 'head', 'html', 'meta', 'link', 'style', 'body', ...(props.customDisallowedElements || [])]}
+      // disallowedElements={['iframe', 'head', 'html', 'meta', 'link', 'style', 'body', ...(props.customDisallowedElements || [])]}
+      disallowedElements={['head', 'html', 'meta', 'link', 'style', 'body', ...(props.customDisallowedElements || [])]}
       components={{
         code: CodeBlock,
         img: (props: any) => pluginInfo ? <PluginImg {...props} pluginInfo={pluginInfo} /> : <Img {...props} />,

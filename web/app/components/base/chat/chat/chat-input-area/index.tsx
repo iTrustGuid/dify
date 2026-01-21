@@ -93,6 +93,7 @@ const ChatInputArea = ({
     },
     [handleTextareaResize],
   )
+
   const handleOnMessage = (event: any) => {
     console.log('event.data.message', event.data.message)
     if (event.data.type === 'dify-chatbot-append-message') {
@@ -107,7 +108,7 @@ const ChatInputArea = ({
     }
   }
   useEffect(() => {
-    // 接收外部消息，推入一条新增聊天消息
+    // fixed by LP 接收外部消息，推入一条新增聊天消息
     window.removeEventListener('message', handleOnMessage)
     window.addEventListener('message', handleOnMessage)
   }, [])

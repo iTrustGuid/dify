@@ -318,6 +318,8 @@ export const useChat = (
 
       return player
     }
+    // 日志记录答复
+    let logMessage = ''
     ssePost(
       url,
       {
@@ -328,6 +330,7 @@ export const useChat = (
         onData: (message: string, isFirstMessage: boolean, { conversationId: newConversationId, messageId, taskId }: any) => {
           if (!isAgentMode) {
             responseItem.content = responseItem.content + message
+            logMessage += message
           }
           else {
             const lastThought = responseItem.agent_thoughts?.[responseItem.agent_thoughts?.length - 1]
@@ -459,6 +462,8 @@ export const useChat = (
           })
         },
         onMessageEnd: (messageEnd) => {
+          console.log('onMessageEnd messageEnd=', messageEnd, logMessage)
+          // TODO fixed by LP 日志打点（问题答案）
           if (messageEnd.metadata?.annotation_reply) {
             responseItem.id = messageEnd.id
             responseItem.annotation = ({
