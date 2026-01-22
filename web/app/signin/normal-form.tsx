@@ -128,17 +128,33 @@ const NormalForm = () => {
 
   return (
     <>
-      <div className="mx-auto mt-8 w-full">
+      <div className="mx-auto  w-full" style={{
+    width: '381px',
+    height: '298px',
+    borderRadius: '0px 0px 0px 0px'
+  }}>
         {isInviteLink
           ? <div className="mx-auto w-full">
             <h2 className="title-4xl-semi-bold text-text-primary">{t('login.join')}{workspaceName}</h2>
             {!systemFeatures.branding.enabled && <p className='body-md-regular mt-2 text-text-tertiary'>{t('login.joinTipStart')}{workspaceName}{t('login.joinTipEnd')}</p>}
           </div>
           : <div className="mx-auto w-full">
-            <h2 className="title-4xl-semi-bold text-text-primary">{systemFeatures.branding.enabled ? t('login.pageTitleForE') : t('login.pageTitle')}</h2>
-            <p className='body-md-regular mt-2 text-text-tertiary'>{t('login.welcome')}</p>
+            <h2 className="title-4xl-semi-bold text-text-primary"  style={{
+    fontFamily: 'PingFang SC, PingFang SC',
+    fontWeight: 600,
+    fontSize: '24px',
+    color: '#000000',
+    lineHeight: '36px',
+    letterSpacing: '1px',
+    textAlign: 'center',
+    fontStyle: 'normal',
+    textTransform: 'none',
+  }}>{systemFeatures.branding.enabled ? t('login.pageTitleForE') : t('login.pageTitle')}</h2>
+            {/* <p className='body-md-regular mt-2 text-text-tertiary'>{t('login.welcome')}</p> */}
           </div>}
-        <div className="relative">
+        <div className="relative" style={{
+    height: '230px'
+  }}>
           <div className="mt-6 flex flex-col gap-3">
             {systemFeatures.enable_social_oauth_login && <SocialAuth />}
             {systemFeatures.sso_enforced_for_signin && <div className='w-full'>
@@ -194,7 +210,7 @@ const NormalForm = () => {
               </div>
             </div>
           </>}
-          {!systemFeatures.branding.enabled && <>
+          {/* {!systemFeatures.branding.enabled && <>
             <div className="system-xs-regular mt-2 block w-full text-text-tertiary">
               {t('login.tosDesc')}
               &nbsp;
@@ -218,7 +234,7 @@ const NormalForm = () => {
                 href='/install'
               >{t('login.setAdminAccount')}</Link>
             </div>}
-          </>}
+          </>} */}
         </div>
       </div>
     </>

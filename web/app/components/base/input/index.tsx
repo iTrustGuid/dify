@@ -85,7 +85,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({
       {showLeftIcon && <RiSearchLine className={cn('absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-components-input-text-placeholder')} />}
       <input
         ref={ref}
-        style={styleCss}
+        // style={styleCss}
         className={cn(
           'w-full appearance-none border border-transparent bg-components-input-bg-normal py-[7px] text-components-input-text-filled caret-primary-600 outline-none placeholder:text-components-input-text-placeholder hover:border-components-input-border-hover hover:bg-components-input-bg-hover focus:border-components-input-border-active focus:bg-components-input-bg-active focus:shadow-xs',
           inputVariants({ size }),
@@ -99,6 +99,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({
           destructive && 'border-components-input-border-destructive bg-components-input-bg-destructive text-components-input-text-filled hover:border-components-input-border-destructive hover:bg-components-input-bg-destructive focus:border-components-input-border-destructive focus:bg-components-input-bg-destructive',
           className,
         )}
+style={{
+  width: '381px',
+  height: '36px',
+  backgroundColor: '#FFFFFF',
+  borderRadius: '4px',
+  border: '1px solid #E5E5E5',
+}}
         placeholder={placeholder ?? (showLeftIcon
           ? (t('common.operation.search') || '')
           : (t('common.placeholder.input') || ''))}
