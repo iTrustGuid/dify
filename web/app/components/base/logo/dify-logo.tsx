@@ -6,8 +6,8 @@ import { basePath } from '@/utils/var'
 export type LogoStyle = 'default' | 'monochromeWhite'
 
 export const logoPathMap: Record<LogoStyle, string> = {
-  default: '/logo/logo.svg',
-  monochromeWhite: '/logo/logo-monochrome-white.svg',
+  default: '/logo/icon-wn.png',
+  monochromeWhite: '/logo/icon-wn.png',
 }
 
 export type LogoSize = 'large' | 'medium' | 'small'

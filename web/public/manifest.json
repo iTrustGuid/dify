@@ -1,6 +1,6 @@
 {
-  "name": "Dify",
-  "short_name": "Dify",
+  "name": "万年县不动产登记快易办",
+  "short_name": "快易办",
   "description": "Build Production Ready Agentic AI Solutions",
   "icons": [
     {
@@ -16,17 +16,17 @@
       "purpose": "maskable"
     },
     {
-      "src": "/icon-256x256.png",
+      "src": "/icon-192x192.png",
       "sizes": "256x256",
       "type": "image/png"
     },
     {
-      "src": "/icon-384x384.png",
+      "src": "/icon-192x192.png",
       "sizes": "384x384",
       "type": "image/png"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "/icon-192x192.png",
       "sizes": "512x512",
       "type": "image/png"
     }
@@ -46,13 +46,13 @@
       "name": "Apps",
       "short_name": "Apps",
       "url": "/apps",
-      "icons": [{ "src": "/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "96x96" }]
     },
     {
       "name": "Datasets",
       "short_name": "Datasets",
       "url": "/datasets",
-      "icons": [{ "src": "/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "96x96" }]
     }
   ]
 }

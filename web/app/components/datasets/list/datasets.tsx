@@ -37,7 +37,7 @@ const Datasets = ({
   const observerRef = useRef<IntersectionObserver>(null)
 
   useEffect(() => {
-    document.title = `${t('dataset.knowledge')} - Dify`
+    document.title = `${t('dataset.knowledge')} - 快易办`
   }, [t])
 
   useEffect(() => {
