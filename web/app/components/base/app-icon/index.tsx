@@ -112,9 +112,13 @@ const AppIcon: FC<AppIconProps> = ({
       onClick={onClick}
     >
       {
-        isValidImageIcon
+        // isValidImageIcon
+        //   ? <img src={imageUrl} className='h-full w-full' alt='app icon' />
+        //   : (innerIcon || Icon)
+          isValidImageIcon
           ? <img src={imageUrl} className='h-full w-full' alt='app icon' />
-          : (innerIcon || Icon)
+          : <img src='/icon-wn.png' className="h-full w-full rounded-full" alt="answer icon" />
+          
       }
       {
         showEditIcon && isHovering && (
