@@ -107,10 +107,23 @@ const ChatInputArea = ({
       }
     }
   }
+  const configChangeHandler = (event: MessageEvent) => {
+    const windowAny = window as any;
+    if (event.data && event.data.type === 'dify-chatbot-config-change') {
+      console.log('configChangeHandler', event)
+      const newConfig = event.data.difyChatbotConfig;
+      windowAny.difyChatbotConfig = newConfig;
+    }
+  }
   useEffect(() => {
+    const windowAny = window as any;
     // fixed by LP 接收外部消息，推入一条新增聊天消息
-    window.removeEventListener('message', handleOnMessage)
-    window.addEventListener('message', handleOnMessage)
+    windowAny.removeEventListener('message', handleOnMessage)
+    windowAny.addEventListener('message', handleOnMessage)
+
+    // 监听message事件，更新chat配置
+    windowAny.removeEventListener('message', configChangeHandler);
+    windowAny.addEventListener('message', configChangeHandler);
   }, [])
 
   const handleSend = () => {

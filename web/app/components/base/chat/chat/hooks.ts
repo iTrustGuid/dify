@@ -36,6 +36,7 @@ import {
   getProcessedFilesFromResponse,
 } from '@/app/components/base/file-uploader/utils'
 import { noop } from 'lodash-es'
+import { postAnswerToParent } from './message-event'
 
 type GetAbortController = (abortController: AbortController) => void
 type SendCallback = {
@@ -463,6 +464,7 @@ export const useChat = (
         },
         onMessageEnd: (messageEnd) => {
           console.log('onMessageEnd messageEnd=', messageEnd, logMessage)
+          postAnswerToParent(logMessage)
           // TODO fixed by LP 日志打点（问题答案）
           if (messageEnd.metadata?.annotation_reply) {
             responseItem.id = messageEnd.id

@@ -135,6 +135,8 @@ const ChatWrapper = () => {
       parent_message_id: (isRegenerate ? parentAnswer?.id : getLastAnswer(chatList)?.id) || null,
     }
 
+    data.inputs = { ...data.inputs, ...((window.difyChatbotConfig || {}).inputs || {}) }
+
     handleSend(
       getUrl('chat-messages', isInstalledApp, appId || ''),
       data,
