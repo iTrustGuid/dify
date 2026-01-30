@@ -99,15 +99,28 @@ export default function MailAndPasswordAuth({ isInvite, isEmailSetup, allowRegis
   }
 
   return <form onSubmit={noop}>
-    <div className='mb-3'>
-      <label htmlFor="email" className="system-md-semibold my-2 text-text-secondary">
+    <div className='mb-3' style={{
+    marginBottom: '30px',
+    marginTop: '20px'
+  }}>
+      {/* <label htmlFor="email" className="system-md-semibold my-2 text-text-secondary">
         {t('login.email')}
-      </label>
-      <div className="mt-1">
+      </label> */}
+
+      <div className="relative mt-1">
+  <div className="absolute inset-y-0 left-0 flex items-center pl-3" style={{
+    zIndex: '99'
+  }}>
+    <img
+      src="/logo/password.svg"
+      alt="User"
+    />
+  </div>
         <Input
           value={email}
           onChange={e => setEmail(e.target.value)}
           disabled={isInvite}
+          className="pl-10"
           id="email"
           type="email"
           autoComplete="email"
@@ -118,7 +131,7 @@ export default function MailAndPasswordAuth({ isInvite, isEmailSetup, allowRegis
     </div>
 
     <div className='mb-3'>
-      <label htmlFor="password" className="my-2 flex items-center justify-between">
+      {/* <label htmlFor="password" className="my-2 flex items-center justify-between">
         <span className='system-md-semibold text-text-secondary'>{t('login.password')}</span>
         <Link
           href={`/reset-password?${searchParams.toString()}`}
@@ -128,10 +141,16 @@ export default function MailAndPasswordAuth({ isInvite, isEmailSetup, allowRegis
         >
           {t('login.forget')}
         </Link>
-      </label>
+      </label> */}
       <div className="relative mt-1">
+    <div className="absolute inset-y-0 left-0 flex items-center pl-3" style={{
+    zIndex: '99'
+  }}>
+    <img src="/logo/username.svg" alt="Lock" className="w-4 h-4" />
+  </div>
         <Input
           id="password"
+          className="pl-10"
           value={password}
           onChange={e => setPassword(e.target.value)}
           onKeyDown={(e) => {
@@ -155,13 +174,44 @@ export default function MailAndPasswordAuth({ isInvite, isEmailSetup, allowRegis
       </div>
     </div>
 
-    <div className='mb-2'>
+    <div className='mb-3'>
+      <label htmlFor="password" className="my-2 flex items-center justify-between">
+        <span className='system-md-semibold text-text-secondary'></span>
+        <Link
+          href={`/reset-password?${searchParams.toString()}`}
+          className={`system-xs-regular ${isEmailSetup ? 'text-components-button-secondary-accent-text' : 'pointer-events-none text-components-button-secondary-accent-text-disabled'}`}
+          tabIndex={isEmailSetup ? 0 : -1}
+          aria-disabled={!isEmailSetup}
+          style={{
+fontWeight: '400',
+fontSize: '14px',
+color: '#005FA3'
+  }}
+        >
+          {t('login.forget')}
+        </Link>
+      </label>
+    </div>
+
+    <div  style={{
+position: 'absolute',
+    bottom: 0
+  }}>
       <Button
         tabIndex={2}
         variant='primary'
         onClick={handleEmailPasswordLogin}
         disabled={isLoading || !email || !password}
         className="w-full"
+        style={{
+   background: '#005FA3',
+borderRadius: '4px 4px 4px 4px',
+width: '381px',
+height: '36px',
+fontWeight: '400',
+fontSize: '16px',
+color: '#FFFFFF'
+  }}
       >{t('login.signBtn')}</Button>
     </div>
   </form>

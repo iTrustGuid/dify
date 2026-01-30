@@ -1,5 +1,5 @@
 const translation = {
-  pageTitle: '嗨，近来可好',
+  pageTitle: '用户登录',
   welcome: '👋 欢迎来到 Escon智能体搭建平台, 登录以继续',
   email: '邮箱',
   emailPlaceholder: '输入邮箱地址',

@@ -15,6 +15,6 @@ const Icon = (
   },
 ) => <IconBase {...props} ref={ref} data={data as IconData} />
 
-Icon.displayName = 'Dify'
+Icon.displayName = '万年县不动产登记快易办'
 
 export default Icon
