@@ -11,7 +11,10 @@ const Apps = () => {
   useEducationInit()
 
   return (
-    <div className='relative flex h-0 shrink-0 grow flex-col overflow-y-auto bg-background-body'>
+    // <div className='relative flex h-0 shrink-0 grow flex-col overflow-y-auto bg-background-body'>
+    <div className='relative flex h-0 shrink-0 grow flex-col overflow-y-auto' style={{
+      background: '#EBF1F9'
+    }}>
       <List />
     </div >
   )

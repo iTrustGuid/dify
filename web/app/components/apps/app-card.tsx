@@ -367,7 +367,18 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
               <div className='truncate' title={app.name}>{app.name}</div>
             </div>
             <div className='flex items-center gap-1 text-[10px] font-medium leading-[18px] text-text-tertiary'>
-              <div className='truncate' title={app.author_name}>{app.author_name}</div>
+              <div className='truncate' title={app.author_name}   style={{
+    width: '54px',
+    height: '18px',
+    display: 'flex',
+    background: 'rgba(0,90,188,0.1)',
+    borderRadius: '19px 19px 19px 19px',
+    fontWeight: '400',
+fontSize: '12px',
+color: '#005ABC',
+justifyContent: 'center',
+textAlign: 'center'
+  }}>{app.author_name}</div>
               <div>·</div>
               <div className='truncate' title={EditTimeText}>{EditTimeText}</div>
             </div>

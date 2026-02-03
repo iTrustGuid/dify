@@ -23,7 +23,18 @@ const CheckboxWithLabel: FC<Props> = ({
   tooltip,
 }) => {
   return (
-    <label className={cn(className, 'flex h-7 items-center space-x-2')}>
+    <label className={cn(className, 'flex h-7 items-center space-x-2')} style={{
+    width: '102px',
+    height: '36px',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '4px',
+    border: '1px solid #DADBE4',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    color:'#999999',
+    justifyContent: 'center'
+  }}>
       <Checkbox checked={isChecked} onCheck={() => onChange(!isChecked)} />
       <div className={cn('text-sm font-normal text-text-secondary', labelClassName)}>{label}</div>
       {tooltip && (
