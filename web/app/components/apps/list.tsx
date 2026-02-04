@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   useRouter,
 } from 'next/navigation'
+import './list.css' 
 import { useTranslation } from 'react-i18next'
 import { useDebounceFn } from 'ahooks'
 import {
@@ -184,7 +185,7 @@ const List = () => {
         )}
 
         {/* <div className='sticky top-0 z-10 flex flex-wrap items-center justify-between gap-y-2 bg-background-body px-12 pb-5 pt-7'> */}
-        <div className='sticky top-0 z-10 flex flex-wrap items-center justify-between gap-y-2  px-12 pb-5 pt-7'>
+        <div className='sticky top-0 z-10 flex flex-wrap items-center justify-between gap-y-2  px-12  pt-7'>
 <div 
   style={{
     width: '1808px',
@@ -208,6 +209,7 @@ const List = () => {
       className="mr-2"
       label={t('app.showMyCreatedAppsOnly')}
       isChecked={isCreatedByMe}
+      labelClassName='system-md-regular font-color'
       onChange={handleCreatedByMeChange}
     />
     <TagFilter type='app' value={tagFilterValue} onChange={handleTagsChange} />
@@ -218,7 +220,7 @@ const List = () => {
     value={keywords}
     onChange={e => handleKeywordsChange(e.target.value)}
     onClear={() => handleKeywordsChange('')}
-    style={{ width: '100%',background: '#FFFFFF !important',
+    style={{ width: '100%',height: '36px',background: '#FFFFFF !important',
     border: '1px solid #DADBE4',
     borderRadius: '4px 4px 4px 4px'}}
   />
@@ -240,7 +242,7 @@ const List = () => {
 </div>
         </div>
         {hasAnyApp
-          ? <div className='relative grid grow grid-cols-1 content-start gap-4 px-12 pt-2 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 2k:grid-cols-6'>
+          ? <div className='relative grid grow grid-cols-1 content-start gap-6 px-12 pt-2 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 2k:grid-cols-6 overflow-y-auto'>
             {/* {isCurrentWorkspaceEditor
               && <NewAppCard ref={newAppCardRef} onSuccess={refetch} selectedAppType={activeTab} />} */}
             {pages.map(({ data: apps }) => apps.map(app => (

@@ -20,6 +20,7 @@ import LicenseNav from './license-env'
 import { Plan } from '../billing/type'
 import { useGlobalPublicStore } from '@/context/global-public-context'
 import { ACCOUNT_SETTING_TAB } from '@/app/components/header/account-setting/constants'
+import appConfig from '@/config/appConfig';
 
 const navClassName = `
   flex items-center relative px-3 h-8 rounded-xl
@@ -57,7 +58,47 @@ const Header = () => {
       </Link>
     </h1>
   )
+  const renderPlatformInfo = () => {
+  const { logo, name } = appConfig.platform;
+  const hasLogo = !!logo && logo.trim() !== '';
+  const hasName = !!name && name.trim() !== '';
 
+  // 如果 logo 和 name 都没有，也不渲染
+  if (!hasLogo && !hasName) {
+    return null;
+  }
+
+  return (
+    <>
+      {/* Logo 图片 */}
+      {hasLogo && (
+        <div style={{ marginLeft: '32px' }}>
+          <img
+            src={logo}
+            alt={name || 'Platform Logo'}
+            style={{
+              width: '177px',
+              height: '40px',
+              borderRadius: '0px'
+            }}
+          />
+        </div>
+      )}
+
+      {/* 分隔竖线：只有 logo 和 name 同时存在才显示 */}
+      {hasLogo && hasName && (
+        <div
+          style={{
+            width: '2px',
+            height: '24px',
+            backgroundColor: '#000000',
+            margin: '0 12px'
+          }}
+        ></div>
+      )}
+    </>
+  );
+};
   if (isMobile) {
     return (
       <div className=''>
@@ -90,36 +131,14 @@ const Header = () => {
   return (
     <div className='flex h-[56px] items-center' style={{
       backgroundImage: 'url(/logo/body-header-bg@2x.png)',
-      backgroundSize: '100% 100%'
+      backgroundSize: '100% 100%',
+      height:'100%'
     }}>
       <div className='flex min-w-0 flex-[1]  items-center pl-3 pr-2 min-[1280px]:pr-3'>
         {renderLogo()}
         {/* <div className='mx-1.5 shrink-0 font-light text-divider-deep'>/</div> */}
-  <div style={{
-        marginLeft: '32px'
-      }}>
-    <img
-      src="/logo/escon.png"
-      alt="壹时空科技 Logo"
-      style={{
-        width: '177px',
-        height: '40px',
-        borderRadius: '0px'
-      }}
-    />
-  </div>
-
-  {/* 竖线分隔符 —— 黑色，2px 宽 */}
-  <div
-    style={{
-      width: '2px',
-      height: '24px',
-      backgroundColor: '#000000',
-      borderRadius: '0px',
-      margin: '0 12px' // 可选：左右留空，避免紧贴
-    }}
-  ></div>
-
+        {renderPlatformInfo()}
+ 
   {/* 平台名称 —— 精确文字样式 */}
   <div
     style={{
@@ -136,7 +155,7 @@ const Header = () => {
       textTransform: 'none'
     }}
   >
-    Escon智能体搭建平台
+     {appConfig.platform.name}
   </div>
         {/* <WorkspaceProvider>
           <WorkplaceSelector />

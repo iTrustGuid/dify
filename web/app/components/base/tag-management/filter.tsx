@@ -17,6 +17,7 @@ import { XCircle } from '@/app/components/base/icons/src/vender/solid/general'
 import type { Tag } from '@/app/components/base/tag-management/constant'
 
 import { fetchTagList } from '@/service/tag'
+import { color } from 'echarts'
 
 type TagFilterProps = {
   type: 'knowledge' | 'app'
@@ -77,16 +78,18 @@ const TagFilter: FC<TagFilterProps> = ({
         <PortalToFollowElemTrigger
           onClick={() => setOpen(v => !v)}
           className='block'
+          style={{ width: '124px',height: '36px',background: '#FFFFFF',    borderRadius: '4px 4px 4px 4px',
+    border: '1px solid #DADBE4'}}
         >
           <div className={cn(
-            'flex h-8 cursor-pointer select-none items-center gap-1 rounded-lg border-[0.5px] border-transparent bg-components-input-bg-normal px-2',
+            'flex h-8 cursor-pointer select-none items-center gap-1 rounded-lg border-[0.5px] border-transparent px-2',
             !open && !!value.length && 'shadow-xs',
             open && !!value.length && 'shadow-xs',
           )}>
             <div className='p-[1px]'>
               <Tag01 className='h-3.5 w-3.5 text-text-tertiary' />
             </div>
-            <div className='text-[13px] leading-[18px] text-text-secondary'>
+            <div className='text-[13px] leading-[18px] text-text-secondary' style={{ color:'#999999'}}>
               {!value.length && t('common.tag.placeholder')}
               {!!value.length && currentTag?.name}
             </div>

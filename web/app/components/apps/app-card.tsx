@@ -350,8 +350,10 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
           getRedirection(isCurrentWorkspaceEditor, app, push)
         }}
         className='group relative col-span-1 inline-flex h-[160px] cursor-pointer flex-col rounded-xl border-[1px] border-solid border-components-card-border bg-components-card-bg shadow-sm transition-all duration-200 ease-in-out hover:shadow-lg'
-      >
-        <div className='flex h-[66px] shrink-0 grow-0 items-center gap-3 px-[14px] pb-3 pt-[14px]'>
+      style={{ width: '349px',background: '#FFFFFF !important',
+    height: '185px',
+    borderRadius: '8px 8px 8px 8px'}}>
+        <div className='flex h-[56px] w-[283px] shrink-0 grow-0 items-center gap-3 px-[14px] mb-[16px] mt-[16px]'>
           <div className='relative shrink-0'>
             <AppIcon
               size="large"
@@ -364,9 +366,14 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
           </div>
           <div className='w-0 grow py-[1px]'>
             <div className='flex items-center text-sm font-semibold leading-5 text-text-secondary'>
-              <div className='truncate' title={app.name}>{app.name}</div>
+              <div className='truncate' title={app.name} style={{
+    fontWeight: '500',
+    fontFamily: 'PingFang SC, PingFang SC',
+    fontSize: '16px',
+    color: '#000000'
+  }}>{app.name}</div>
             </div>
-            <div className='flex items-center gap-1 text-[10px] font-medium leading-[18px] text-text-tertiary'>
+            <div className='flex items-center gap-1 text-[10px] mt-[5px] font-medium leading-[18px] text-text-tertiary'>
               <div className='truncate' title={app.author_name}   style={{
     width: '54px',
     height: '18px',
@@ -380,7 +387,11 @@ justifyContent: 'center',
 textAlign: 'center'
   }}>{app.author_name}</div>
               <div>·</div>
-              <div className='truncate' title={EditTimeText}>{EditTimeText}</div>
+              <div className='truncate' title={EditTimeText} style={{
+    fontWeight: '400',
+    fontSize: '12px',
+    color: '#999999'
+  }}>{EditTimeText}</div>
             </div>
           </div>
           <div className='flex h-5 w-5 shrink-0 items-center justify-center'>
@@ -402,6 +413,13 @@ textAlign: 'center'
           <div
             className='line-clamp-2'
             title={app.description}
+            style={{
+    fontWeight: '400',
+    fontFamily: 'PingFang SC, PingFang SC',
+    fontSize: '14px',
+    color: '#666666',
+    letterSpacing: '1px'
+  }}
           >
             {app.description}
           </div>

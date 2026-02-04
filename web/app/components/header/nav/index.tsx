@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import './index.css' 
 import Link from 'next/link'
 import { usePathname, useSearchParams, useSelectedLayoutSegment } from 'next/navigation'
 import type { INavSelectorProps } from './nav-selector'
@@ -60,7 +61,7 @@ const Nav = ({
           }}
           className={classNames(
             'flex h-7 cursor-pointer items-center rounded-[10px] px-2.5',
-            isActivated ? 'text-components-main-nav-nav-button-text-active' : 'text-components-main-nav-nav-button-text',
+            isActivated ? 'text-color-active' : 'text-color',
             curNav && isActivated && 'hover:bg-components-main-nav-nav-button-bg-active-hover',
           )}
           onMouseEnter={() => setHovered(true)}

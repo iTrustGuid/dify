@@ -157,6 +157,12 @@ const DatasetCard = ({
     <>
       <div
         className='group relative col-span-1 flex h-[190px] cursor-pointer flex-col rounded-xl border-[0.5px] border-solid border-components-card-border bg-components-card-bg shadow-xs shadow-shadow-shadow-3 transition-all duration-200 ease-in-out hover:bg-components-card-bg-alt hover:shadow-md hover:shadow-shadow-shadow-5'
+        style={{
+    width: '349px',
+    height: '185px',
+    background: '#FFFFFF',
+    borderRadius: 'ce8px 8px 8px 8pxnter'
+  }}
         data-disable-nprogress={true}
         onClick={(e) => {
           e.preventDefault()
@@ -198,16 +204,44 @@ const DatasetCard = ({
           <div className='flex grow flex-col gap-y-1 overflow-hidden py-px'>
             <div
               className='system-md-semibold truncate text-text-secondary'
+                 style={{
+    fontWeight: '500',
+fontSize: '16px',
+color: '#000000',
+lineHeight: '24px',
+letterSpacing: '1px'
+  }}
               title={dataset.name}
             >
               {dataset.name}
             </div>
             <div className='flex items-center gap-1 text-[10px] font-medium leading-[18px] text-text-tertiary'>
-              <div className='truncate' title={dataset.author_name}>{dataset.author_name}</div>
+              <div className='truncate' title={dataset.author_name} style={{
+    width: '54px',
+    height: '18px',
+    background: 'rgba(0, 90, 188, 0.1)',
+    borderRadius: '19px 19px 19px 19px',
+    justifyContent: 'center',
+    display: 'flex',
+    fontWeight: '400',
+    fontSize: '12px',
+    color: '#005ABC',
+    lineHeight: '18px'
+  }}>{dataset.author_name}</div>
               <div>·</div>
-              <div className='truncate' title={editTimeText}>{editTimeText}</div>
+              <div className='truncate' title={editTimeText} style={{
+    fontWeight: '400',
+    fontSize: '12px',
+    color: '#999999',
+    lineHeight: '18px'
+  }}>{editTimeText}</div>
             </div>
-            <div className='system-2xs-medium-uppercase flex items-center gap-x-3 text-text-tertiary'>
+            <div className='system-2xs-medium-uppercase flex items-center gap-x-3 text-text-tertiary' style={{
+    fontWeight: '400',
+    fontSize: '12px',
+    color: '#999999',
+    lineHeight: '18px'
+  }}>
               {isExternalProvider && <span>{t('dataset.externalKnowledgeBase')}</span>}
               {!isExternalProvider && isShowDocModeInfo && (
                 <>
@@ -241,7 +275,14 @@ const DatasetCard = ({
           </div>
         </div>
         <div
-          className={cn('system-xs-regular line-clamp-2 h-10 px-4 py-1 text-text-tertiary', !dataset.embedding_available && 'opacity-30')}
+          className={cn('system-xs-regular line-clamp-2 h-10 px-4 pb-1 text-text-tertiary', !dataset.embedding_available && 'opacity-30')}
+          style={{
+    fontWeight: '400',
+fontSize: '14px',
+color: '#666666',
+lineHeight: '21px',
+letterSpacing: '1px'
+  }}
           title={dataset.description}
         >
           {dataset.description}
@@ -283,17 +324,23 @@ const DatasetCard = ({
             'flex items-center gap-x-3 px-4 pb-3 pt-2 text-text-tertiary',
             !dataset.embedding_available && 'opacity-30',
           )}
+           style={{
+              justifyContent: 'space-between',
+              fontWeight: '400',
+              fontSize: '12px',
+              color: '#999999'
+          }}
         >
           <Tooltip popupContent={documentCountTooltip} >
             <div className='flex items-center gap-x-1'>
-              <RiFileTextFill className='size-3 text-text-quaternary' />
+              <RiFileTextFill className='size-4 text-text-quaternary' />
               <span className='system-xs-medium'>{documentCount}</span>
             </div>
           </Tooltip>
           {!isExternalProvider && (
             <Tooltip popupContent={`${dataset.app_count} ${t('dataset.appCount')}`}>
               <div className='flex items-center gap-x-1'>
-                <RiRobot2Fill className='size-3 text-text-quaternary' />
+                <RiRobot2Fill className='size-4 text-text-quaternary' />
                 <span className='system-xs-medium'>{dataset.app_count}</span>
               </div>
             </Tooltip>

@@ -1,0 +1,29 @@
+/* list.css */
+.custom-checkbox-container {
+  width: 140px !important;
+  height: 36px !important;
+  background-color: #ffffff !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 5px !important;
+  box-sizing: border-box !important;
+  gap: 0px !important;
+  color: #999999 !important;
+  font-weight: 400 !important;
+  font-size: 14px !important;
+  line-height: 21px !important;
+}
+.font-color {
+  color: #999999 !important;
+}
+.btn-font-color {
+  color: #ffffff !important;
+}
+.btn-know {
+  width: 173px !important;
+  height: 36px !important;
+  background: #005abc !important;
+  border-radius: 4px 4px 4px 4px !important;
+}

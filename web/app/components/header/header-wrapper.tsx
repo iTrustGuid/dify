@@ -33,6 +33,7 @@ const HeaderWrapper = ({
       isBordered ? 'border-b border-divider-regular' : '',
       hideHeader && (inWorkflowCanvas || isPipelineCanvas) && 'hidden',
     )}
+    style={{ height: '72px'}}
     >
       {children}
     </div>
