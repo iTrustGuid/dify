@@ -70,7 +70,17 @@ const LabelFilter: FC<LabelFilterProps> = ({
             'flex h-8 cursor-pointer select-none items-center gap-1 rounded-lg border-[0.5px] border-transparent bg-components-input-bg-normal px-2 hover:bg-components-input-bg-hover',
             !open && !!value.length && 'shadow-xs',
             open && !!value.length && 'shadow-xs',
-          )}>
+          )} style={{
+            width: '124px',
+    height: '36px',
+    background: '#FFFFFF',
+    borderRadius: '4px 4px 4px 4px',
+    border: '1px solid #DADBE4',
+    fontWeight: '400',
+fontSize: '14px',
+color: '#999999',
+lineHeight: '21px'
+          }}>
             <div className='p-[1px]'>
               <Tag01 className='h-3.5 w-3.5 text-text-tertiary' />
             </div>

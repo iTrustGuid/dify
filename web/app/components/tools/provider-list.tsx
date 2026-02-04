@@ -125,15 +125,28 @@ const ProviderList = () => {
 
   return (
     <>
-      <div className='relative flex h-0 shrink-0 grow overflow-hidden'>
+      <div className='relative flex h-0 shrink-0 grow overflow-hidden' style={{
+    background: '#EBF1F9'
+  }}>
         <div
           ref={containerRef}
-          className='relative flex grow flex-col overflow-y-auto bg-background-body'
+          className='relative flex grow flex-col overflow-y-auto '
         >
           <div className={cn(
-            'sticky top-0 z-10 flex flex-wrap items-center justify-between gap-y-2 bg-background-body px-12 pb-2 pt-4 leading-[56px]',
+            'sticky top-0 z-10 flex flex-wrap items-center justify-between gap-y-2  px-12 pb-2 pt-4 leading-[56px]',
             currentProviderId && 'pr-6',
           )}>
+            <div style={{
+    width: '1808px',
+    height: '52px',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 16px',
+    boxSizing: 'border-box'
+  }}>
             <TabSliderNew
               value={activeTab}
               onChange={(state) => {
@@ -147,21 +160,28 @@ const ProviderList = () => {
               {activeTab !== 'mcp' && (
                 <LabelFilter value={tagFilterValue} onChange={handleTagsChange} />
               )}
-              <Input
-                showLeftIcon
-                showClearIcon
-                wrapperClassName='w-[200px]'
-                value={keywords}
-                onChange={e => handleKeywordsChange(e.target.value)}
-                onClear={() => handleKeywordsChange('')}
-              />
+                  <div style={{ width: '280px'}}>
+                <Input
+                  showLeftIcon
+                  showClearIcon
+                  value={keywords}
+                  onChange={e => handleKeywordsChange(e.target.value)}
+                  onClear={() => handleKeywordsChange('')}
+                  style={{ width: '100%',height: '36px',background: '#FFFFFF !important',
+                  border: '1px solid #DADBE4',
+                  borderRadius: '4px 4px 4px 4px'}}
+                />
+              </div>
             </div>
+            </div>
+
           </div>
           {activeTab !== 'mcp' && (
             <div className={cn(
-              'relative grid shrink-0 grid-cols-1 content-start gap-4 px-12 pb-4 pt-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
+              'relative grid shrink-0 grid-cols-2 content-start gap-4 px-12 pb-4 pt-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5',
               !filteredCollectionList.length && activeTab === 'workflow' && 'grow',
-            )}>
+            )}
+            >
               {activeTab === 'api' && <CustomCreateCard onRefreshData={refetch} />}
               {filteredCollectionList.map(collection => (
                 <div

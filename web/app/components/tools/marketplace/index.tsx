@@ -37,14 +37,32 @@ const Marketplace = ({
 
   return (
     <>
-      <div className='sticky bottom-0 flex shrink-0 flex-col bg-background-default-subtle px-12 pb-[14px] pt-2'>
+    <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#EBF1F9'
+  }}>
+  <div
+               style={{
+    width: '1808px',
+background: '#FFFFFF',
+borderRadius: '8px 8px 8px 8px',
+overflowY: 'auto',
+maxHeight: '470px'
+  }}>
+      <div className='sticky bottom-0 flex shrink-0 flex-col px-6 pb-[14px] pt-2'>
         {isMarketplaceArrowVisible && (
           <RiArrowUpDoubleLine
             className='absolute left-1/2 top-2 z-10 h-4 w-4 -translate-x-1/2 cursor-pointer text-text-quaternary'
             onClick={showMarketplacePanel}
           />
         )}
-        <div className='pb-3 pt-4'>
+        <div className='pb-3 pt-4' style={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  }}>
           <div className='title-2xl-semi-bold bg-gradient-to-r from-[rgba(11,165,236,0.95)] to-[rgba(21,90,239,0.95)] bg-clip-text text-transparent'>
             {t('plugin.marketplace.moreFrom')}
           </div>
@@ -89,7 +107,7 @@ const Marketplace = ({
           </div>
         </div>
       </div>
-      <div className='mt-[-14px] shrink-0 grow bg-background-default-subtle px-12 pb-2'>
+      <div className='mt-[-14px] shrink-0 grow px-6 pb-2'>
         {
           isLoading && page === 1 && (
             <div className='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'>
@@ -109,6 +127,9 @@ const Marketplace = ({
           )
         }
       </div>
+    </div>
+    </div>
+
     </>
   )
 }
