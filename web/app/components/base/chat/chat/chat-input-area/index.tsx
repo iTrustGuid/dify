@@ -24,7 +24,7 @@ import {
   FileContextProvider,
   useFileStore,
 } from '@/app/components/base/file-uploader/store'
-import VoiceInput from '@/app/components/base/voice-input'
+import VoiceInput, { VoiceInputRef } from '@/app/components/base/voice-input'
 import { useToastContext } from '@/app/components/base/toast'
 import FeatureBar from '@/app/components/base/features/new-feature-panel/feature-bar'
 import type { FileUpload } from '@/app/components/base/features/types'
@@ -45,6 +45,7 @@ type ChatInputAreaProps = {
   isResponding?: boolean
   disabled?: boolean
 }
+
 const ChatInputArea = ({
   botName,
   showFeatureBar,
@@ -71,8 +72,18 @@ const ChatInputArea = ({
     isMultipleLine,
   } = useTextAreaHeight()
   const [query, setQuery] = useState('')
-  const [showVoiceInput, setShowVoiceInput] = useState(false)
+  const [voiceMode, setVoiceMode] = useState(false)
+  // 录音动画状态
+  const [recordingAnim, setRecordingAnim] = useState(false)
+  const [dragY, setDragY] = useState(0)
+  // 波纹数据（持续动画）
+  const [waveDots, setWaveDots] = useState<number[]>(Array(40).fill(0))
+  const waveInterval = useRef<NodeJS.Timeout | null>(null)
+  const isRecordingRef = useRef(false)
+  const voiceInputRef = useRef<VoiceInputRef | null>(null)
+  const isComposingRef = useRef(false)
   const filesStore = useFileStore()
+
   const {
     handleDragFileEnter,
     handleDragFileLeave,
@@ -82,9 +93,6 @@ const ChatInputArea = ({
     isDragActive,
   } = useFile(visionConfig!)
   const { checkInputsForm } = useCheckInputsForms()
-  const historyRef = useRef([''])
-  const [currentIndex, setCurrentIndex] = useState(-1)
-  const isComposingRef = useRef(false)
 
   const handleQueryChange = useCallback(
     (value: string) => {
@@ -94,184 +102,244 @@ const ChatInputArea = ({
     [handleTextareaResize],
   )
 
-  const handleOnMessage = (event: any) => {
-    console.log('event.data.message', event.data.message)
-    if (event.data.type === 'dify-chatbot-append-message') {
-      const message = event.data.message as string
-      setQuery(message)
-      historyRef.current.push(message)
-      setCurrentIndex(historyRef.current.length)
-      if (onSend) {
-        onSend(message)
-        setQuery('')
-      }
-    }
-  }
-  const configChangeHandler = (event: MessageEvent) => {
-    const windowAny = window as any;
-    if (event.data && event.data.type === 'dify-chatbot-config-change') {
-      console.log('configChangeHandler', event)
-      const newConfig = event.data.difyChatbotConfig;
-      windowAny.difyChatbotConfig = newConfig;
-    }
-  }
-  useEffect(() => {
-    const windowAny = window as any;
-    // fixed by LP 接收外部消息，推入一条新增聊天消息
-    windowAny.removeEventListener('message', handleOnMessage)
-    windowAny.addEventListener('message', handleOnMessage)
-
-    // 监听message事件，更新chat配置
-    windowAny.removeEventListener('message', configChangeHandler);
-    windowAny.addEventListener('message', configChangeHandler);
+  // 【修复1】波纹持续动画，按住一直动，不会停
+  const startWaveAnimation = useCallback(() => {
+    // 先清旧定时器
+    if (waveInterval.current) clearInterval(waveInterval.current)
+    waveInterval.current = setInterval(() => {
+      setWaveDots(prev => prev.map(() => 4 + Math.random() * 7))
+    }, 120)
   }, [])
 
-  const handleSend = () => {
-    if (isResponding) {
-      notify({ type: 'info', message: t('appDebug.errorMessage.waitForResponse') })
+  // 【修复2】松开才停止波纹
+  const stopWaveAnimation = useCallback(() => {
+    if (waveInterval.current) {
+      clearInterval(waveInterval.current)
+      waveInterval.current = null
+    }
+    setWaveDots(Array(40).fill(0))
+  }, [])
+
+  // 清理副作用
+  useEffect(() => {
+    return () => {
+      if (waveInterval.current) clearInterval(waveInterval.current)
+    }
+  }, [])
+
+  // 开始录音 + 开启动画（只覆盖输入框）
+  const handleStartRecord = useCallback(() => {
+    if (disabled || isResponding || isRecordingRef.current) return
+    setRecordingAnim(true)
+    startWaveAnimation() // 持续波纹
+
+    ;(Recorder as any).getPermission().then(() => {
+      isRecordingRef.current = true
+      voiceInputRef.current?.start()
+    }).catch(() => {
+      notify({ type: 'error', message: t('common.voiceInput.notAllow') })
+      setRecordingAnim(false)
+      stopWaveAnimation()
+    })
+  }, [t, notify, disabled, isResponding, startWaveAnimation, stopWaveAnimation])
+
+  // 松开停止 + 取消逻辑 + 关闭动画
+  const handleStopRecord = useCallback(
+    (e?: React.MouseEvent | React.TouchEvent) => {
+      e?.preventDefault()
+      const cancelSend = dragY < -30
+
+      // 停止录音 & 动画 & 波纹
+      isRecordingRef.current = false
+      setRecordingAnim(false)
+      stopWaveAnimation()
+      setDragY(0)
+
+      if (cancelSend) {
+        notify({ type: 'info', message: '已取消' })
+        voiceInputRef.current?.stop()
+        return
+      }
+
+      // 正常发送
+      setTimeout(() => {
+        if (voiceInputRef.current) voiceInputRef.current.stop()
+      }, 100)
+    },
+    [dragY, notify, stopWaveAnimation]
+  )
+
+  // 上滑拖动取消
+  const handleRecordMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    if (!recordingAnim) return
+    let y = 'touches' in e ? e.touches[0].clientY : e.clientY
+    const startY = e.currentTarget.getBoundingClientRect().top + 20
+    const offset = startY - y
+    setDragY(-offset)
+  }, [recordingAnim])
+
+  // 语音转文字发送
+  const handleVoiceConverted = useCallback((voiceText: string) => {
+    if (!onSend || dragY < -30) return
+    if (!voiceText?.trim()) {
+      isRecordingRef.current = false
       return
     }
+    const { files, setFiles } = filesStore.getState()
+    if (isResponding) return
+    if (files.find(f => f.transferMethod === TransferMethod.local_file && !f.uploadedId)) return
+    if (!checkInputsForm(inputs, inputsForm)) return
 
-    if (onSend) {
-      const { files, setFiles } = filesStore.getState()
-      if (files.find(item => item.transferMethod === TransferMethod.local_file && !item.uploadedId)) {
-        notify({ type: 'info', message: t('appDebug.errorMessage.waitForFileUpload') })
-        return
-      }
-      if (!query || !query.trim()) {
-        notify({ type: 'info', message: t('appAnnotation.errorMessage.queryRequired') })
-        return
-      }
-      if (checkInputsForm(inputs, inputsForm)) {
-        onSend(query, files)
-        handleQueryChange('')
-        setFiles([])
-      }
-    }
-  }
-  const handleCompositionStart = () => {
-    // e: React.CompositionEvent<HTMLTextAreaElement>
-    isComposingRef.current = true
-  }
-  const handleCompositionEnd = () => {
-    // safari or some browsers will trigger compositionend before keydown.
-    // delay 50ms for safari.
-    setTimeout(() => {
-      isComposingRef.current = false
-    }, 50)
-  }
+    onSend(voiceText, files)
+    handleQueryChange('')
+    setFiles([])
+    isRecordingRef.current = false
+  }, [onSend, dragY, isResponding, filesStore, checkInputsForm, inputs, inputsForm, handleQueryChange])
+
+  // 单击切换语音模式
+  const toggleVoiceMode = useCallback(() => {
+    setVoiceMode(prev => !prev)
+    setQuery('')
+  }, [])
+
+  const handleVoiceModeLongPress = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    if (!voiceMode || disabled || isResponding) return
+    handleStartRecord()
+  }, [voiceMode, disabled, isResponding, handleStartRecord])
+
+  const handleCompositionStart = () => { isComposingRef.current = true }
+  const handleCompositionEnd = () => { setTimeout(() => { isComposingRef.current = false }, 50) }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (voiceMode || recordingAnim) return
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-      // if isComposing, exit
-      if (isComposingRef.current) return
       e.preventDefault()
-      setQuery(query.replace(/\n$/, ''))
-      historyRef.current.push(query)
-      setCurrentIndex(historyRef.current.length)
-      handleSend()
-    }
-    else if (e.key === 'ArrowUp' && !e.shiftKey && !e.nativeEvent.isComposing && e.metaKey) {
-      // When the cmd + up key is pressed, output the previous element
-      if (currentIndex > 0) {
-        setCurrentIndex(currentIndex - 1)
-        handleQueryChange(historyRef.current[currentIndex - 1])
-      }
-    }
-    else if (e.key === 'ArrowDown' && !e.shiftKey && !e.nativeEvent.isComposing && e.metaKey) {
-      // When the cmd + down key is pressed, output the next element
-      if (currentIndex < historyRef.current.length - 1) {
-        setCurrentIndex(currentIndex + 1)
-        handleQueryChange(historyRef.current[currentIndex + 1])
-      }
-      else if (currentIndex === historyRef.current.length - 1) {
-        // If it is the last element, clear the input box
-        setCurrentIndex(historyRef.current.length)
-        handleQueryChange('')
-      }
+      setQuery(q => q.replace(/\n$/, ''))
+      onSend?.(query, filesStore.getState().files)
+      handleQueryChange('')
     }
   }
-
-  const handleShowVoiceInput = useCallback(() => {
-    (Recorder as any).getPermission().then(() => {
-      setShowVoiceInput(true)
-    }, () => {
-      notify({ type: 'error', message: t('common.voiceInput.notAllow') })
-    })
-  }, [t, notify])
 
   const operation = (
     <Operation
       ref={holdSpaceRef}
       fileConfig={visionConfig}
       speechToTextConfig={speechToTextConfig}
-      onShowVoiceInput={handleShowVoiceInput}
-      onSend={handleSend}
+      voiceMode={voiceMode}
+      toggleVoiceMode={toggleVoiceMode}
+      onMicLongPress={handleStartRecord}
+      onMicEnd={handleStopRecord}
+      onSend={() => {
+        if (!isResponding && query.trim()) {
+          onSend?.(query, filesStore.getState().files)
+          handleQueryChange('')
+        }
+      }}
       theme={theme}
     />
   )
 
   return (
     <>
-      <div
-        className={cn(
-          'relative z-10 overflow-hidden rounded-xl border border-components-chat-input-border bg-components-panel-bg-blur pb-[9px] shadow-md',
-          isDragActive && 'border border-dashed border-components-option-card-option-selected-border',
-          disabled && 'pointer-events-none border-components-panel-border opacity-50 shadow-none',
-        )}
-      >
-        <div className='relative max-h-[158px] overflow-y-auto overflow-x-hidden px-[9px] pt-[9px]'>
-          <FileListInChatInput fileConfig={visionConfig!} />
+      {/* 【核心修复】动画只覆盖输入框，不全屏！大小完全贴合输入框 */}
+      <div className="relative z-10 rounded-full border border-gray-200 bg-white py-2.5 px-4 shadow-sm transition-all">
+        {/* 录音动画层：和输入框同大小、同位置、同圆角，只盖输入框 */}
+        {recordingAnim && (
           <div
-            ref={wrapperRef}
-            className='flex items-center justify-between'
+            className="absolute inset-0 z-20 rounded-full flex flex-col items-center justify-center
+                      bg-gradient-to-r from-blue-500 to-blue-600 animate-fade-in overflow-hidden"
+            onMouseMove={handleRecordMove}
+            onTouchMove={handleRecordMove}
+            onMouseUp={handleStopRecord}
+            onTouchEnd={handleStopRecord}
+            onMouseLeave={handleStopRecord}
           >
-            <div className='relative flex w-full grow items-center'>
-              <div
-                ref={textValueRef}
-                className='body-lg-regular pointer-events-none invisible absolute h-auto w-auto whitespace-pre p-1 leading-6'
-              >
-                {query}
-              </div>
-              <Textarea
-                ref={ref => textareaRef.current = ref as any}
-                className={cn(
-                  'body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none',
-                )}
-                placeholder={decode(t('common.chat.inputPlaceholder', { botName }) || '')}
-                autoFocus
-                minRows={1}
-                value={query}
-                onChange={e => handleQueryChange(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onCompositionStart={handleCompositionStart}
-                onCompositionEnd={handleCompositionEnd}
-                onPaste={handleClipboardPasteFile}
-                onDragEnter={handleDragFileEnter}
-                onDragLeave={handleDragFileLeave}
-                onDragOver={handleDragFileOver}
-                onDrop={handleDropFile}
-              />
+            {/* 提示文字 */}
+            <div className="text-white text-[15px] font-medium mb-2">
+              {dragY < -30 ? '松开取消' : '松手发送，上移取消'}
             </div>
-            {
-              !isMultipleLine && operation
-            }
+
+            {/* 动态波纹：按住一直动，绝不消失 */}
+            <div className="flex items-center justify-center gap-[2px] h-6 px-1">
+              {waveDots.map((h, i) => (
+                <div
+                  key={i}
+                  className="w-[2px] rounded-full bg-white opacity-90 transition-all"
+                  style={{ height: `${h}px` }}
+                />
+              ))}
+            </div>
           </div>
-          {
-            showVoiceInput && (
-              <VoiceInput
-                onCancel={() => setShowVoiceInput(false)}
-                onConverted={text => handleQueryChange(text)}
-              />
-            )
-          }
+        )}
+
+        <div
+          className={cn(
+            'w-full flex items-center justify-between relative z-10',
+            recordingAnim && 'opacity-0', // 动画时隐藏原输入框内容
+          )}
+        >
+          {voiceMode ? (
+            <div
+              className="w-full h-9 flex items-center justify-center relative cursor-pointer"
+              onMouseDown={handleVoiceModeLongPress}
+              onMouseUp={handleStopRecord}
+              onMouseLeave={handleStopRecord}
+              onTouchStart={handleVoiceModeLongPress}
+              onTouchEnd={handleStopRecord}
+            >
+              <span className="text-sm text-gray-500 font-normal">按住说话</span>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {operation}
+              </div>
+            </div>
+          ) : (
+            <div
+              ref={wrapperRef}
+              className="flex-1 flex items-center gap-2"
+              onMouseDown={handleStartRecord}
+              onMouseUp={handleStopRecord}
+              onMouseLeave={handleStopRecord}
+              onTouchStart={handleStartRecord}
+              onTouchEnd={handleStopRecord}
+            >
+              <div className="flex-1 relative">
+                <div
+                  ref={textValueRef}
+                  className="invisible absolute left-0 right-0 whitespace-pre px-1 text-sm leading-6"
+                >
+                  {query}
+                </div>
+                <Textarea
+                  ref={ref => textareaRef.current = ref as any}
+                  className="w-full resize-none bg-transparent px-1 text-sm leading-6 outline-none text-gray-800"
+                  placeholder="和 Bot 聊天"
+                  autoFocus
+                  minRows={1}
+                  maxRows={4}
+                  value={query}
+                  onChange={e => handleQueryChange(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onCompositionStart={handleCompositionStart}
+                  onCompositionEnd={handleCompositionEnd}
+                  disabled={disabled || recordingAnim}
+                />
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {operation}
+              </div>
+            </div>
+          )}
         </div>
-        {
-          isMultipleLine && (
-            <div className='px-[9px]'>{operation}</div>
-          )
-        }
+
+        <VoiceInput
+          ref={voiceInputRef}
+          onConverted={handleVoiceConverted}
+          onCancel={() => { isRecordingRef.current = false }}
+          style={{ display: 'none' }}
+        />
       </div>
+
       {showFeatureBar && <FeatureBar showFileUpload={showFileUpload} disabled={featureBarDisabled} onFeatureBarClick={onFeatureBarClick} />}
     </>
   )
