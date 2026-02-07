@@ -23,6 +23,7 @@ import { audioToText } from '@/service/share'
 export type VoiceInputRef = {
   start: () => void;
   stop: () => void;
+  isRecording: boolean; // 暴露录音状态
 };
 
 // 组件Props类型
@@ -43,11 +44,13 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
     const drawRecordId = useRef<number | null>(null)
+    const isStopping = useRef(false) // 新增：防止重复停止
     
     // 状态管理
     const [originDuration, setOriginDuration] = useState(0)
     const [startRecord, setStartRecord] = useState(false)
     const [startConvert, setStartConvert] = useState(false)
+    const [isRecording, setIsRecording] = useState(false) // 标记是否正在录音
     
     // 路由相关
     const pathname = usePathname()
@@ -100,19 +103,24 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
       ctx.closePath()
     }, [startRecord])
 
-    // 停止录音并转换为文字
+    // 停止录音并转换为文字（核心修复：防止重复调用onCancel）
     const handleStopRecorder = useCallback(async () => {
-      // 边界判断：未开始录音则直接返回
-      if (!startRecord || !recorder.current) {
-        setStartRecord(false)
-        setStartConvert(false)
-        onCancel()
-        return
-      }
+      // 已经在停止中，直接返回
+      if (isStopping.current) return
+      isStopping.current = true
 
       try {
+        // 边界判断：未开始录音则直接返回（仅重置状态，不调用onCancel）
+        if (!startRecord || !recorder.current) {
+          setStartRecord(false)
+          setStartConvert(false)
+          setIsRecording(false)
+          return // 关键：不再调用onCancel，打破递归
+        }
+
         // 标记状态：停止录音，开始转换
         setStartRecord(false)
+        setIsRecording(false)
         setStartConvert(true)
         
         // 强制停止录音（增加异常捕获）
@@ -163,9 +171,10 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
         setStartConvert(false)
         setOriginDuration(0)
         recorder.current = null // 清空录音器实例
-        onCancel() // 触发取消回调，重置外层状态
+        isStopping.current = false // 重置标记
+        // 转换完成后不再调用onCancel，由父组件自行处理状态
       }
-    }, [onCancel, onConverted, params.appId, params.token, pathname, startRecord, wordTimestamps])
+    }, [onConverted, params.appId, params.token, pathname, startRecord, wordTimestamps])
 
     // 开始录音
     const handleStartRecord = useCallback(async () => {
@@ -173,6 +182,7 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
       setOriginDuration(0)
       setStartConvert(false)
       setStartRecord(false)
+      setIsRecording(false)
 
       // 销毁旧的录音器实例
       if (recorder.current) {
@@ -195,6 +205,10 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
 
         // 开始录音
         await recorder.current.start()
+        
+        // 标记录音状态
+        setIsRecording(true)
+        setStartRecord(true)
 
         // 初始化Canvas
         if (canvasRef.current && !ctxRef.current) {
@@ -212,22 +226,23 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
         }
 
         // 标记开始录音并绘制波形
-        setStartRecord(true)
         drawRecord()
       } catch (error) {
         console.error('Start record error:', error)
         // 异常时重置所有状态
         setStartRecord(false)
+        setIsRecording(false)
         recorder.current = null
-        onCancel()
+        onCancel() // 仅初始化失败时调用onCancel
       }
     }, [drawRecord, onCancel])
 
     // 暴露组件方法给父组件
     useImperativeHandle(ref, () => ({
       start: handleStartRecord,
-      stop: handleStopRecorder
-    }), [handleStartRecord, handleStopRecorder])
+      stop: handleStopRecorder,
+      isRecording: isRecording
+    }), [handleStartRecord, handleStopRecorder, isRecording])
 
     // 初始化Canvas
     const initCanvas = useCallback(() => {
@@ -272,8 +287,10 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
         
         // 重置状态
         setStartRecord(false)
+        setIsRecording(false)
         setStartConvert(false)
         setOriginDuration(0)
+        isStopping.current = false
       }
     }, [clearInterval, initCanvas])
 
@@ -323,7 +340,8 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
               onClick={() => {
                 setStartConvert(false)
                 setOriginDuration(0)
-                onCancel()
+                setIsRecording(false)
+                // 取消转换时仅重置状态，不调用onCancel
               }}
               onContextMenu={(e) => e.preventDefault()} // 拦截右键菜单
             >
