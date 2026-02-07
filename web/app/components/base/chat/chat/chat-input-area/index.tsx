@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  TouchEvent
 } from 'react'
 import Textarea from 'react-textarea-autosize'
 import { useTranslation } from 'react-i18next'
@@ -27,7 +28,7 @@ import {
 import VoiceInput, { VoiceInputRef } from '@/app/components/base/voice-input'
 import { useToastContext } from '@/app/components/base/toast'
 import FeatureBar from '@/app/components/base/features/new-feature-panel/feature-bar'
-import type { FileUpload } from '@/app/components/base/features/types'
+import type { FileUpload } from '@/app/components/base/file-uploader/types'
 import { TransferMethod } from '@/types/app'
 
 type ChatInputAreaProps = {
@@ -74,19 +75,17 @@ const ChatInputArea = ({
   const [query, setQuery] = useState('')
   const [voiceMode, setVoiceMode] = useState(false)
 
-  // 长按触发时间（700ms，避免误触）
   const LONG_PRESS_DELAY = 700
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const isLongPressTriggered = useRef(false)
+  const isInputLongPress = useRef(false)
 
-  // 录音状态：仅底部区域动画，不全屏
   const [recordingAnim, setRecordingAnim] = useState(false)
   const [dragY, setDragY] = useState(0)
   const isRecordingRef = useRef(false)
   const voiceInputRef = useRef<VoiceInputRef | null>(null)
 
-  // 波纹配置（匹配参考图的长条形波纹）
-  const [waveDots, setWaveDots] = useState<number[]>(Array(40).fill(0))
+  const [waveDots, setWaveDots] = useState<number[]>(Array(60).fill(0))
   const waveInterval = useRef<NodeJS.Timeout | null>(null)
 
   const isComposingRef = useRef(false)
@@ -102,34 +101,30 @@ const ChatInputArea = ({
   } = useFile(visionConfig!)
   const { checkInputsForm } = useCheckInputsForms()
 
-  // 输入框内容变化
   const handleQueryChange = useCallback(
     (value: string) => {
+      if (isInputLongPress.current) return
       setQuery(value)
       setTimeout(handleTextareaResize, 0)
     },
     [handleTextareaResize],
   )
 
-  // 波纹持续动画：按住一直跳动，不中断
   const startWaveAnimation = useCallback(() => {
     if (waveInterval.current) clearInterval(waveInterval.current)
-    // 匹配参考图的波纹高度（3-8px）
     waveInterval.current = setInterval(() => {
-      setWaveDots(prev => prev.map(() => 3 + Math.random() * 5))
+      setWaveDots(prev => prev.map(() => 2 + Math.random() * 6))
     }, 120)
   }, [])
 
-  // 仅松手停止波纹
   const stopWaveAnimation = useCallback(() => {
     if (waveInterval.current) {
       clearInterval(waveInterval.current)
       waveInterval.current = null
     }
-    setWaveDots(Array(40).fill(0))
+    setWaveDots(Array(60).fill(0))
   }, [])
 
-  // 清理定时器（避免内存泄漏）
   useEffect(() => {
     return () => {
       if (waveInterval.current) clearInterval(waveInterval.current)
@@ -137,9 +132,9 @@ const ChatInputArea = ({
     }
   }, [])
 
-  // 长按按下：700ms后触发动画
-  const handleRecordPressStart = useCallback(() => {
-    if (disabled || isResponding || isRecordingRef.current) return
+  const handleRecordPressStart = useCallback((isClick = false, isInput = false, isHoldBtn = false) => {
+    if (disabled || isResponding || isRecordingRef.current || isClick) return
+    if (isInput || isHoldBtn) isInputLongPress.current = true
     isLongPressTriggered.current = false
 
     longPressTimer.current = setTimeout(() => {
@@ -148,45 +143,40 @@ const ChatInputArea = ({
       setRecordingAnim(true)
       startWaveAnimation()
 
-      // 获取录音权限并开始录音
       ;(Recorder as any).getPermission().then(() => {
         voiceInputRef.current?.start()
       }).catch(() => {
         notify({ type: 'error', message: t('common.voiceInput.notAllow') })
         setRecordingAnim(false)
         stopWaveAnimation()
-        isRecordingRef.current = false
+        isInputLongPress.current = false
       })
     }, LONG_PRESS_DELAY)
   }, [t, notify, disabled, isResponding, startWaveAnimation])
 
-  // 松开/离开：仅此时关闭动画
   const handleRecordPressEnd = useCallback(
-    (e?: React.MouseEvent | React.TouchEvent) => {
+    (e?: React.MouseEvent | React.TouchEvent, isInput = false, isHoldBtn = false) => {
       e?.preventDefault()
-      // 清除长按定时器（短按直接返回）
+      if (isInput || isHoldBtn) isInputLongPress.current = false
+
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current)
         longPressTimer.current = null
       }
-      // 非长按触发，不执行任何操作
       if (!isLongPressTriggered.current || !isRecordingRef.current) return
 
-      // 关闭动画、波纹、录音
       const cancelSend = dragY < -30
       isRecordingRef.current = false
       setRecordingAnim(false)
       stopWaveAnimation()
       setDragY(0)
 
-      // 上滑取消
       if (cancelSend) {
         notify({ type: 'info', message: '已取消发送' })
         voiceInputRef.current?.stop()
         return
       }
 
-      // 正常发送
       setTimeout(() => {
         voiceInputRef.current?.stop()
       }, 100)
@@ -194,45 +184,48 @@ const ChatInputArea = ({
     [dragY, notify, stopWaveAnimation]
   )
 
-  // 上滑取消拖动
   const handleRecordMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!recordingAnim || !isLongPressTriggered.current) return
     let y = 'touches' in e ? e.touches[0].clientY : e.clientY
     setDragY(window.innerHeight / 2 - y)
   }, [recordingAnim])
 
-  // 语音转文字发送
   const handleVoiceConverted = useCallback((voiceText: string) => {
     if (!onSend || !isLongPressTriggered.current || dragY < -30) return
     if (!voiceText?.trim()) {
       isRecordingRef.current = false
+      isInputLongPress.current = false
       notify({ type: 'info', message: '未识别到文字' })
       return
     }
     const { files, setFiles } = filesStore.getState()
     if (isResponding) return
-    if (files.find(f => f.transferMethod === TransferMethod.local_file && !f.uploadedId)) return
+    if (files.find(f => f.transferMethod === TransferMethod.LOCAL && !f.uploadedId)) return
     if (!checkInputsForm(inputs, inputsForm)) return
 
     onSend(voiceText, files)
     handleQueryChange('')
     setFiles([])
     isRecordingRef.current = false
+    isInputLongPress.current = false
   }, [onSend, dragY, isResponding, filesStore, checkInputsForm, inputs, inputsForm, handleQueryChange, notify])
 
-  // 单击麦克风切换语音模式
   const toggleVoiceMode = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+    isLongPressTriggered.current = false
+    isInputLongPress.current = false
     setVoiceMode(prev => !prev)
     setQuery('')
   }, [])
 
-  // 输入法组合态处理
   const handleCompositionStart = () => { isComposingRef.current = true }
   const handleCompositionEnd = () => { setTimeout(() => { isComposingRef.current = false }, 50) }
 
-  // 回车发送
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (voiceMode || recordingAnim) return
+    if (voiceMode || recordingAnim || isInputLongPress.current) return
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
       setQuery(q => q.replace(/\n$/, ''))
@@ -241,7 +234,66 @@ const ChatInputArea = ({
     }
   }
 
-  // 操作栏（麦克风/发送/文件）
+  const handleInputMouseDown = useCallback((e: React.MouseEvent) => {
+    if (voiceMode || disabled || isResponding) return
+    e.stopPropagation()
+    handleRecordPressStart(false, true)
+  }, [voiceMode, disabled, isResponding, handleRecordPressStart])
+
+  const handleInputMouseUp = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    handleRecordPressEnd(e, true)
+  }, [handleRecordPressEnd])
+
+  const handleInputMouseLeave = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    handleRecordPressEnd(e, true)
+  }, [handleRecordPressEnd])
+
+  const handleInputTouchStart = useCallback((e: TouchEvent) => {
+    if (voiceMode || disabled || isResponding) return
+    e.stopPropagation()
+    handleRecordPressStart(false, true)
+  }, [voiceMode, disabled, isResponding, handleRecordPressStart])
+
+  const handleInputTouchEnd = useCallback((e: TouchEvent) => {
+    e.stopPropagation()
+    handleRecordPressEnd(e, true)
+  }, [handleRecordPressEnd])
+
+  const handleInputTouchCancel = useCallback((e: TouchEvent) => {
+    e.stopPropagation()
+    handleRecordPressEnd(e, true)
+    isInputLongPress.current = false
+  }, [handleRecordPressEnd])
+
+  const handleHoldBtnMouseDown = useCallback((e: React.MouseEvent) => {
+    if (disabled || isResponding) return
+    e.stopPropagation()
+    handleRecordPressStart(false, false, true)
+  }, [disabled, isResponding, handleRecordPressStart])
+
+  const handleHoldBtnMouseUp = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    handleRecordPressEnd(e, false, true)
+  }, [handleRecordPressEnd])
+
+  const handleHoldBtnMouseLeave = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    handleRecordPressEnd(e, false, true)
+  }, [handleRecordPressEnd])
+
+  const handleHoldBtnTouchStart = useCallback((e: TouchEvent) => {
+    if (disabled || isResponding) return
+    e.stopPropagation()
+    handleRecordPressStart(false, false, true)
+  }, [disabled, isResponding, handleRecordPressStart])
+
+  const handleHoldBtnTouchEnd = useCallback((e: TouchEvent) => {
+    e.stopPropagation()
+    handleRecordPressEnd(e, false, true)
+  }, [handleRecordPressEnd])
+
   const operation = (
     <Operation
       ref={holdSpaceRef}
@@ -252,7 +304,7 @@ const ChatInputArea = ({
       onMicLongPress={handleRecordPressStart}
       onMicEnd={handleRecordPressEnd}
       onSend={() => {
-        if (!isResponding && query.trim()) {
+        if (!isResponding && query.trim() && !voiceMode && !isInputLongPress.current) {
           onSend?.(query, filesStore.getState().files)
           handleQueryChange('')
         }
@@ -263,37 +315,39 @@ const ChatInputArea = ({
 
   return (
     <>
-      {/* 参考图同款：底部输入框区域+向上渐变动画，不全屏 */}
+      {/* ✅ 最终版：超大模糊范围 + 中间色最深 + 多层次渐变 + 180px高 + 底部半圆 + 无边框 */}
       {recordingAnim && (
-        <div
-          className="fixed bottom-0 left-0 right-0 z-50 flex flex-col items-center justify-end
-                    bg-gradient-to-t from-blue-500 via-blue-400 to-transparent
-                    animate-fade-in pointer-events-auto pb-6"
-          onMouseMove={handleRecordMove}
-          onTouchMove={handleRecordMove}
-          onMouseUp={handleRecordPressEnd}
-          onTouchEnd={handleRecordPressEnd}
-          onMouseLeave={handleRecordPressEnd}
-        >
-          {/* 提示文字（参考图居中样式） */}
-          <div className="text-white text-lg font-medium mb-4">
-            {dragY < -30 ? '松开取消' : '松手发送，上移取消'}
-          </div>
+        <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-auto">
+          {/* 核心背景：超大模糊 + 中间深两侧渐浅 + 多层次渐变 + 半圆 + 无边框 */}
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-700 via-blue-600 to-blue-500/70"
+            style={{
+              height: '180px',
+              borderRadius: '50% / 100% 100% 0 0',
+              filter: 'blur(8px)', // 大幅加大模糊范围，匹配参考图
+              border: 'none',
+              transform: 'scaleX(1.05)', // 轻微横向拉伸，让模糊边缘更自然覆盖两侧
+            }}
+          />
 
-          {/* 长条形波纹（参考图底部样式） */}
-          <div className="flex items-center justify-center gap-1 h-4 w-[80%] mb-2">
-            {waveDots.map((h, i) => (
-              <div
-                key={i}
-                className="w-1 rounded-full bg-white opacity-90 transition-all duration-120"
-                style={{ height: `${h}px` }}
-              />
-            ))}
+          {/* 文字 + 波纹 容器：适配180px高度，居中无错位 */}
+          <div className="relative z-10 w-full flex flex-col items-center justify-end pb-14 h-[180px]">
+            <div className="text-white text-lg font-medium mb-5">
+              {dragY < -30 ? '松开取消' : '松手发送，上移取消'}
+            </div>
+            <div className="flex items-center justify-center gap-[3px] h-4 w-[88%]">
+              {waveDots.map((h, i) => (
+                <div
+                  key={i}
+                  className="w-[2.5px] rounded-full bg-white opacity-100 transition-all duration-150"
+                  style={{ height: `${h}px` }}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* 原输入框：录音时半透明，不影响视觉 */}
       <div
         className={cn(
           'relative z-10 rounded-full border border-gray-200 bg-white py-2.5 px-4 shadow-sm transition-all',
@@ -304,30 +358,29 @@ const ChatInputArea = ({
       >
         <div className="w-full flex items-center justify-between">
           {voiceMode ? (
-            // 单击切换后的「按住说话」模式
             <div
               className="w-full h-9 flex items-center justify-center relative cursor-pointer"
-              onMouseDown={handleRecordPressStart}
-              onMouseUp={handleRecordPressEnd}
-              onMouseLeave={handleRecordPressEnd}
-              onTouchStart={handleRecordPressStart}
-              onTouchEnd={handleRecordPressEnd}
+              onMouseDown={handleHoldBtnMouseDown}
+              onMouseUp={handleHoldBtnMouseUp}
+              onMouseLeave={handleHoldBtnMouseLeave}
+              onTouchStart={handleHoldBtnTouchStart}
+              onTouchEnd={handleHoldBtnTouchEnd}
             >
               <span className="text-sm text-gray-500 font-normal">按住说话</span>
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <div className="absolute right-0 top-1/2 translate-y-[-50%] flex items-center gap-1">
                 {operation}
               </div>
             </div>
           ) : (
-            // 默认输入模式
             <div
               ref={wrapperRef}
               className="flex-1 flex items-center gap-2"
-              onMouseDown={handleRecordPressStart}
-              onMouseUp={handleRecordPressEnd}
-              onMouseLeave={handleRecordPressEnd}
-              onTouchStart={handleRecordPressStart}
-              onTouchEnd={handleRecordPressEnd}
+              onMouseDown={handleInputMouseDown}
+              onMouseUp={handleInputMouseUp}
+              onMouseLeave={handleInputMouseLeave}
+              onTouchStart={handleInputTouchStart}
+              onTouchEnd={handleInputTouchEnd}
+              onTouchCancel={handleInputTouchCancel}
             >
               <div className="flex-1 relative">
                 <div
@@ -363,12 +416,12 @@ const ChatInputArea = ({
           )}
         </div>
 
-        {/* 语音识别组件（隐藏） */}
         <VoiceInput
           ref={voiceInputRef}
           onConverted={handleVoiceConverted}
           onCancel={() => {
             isRecordingRef.current = false
+            isInputLongPress.current = false
             setRecordingAnim(false)
             stopWaveAnimation()
           }}
@@ -376,13 +429,11 @@ const ChatInputArea = ({
         />
       </div>
 
-      {/* 功能栏（保留原有逻辑） */}
       {showFeatureBar && <FeatureBar showFileUpload={showFileUpload} disabled={featureBarDisabled} onFeatureBarClick={onFeatureBarClick} />}
     </>
   )
 }
 
-// 文件上下文包裹
 const ChatInputAreaWrapper = (props: ChatInputAreaProps) => {
   return (
     <FileContextProvider>
