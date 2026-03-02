@@ -309,7 +309,7 @@ const ChatInputArea = ({
     
     if (!onSend || dragY < -30) return
     if (!voiceText?.trim()) {
-      notify({ type: 'info', message: '未识别到文字' })
+      notify({ type: 'info', message: '未识别到文字',className: 'ml-5' })
       return
     }
     
@@ -546,7 +546,7 @@ const ChatInputArea = ({
               }}
             >
               <span className="text-sm text-gray-500">按住说话</span>
-              <div className="absolute right-0 top-1/2 translate-y-[-50%]">
+              <div className="absolute right-0 top-1/2 translate-y-[-50%]" style={{ marginRight: '10px' }}>
                 {operation}
               </div>
             </div>
