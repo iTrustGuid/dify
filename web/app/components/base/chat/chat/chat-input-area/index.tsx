@@ -109,7 +109,10 @@ const ChatInputArea = ({
   } = useFile(visionConfig!)
   const { checkInputsForm } = useCheckInputsForms()
 
-  // ========== 基础工具函数 ==========
+  // ========== 新增：微信授权状态检测定时器（先定义ref） ==========
+  const authCheckTimer = useRef<NodeJS.Timeout | null>(null)
+
+  // ========== 基础工具函数（提前定义，解决依赖顺序问题） ==========
   const blurTextarea = useCallback(() => {
     if (textareaRef.current) {
       textareaRef.current.blur()
@@ -146,12 +149,18 @@ const ChatInputArea = ({
     setWaveDots(Array(60).fill(0))
   }, [])
 
-  // ========== 核心修复：强制关闭弹框（只改逻辑，不改样式） ==========
+  // ========== 核心修复：强制关闭弹框（提前定义，解决顺序问题） ==========
   const forceCloseRecording = useCallback(() => {
     // 清空计时器
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
+    }
+    
+    // 清空授权检测定时器
+    if (authCheckTimer.current) {
+      clearTimeout(authCheckTimer.current)
+      authCheckTimer.current = null
     }
     
     // 重置状态（只改值，不改样式）
@@ -171,6 +180,52 @@ const ChatInputArea = ({
       }, 100)
     }
   }, [stopWaveAnimation, blurTextarea])
+
+  // ========== 微信授权状态检测（现在forceCloseRecording已定义） ==========
+  const checkWeChatAuthStatus = useCallback(() => {
+    if (!isWeChat() || !recordingAnim) return
+    
+    // 清除之前的定时器
+    if (authCheckTimer.current) {
+      clearTimeout(authCheckTimer.current)
+    }
+    
+    // 每200ms检测一次授权状态
+    authCheckTimer.current = setTimeout(() => {
+      // 检测是否获得麦克风权限
+      navigator.permissions.query({ name: 'microphone' as PermissionName })
+        .then(permissionStatus => {
+          // 如果权限被拒绝，强制关闭弹框
+          if (permissionStatus.state === 'denied') {
+            notify({ 
+              type: 'error', 
+              message: t('common.chat.microphoneDenied') || '麦克风权限被拒绝，请在设置中开启' 
+            })
+            forceCloseRecording()
+          }
+          // 如果权限已授予，但录音未开始（授权弹框已关闭），也关闭录制弹框
+          else if (permissionStatus.state === 'granted' && recordingAnim) {
+            // 这里延迟一点确保授权流程完成
+            setTimeout(() => {
+              forceCloseRecording()
+            }, 300)
+          }
+          
+          // 监听权限变化
+          permissionStatus.onchange = () => {
+            if (permissionStatus.state === 'denied') {
+              forceCloseRecording()
+            }
+          }
+        })
+        .catch(() => {
+          // 兼容处理：如果无法检测权限，授权后默认关闭弹框
+          setTimeout(() => {
+            forceCloseRecording()
+          }, 500)
+        })
+    }, 200)
+  }, [isWeChat, recordingAnim, notify, t, forceCloseRecording])
 
   // ========== 长按开始（恢复弹框触发） ==========
   const handleRecordPressStart = useCallback((isClick = false, e?: React.MouseEvent | React.TouchEvent) => {
@@ -193,8 +248,13 @@ const ChatInputArea = ({
 
       // 开始录音（触发微信授权）
       voiceInputRef.current?.start()
+      
+      // 新增：微信环境下启动授权检测
+      if (isWeChat()) {
+        checkWeChatAuthStatus()
+      }
     }, LONG_PRESS_DELAY)
-  }, [disabled, isResponding, recordingAnim, startWaveAnimation, blurTextarea])
+  }, [disabled, isResponding, recordingAnim, startWaveAnimation, blurTextarea, isWeChat, checkWeChatAuthStatus])
 
   // ========== 长按结束（恢复弹框关闭） ==========
   const handleRecordPressEnd = useCallback(
@@ -202,6 +262,12 @@ const ChatInputArea = ({
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current)
         longPressTimer.current = null
+      }
+      
+      // 清空授权检测定时器
+      if (authCheckTimer.current) {
+        clearTimeout(authCheckTimer.current)
+        authCheckTimer.current = null
       }
       
       isTouching.current = false
@@ -290,6 +356,7 @@ const ChatInputArea = ({
     return () => {
       if (waveInterval.current) clearInterval(waveInterval.current)
       if (longPressTimer.current) clearTimeout(longPressTimer.current)
+      if (authCheckTimer.current) clearTimeout(authCheckTimer.current) // 新增
       forceCloseRecording()
     }
   }, [forceCloseRecording])
@@ -299,6 +366,12 @@ const ChatInputArea = ({
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
+    // 新增：清空授权检测定时器
+    if (authCheckTimer.current) {
+      clearTimeout(authCheckTimer.current)
+      authCheckTimer.current = null
+    }
+    
     isLongPressTriggered.current = false
     isLongPressing.current = false
     isTouching.current = false
