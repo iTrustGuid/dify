@@ -12,7 +12,7 @@ import type {
   EnableType,
   OnSend,
 } from '../../types'
-import type { Theme } from '../../embedded-chatbot/theme-context'
+import type { Theme } from '../../embedded-chatbot/theme/theme-context'
 import type { InputForm } from '../type'
 import { useCheckInputsForms } from '../check-input-forms-hooks'
 import { useTextAreaHeight } from './hooks'
@@ -108,6 +108,50 @@ const ChatInputArea = ({
     isDragActive,
   } = useFile(visionConfig!)
   const { checkInputsForm } = useCheckInputsForms()
+
+  // ========== 新增：禁用长按默认行为 + 关闭键盘核心函数 ==========
+  // 禁用文本选择/长按复制
+  const disableTextSelection = useCallback(() => {
+    // 全局禁用文本选择（修复属性名：Webkit 首字母大写）
+    document.body.style.userSelect = 'none'
+    document.body.style.WebkitUserSelect = 'none' 
+    document.body.style.touchCallout = 'none'
+    document.body.style.WebkitTouchCallout = 'none'
+
+    // 禁用上下文菜单（右键/长按菜单）
+    const handleContextMenu = (e: Event) => {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    document.addEventListener('contextmenu', handleContextMenu)
+    
+    return () => {
+      // 组件卸载恢复
+      document.body.style.userSelect = ''
+      document.body.style.WebkitUserSelect = ''
+      document.body.style.touchCallout = ''
+      document.body.style.WebkitTouchCallout = ''
+      document.removeEventListener('contextmenu', handleContextMenu)
+    }
+  }, [])
+
+  // 关闭键盘 + 输入框失焦
+  const closeKeyboardAndBlur = useCallback(() => {
+    // 输入框失焦
+    if (textareaRef.current) {
+      textareaRef.current.blur()
+    }
+    // 强制关闭移动端键盘
+    if (isMobile() && document.activeElement) {
+      ;(document.activeElement as HTMLElement).blur()
+    }
+    // 微信环境额外处理
+    if (isWeChat()) {
+      setTimeout(() => {
+        document.activeElement?.blur()
+      }, 50)
+    }
+  }, [])
 
   // ========== 基础工具函数 ==========
   const blurTextarea = useCallback(() => {
@@ -298,10 +342,14 @@ const ChatInputArea = ({
 
   // ========== 全局兜底：页面卸载/切换时关闭弹框 ==========
   useEffect(() => {
+    // 组件挂载时禁用长按复制/文本选择
+    const cleanup = disableTextSelection()
+    
     return () => {
       forceCloseRecording() // 页面卸载必关弹框
+      cleanup() // 恢复默认行为
     }
-  }, [forceCloseRecording])
+  }, [forceCloseRecording, disableTextSelection])
 
   // ========== 全局监听：ESC键关闭弹框（浏览器端） ==========
   useEffect(() => {
@@ -316,8 +364,14 @@ const ChatInputArea = ({
     }
   }, [recordingAnim, forceCloseRecording])
 
+  // ========== 新增：处理按钮点击时关闭键盘 ==========
+  const handleButtonClick = useCallback(() => {
+    closeKeyboardAndBlur()
+  }, [closeKeyboardAndBlur])
+
   const toggleVoiceMode = useCallback(() => {
     forceCloseRecording() // 切换模式时先关弹框
+    handleButtonClick() // 关闭键盘
     setVoiceMode(prev => {
       const newMode = !prev
       setTimeout(() => {
@@ -330,13 +384,11 @@ const ChatInputArea = ({
       return newMode
     })
     setQuery('')
-  }, [focusTextarea, blurTextarea, forceCloseRecording])
+  }, [focusTextarea, blurTextarea, forceCloseRecording, handleButtonClick])
 
   const handleContextMenu = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (isMobile()) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
+    e.preventDefault()
+    e.stopPropagation()
   }, [])
 
   const handleInputClick = useCallback(() => {
@@ -382,7 +434,7 @@ const ChatInputArea = ({
     }
   }, [recordingAnim, blurTextarea])
 
-  // ========== 操作栏 ==========
+  // ========== 操作栏（新增：按钮点击关闭键盘） ==========
   const operation = (
     <Operation
       ref={holdSpaceRef}
@@ -393,6 +445,7 @@ const ChatInputArea = ({
       onMicLongPress={() => handleRecordPressStart(false)}
       onMicEnd={handleRecordPressEnd}
       onSend={() => {
+        handleButtonClick() // 发送按钮点击关闭键盘
         if (!isResponding && query.trim() && !voiceMode) {
           onSend?.(query, filesStore.getState().files)
           handleQueryChange('')
@@ -401,17 +454,25 @@ const ChatInputArea = ({
       }}
       theme={theme}
       isMobile={isMobile()}
+      onButtonClick={handleButtonClick} // 传递给Operation组件
     />
   )
 
-  // ========== 渲染部分（关键：弹框添加全局点击关闭） ==========
+  // ========== 渲染部分 ==========
   return (
     <>
-      {/* 录音弹框：添加全局点击关闭，优先级最高 */}
+      {/* 录音弹框 */}
       {recordingAnim && (
         <div 
           className="fixed inset-0 z-50 pointer-events-auto flex items-end justify-center"
-          onClick={() => forceCloseRecording()} // 点击弹框外/内都关闭
+          onClick={() => forceCloseRecording()}
+          onContextMenu={handleContextMenu}
+          style={{
+            userSelect: 'none',
+            WebkitUserSelect: 'none', // 修复属性名
+            touchCallout: 'none',
+            WebkitTouchCallout: 'none' // 修复属性名
+          }}
         >
           <div
             className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-700 via-blue-600 to-blue-500/70"
@@ -447,7 +508,7 @@ const ChatInputArea = ({
         </div>
       )}
 
-      {/* 输入框容器：添加触摸禁止滚动 */}
+      {/* 输入框容器：禁用长按默认行为 + 触摸禁止滚动 */}
       <div
         className={cn(
           'relative z-10 rounded-full border border-gray-200 bg-white py-2.5 px-4 shadow-sm transition-all',
@@ -455,10 +516,17 @@ const ChatInputArea = ({
           disabled && 'opacity-50 pointer-events-none',
           recordingAnim && 'opacity-30',
         )}
-        style={{ touchAction: 'none' }} // 禁止滚动，避免事件冲突
+        style={{ 
+          touchAction: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none', // 修复属性名
+          touchCallout: 'none',
+          WebkitTouchCallout: 'none' // 修复属性名
+        }}
         onContextMenu={handleContextMenu}
+        onTouchStart={(e) => e.preventDefault()} // 禁用默认触摸行为
         onClick={() => {
-          if (recordingAnim) forceCloseRecording() // 点击输入框关闭弹框
+          if (recordingAnim) forceCloseRecording()
         }}
       >
         <div className="w-full flex items-center justify-between">
@@ -472,6 +540,10 @@ const ChatInputArea = ({
               onMouseDown={(e) => handleRecordPressStart(false, e)}
               onMouseUp={(e) => handleRecordPressEnd(e)}
               onMouseLeave={(e) => handleRecordPressEnd(e)}
+              style={{
+                userSelect: 'none',
+                WebkitUserSelect: 'none' // 修复属性名
+              }}
             >
               <span className="text-sm text-gray-500">按住说话</span>
               <div className="absolute right-0 top-1/2 translate-y-[-50%]">
@@ -490,6 +562,10 @@ const ChatInputArea = ({
               onMouseDown={(e) => handleInputLongPressStart(e)}
               onMouseUp={(e) => handleInputLongPressEnd(e)}
               onMouseLeave={(e) => handleInputLongPressEnd(e)}
+              style={{
+                userSelect: 'none',
+                WebkitUserSelect: 'none' // 修复属性名
+              }}
             >
               <div className="flex-1 relative">
                 <div ref={textValueRef} className="invisible absolute whitespace-pre px-1 text-sm">
@@ -513,6 +589,11 @@ const ChatInputArea = ({
                   autoCorrect="off"
                   autoCapitalize="off"
                   spellCheck="false"
+                  // 禁用文本选择（修复属性名）
+                  style={{
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none'
+                  }}
                 />
               </div>
               <div className="flex-shrink-0">

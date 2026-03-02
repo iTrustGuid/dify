@@ -19,6 +19,7 @@ type OperationProps = {
   theme?: Theme | null
   ref?: Ref<HTMLDivElement>
   isMobile?: boolean
+  onButtonClick: () => void // 新增：接收关闭键盘函数
 }
 
 const Operation: FC<OperationProps> = ({
@@ -32,19 +33,21 @@ const Operation: FC<OperationProps> = ({
   onSend,
   theme,
   isMobile = false,
+  onButtonClick // 新增
 }) => {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const isLongPressTriggered = useRef(false)
   const LONG_PRESS_DELAY = 300
 
-  // 单击：只切换模式，不触发长按
+  // 单击麦克风：关闭键盘 + 切换模式
   const handleMicClick = useCallback(() => {
+    onButtonClick() // 关闭键盘
     if (isLongPressTriggered.current) {
       isLongPressTriggered.current = false
       return
     }
     toggleVoiceMode()
-  }, [toggleVoiceMode])
+  }, [toggleVoiceMode, isLongPressTriggered, onButtonClick])
 
   // 长按开始：只记录，不立即触发
   const handleTouchStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
@@ -68,21 +71,37 @@ const Operation: FC<OperationProps> = ({
   }, [onMicEnd])
 
   const handleContextMenu = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (isMobile) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
-  }, [isMobile])
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  // 新增：文件上传按钮点击关闭键盘
+  const handleFileUploadClick = useCallback(() => {
+    onButtonClick()
+  }, [onButtonClick])
 
   return (
-    <div ref={ref} className="flex items-center gap-1" onContextMenu={handleContextMenu}>
+    <div 
+      ref={ref} 
+      className="flex items-center gap-1" 
+      onContextMenu={handleContextMenu}
+      style={{
+        userSelect: 'none',
+        WebkitUserSelect: 'none', // 修复属性名
+        touchCallout: 'none',
+        WebkitTouchCallout: 'none' // 修复属性名
+      }}
+    >
+      {/* 文件按钮：点击关闭键盘 */}
       {fileConfig?.enabled && (
-        <FileUploaderInChatInput
-          fileConfig={fileConfig}
+        <FileUploaderInChatInput 
+          fileConfig={fileConfig} 
           style={{ pointerEvents: 'auto' }}
+          onClick={handleFileUploadClick} // 关闭键盘
         />
       )}
 
+      {/* 麦克风：点击关闭键盘 */}
       {speechToTextConfig?.enabled && (
         <ActionButton
           size="sm"
@@ -90,28 +109,36 @@ const Operation: FC<OperationProps> = ({
           onClick={handleMicClick}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd} // 新增：触摸取消时也执行
+          onTouchCancel={handleTouchEnd}
           onTouchMove={handleTouchEnd}
           onMouseDown={handleTouchStart}
           onMouseUp={handleTouchEnd}
           onMouseLeave={handleTouchEnd}
           onContextMenu={handleContextMenu}
+          style={{
+            userSelect: 'none',
+            WebkitUserSelect: 'none' // 修复属性名
+          }}
         >
           <RiMicLine className="w-4 h-4" />
         </ActionButton>
       )}
 
+      {/* 发送按钮：点击关闭键盘（已在父组件处理，这里兜底） */}
       {!voiceMode && (
         <Button
           className="w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center p-0 border-none"
           variant="primary"
           onClick={(e) => {
             e.stopPropagation()
+            onButtonClick() // 兜底关闭键盘
             onSend()
           }}
           style={{
             backgroundColor: theme?.primaryColor || '#0071e3',
             pointerEvents: 'auto',
+            userSelect: 'none',
+            WebkitUserSelect: 'none' // 修复属性名
           }}
         >
           <RiSendPlane2Fill className="w-4 h-4 text-white" />
