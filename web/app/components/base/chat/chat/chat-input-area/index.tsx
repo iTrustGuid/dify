@@ -109,11 +109,7 @@ const ChatInputArea = ({
   } = useFile(visionConfig!)
   const { checkInputsForm } = useCheckInputsForms()
 
-  // ========== 新增：微信授权超时兜底定时器 ==========
-  const wechatAuthTimeout = useRef<NodeJS.Timeout | null>(null)
-  const authCheckTimer = useRef<NodeJS.Timeout | null>(null)
-
-  // ========== 基础工具函数（提前定义，解决依赖顺序问题） ==========
+  // ========== 基础工具函数 ==========
   const blurTextarea = useCallback(() => {
     if (textareaRef.current) {
       textareaRef.current.blur()
@@ -150,56 +146,33 @@ const ChatInputArea = ({
     setWaveDots(Array(60).fill(0))
   }, [])
 
-  // ========== 核心修复：强制关闭弹框（增强版） ==========
+  // ========== 核心修复：强制关闭弹框（只改逻辑，不改样式） ==========
   const forceCloseRecording = useCallback(() => {
-    // 1. 清空所有计时器
+    // 清空计时器
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
-    if (authCheckTimer.current) {
-      clearTimeout(authCheckTimer.current)
-      authCheckTimer.current = null
-    }
-    if (waveInterval.current) {
-      clearInterval(waveInterval.current)
-      waveInterval.current = null
-    }
-    if (wechatAuthTimeout.current) {
-      clearTimeout(wechatAuthTimeout.current)
-      wechatAuthTimeout.current = null
-    }
     
-    // 2. 重置所有状态（关键：确保所有状态都重置）
+    // 重置状态（只改值，不改样式）
     isLongPressTriggered.current = false
     isLongPressing.current = false
     isTouching.current = false
-    setRecordingAnim(false) // 核心：关闭弹框
-    stopWaveAnimation()     // 停止波形动画
-    setDragY(0)             // 重置滑动距离
-    blurTextarea()          // 失焦输入框
-    
-    // 3. 微信环境特殊处理（强制关闭，双重保障）
+    setRecordingAnim(false)
+    stopWaveAnimation()
+    setDragY(0)
+    blurTextarea()
+
+    // 微信环境授权后强制关闭弹框
     if (isWeChat()) {
-      // 立即关闭 + 延迟再次确认关闭
-      setRecordingAnim(false)
       setTimeout(() => {
         setRecordingAnim(false)
         stopWaveAnimation()
       }, 100)
     }
-    
-    // 4. 停止录音（如果正在录音）
-    if (voiceInputRef.current) {
-      try {
-        voiceInputRef.current.stop()
-      } catch (e) {
-        console.log('停止录音失败:', e)
-      }
-    }
   }, [stopWaveAnimation, blurTextarea])
 
-  // ========== 长按开始（微信授权超时兜底） ==========
+  // ========== 长按开始（恢复弹框触发） ==========
   const handleRecordPressStart = useCallback((isClick = false, e?: React.MouseEvent | React.TouchEvent) => {
     if (isClick || disabled || isResponding || recordingAnim) return
     
@@ -209,52 +182,31 @@ const ChatInputArea = ({
     if (e && 'touches' in e) {
       isTouching.current = true
       e.preventDefault()
-      e.stopPropagation()
     }
 
     isLongPressTriggered.current = false
 
     longPressTimer.current = setTimeout(() => {
       isLongPressTriggered.current = true
-      setRecordingAnim(true)
+      setRecordingAnim(true) // 弹框显示（样式不变）
       startWaveAnimation()
 
       // 开始录音（触发微信授权）
       voiceInputRef.current?.start()
-      
-      // 微信环境：授权超时兜底（3秒后强制关闭弹框）
-      if (isWeChat()) {
-        wechatAuthTimeout.current = setTimeout(() => {
-          if (recordingAnim) {
-            forceCloseRecording()
-          }
-        }, 3000)
-      }
     }, LONG_PRESS_DELAY)
-  }, [disabled, isResponding, recordingAnim, startWaveAnimation, blurTextarea, isWeChat, forceCloseRecording])
+  }, [disabled, isResponding, recordingAnim, startWaveAnimation, blurTextarea])
 
-  // ========== 长按结束（确保弹框关闭） ==========
+  // ========== 长按结束（恢复弹框关闭） ==========
   const handleRecordPressEnd = useCallback(
     (e?: React.MouseEvent | React.TouchEvent) => {
-      // 清空所有定时器
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current)
         longPressTimer.current = null
       }
-      if (authCheckTimer.current) {
-        clearTimeout(authCheckTimer.current)
-        authCheckTimer.current = null
-      }
-      if (wechatAuthTimeout.current) {
-        clearTimeout(wechatAuthTimeout.current)
-        wechatAuthTimeout.current = null
-      }
       
-      // 重置触摸状态
       isTouching.current = false
       isLongPressing.current = false
 
-      // 如果长按未触发，恢复焦点
       if (!isLongPressTriggered.current) {
         setTimeout(() => focusTextarea(), 100)
         return
@@ -263,7 +215,7 @@ const ChatInputArea = ({
       blurTextarea()
       const cancelSend = dragY < -30
       
-      // 核心：强制关闭弹框（无论什么情况都关闭）
+      // 强制关闭弹框
       forceCloseRecording()
 
       if (cancelSend) {
@@ -271,13 +223,9 @@ const ChatInputArea = ({
         return
       }
 
-      // 正常停止录音（延迟执行，确保弹框已关闭）
+      // 正常停止录音
       setTimeout(() => {
-        try {
-          voiceInputRef.current?.stop()
-        } catch (e) {
-          console.log('停止录音失败:', e)
-        }
+        voiceInputRef.current?.stop()
       }, 100)
     },
     [dragY, notify, focusTextarea, blurTextarea, forceCloseRecording]
@@ -289,7 +237,6 @@ const ChatInputArea = ({
     
     if ('touches' in e) {
       e.preventDefault()
-      e.stopPropagation()
     }
     
     let y = 0
@@ -339,37 +286,19 @@ const ChatInputArea = ({
     [handleTextareaResize],
   )
 
-  // ========== 新增：监听页面可见性变化（微信授权后关闭弹框） ==========
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      // 当页面从不可见变为可见时（授权弹窗关闭后），强制关闭弹框
-      if (document.visibilityState === 'visible' && recordingAnim && isWeChat()) {
-        forceCloseRecording()
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      
-      // 确保所有定时器都被清除
       if (waveInterval.current) clearInterval(waveInterval.current)
       if (longPressTimer.current) clearTimeout(longPressTimer.current)
-      if (authCheckTimer.current) clearTimeout(authCheckTimer.current)
-      if (wechatAuthTimeout.current) clearTimeout(wechatAuthTimeout.current)
       forceCloseRecording()
     }
-  }, [recordingAnim, isWeChat, forceCloseRecording])
+  }, [forceCloseRecording])
 
   const toggleVoiceMode = useCallback(() => {
-    // 切换语音模式时，确保弹框关闭
-    forceCloseRecording()
-    
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
-    
     isLongPressTriggered.current = false
     isLongPressing.current = false
     isTouching.current = false
@@ -386,7 +315,7 @@ const ChatInputArea = ({
       return newMode
     })
     setQuery('')
-  }, [focusTextarea, blurTextarea, forceCloseRecording])
+  }, [focusTextarea, blurTextarea])
 
   const handleContextMenu = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (isMobile()) {
@@ -450,9 +379,6 @@ const ChatInputArea = ({
       onMicLongPress={() => handleRecordPressStart(false)}
       onMicEnd={handleRecordPressEnd}
       onSend={() => {
-        // 发送消息时确保弹框关闭
-        forceCloseRecording()
-        
         if (!isResponding && query.trim() && !voiceMode) {
           onSend?.(query, filesStore.getState().files)
           handleQueryChange('')
@@ -464,73 +390,55 @@ const ChatInputArea = ({
     />
   )
 
-  // ========== 渲染部分（增强弹框关闭逻辑） ==========
+  // ========== 渲染部分（样式100%还原，只加点击关闭逻辑） ==========
   return (
     <>
-      {/* 录音弹框：增强关闭逻辑 */}
+      {/* 录音弹框：样式完全保留，只加点击关闭逻辑 */}
       {recordingAnim && (
-        <>
-          {/* 新增：全屏遮罩层 - 点击任意空白处关闭 */}
-          <div 
-            className="fixed inset-0 bg-black/30 z-40 pointer-events-auto"
-            onClick={() => {
-              forceCloseRecording()
-            }}
-            onTouchEnd={() => {
-              forceCloseRecording()
+        <div 
+          className="fixed bottom-0 left-0 right-0 z-50 pointer-events-auto"
+          onContextMenu={handleContextMenu}
+          onClick={(e) => {
+            e.stopPropagation()
+            forceCloseRecording() // 点击弹框任意位置关闭
+          }}
+        >
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-700 via-blue-600 to-blue-500/70"
+            style={{
+              height: '180px',
+              borderRadius: '50% / 100% 100% 0 0',
+              filter: 'blur(8px)',
+              border: 'none',
+              transform: 'scaleX(1.05)',
             }}
           />
-          
-          {/* 原有弹框：保留样式，增强关闭逻辑 */}
           <div 
-            className="fixed bottom-0 left-0 right-0 z-50 pointer-events-auto"
-            onContextMenu={handleContextMenu}
-            onClick={(e) => {
-              e.stopPropagation() // 阻止冒泡到遮罩层
-              forceCloseRecording() // 点击弹框任意位置都关闭
-            }}
-            onTouchEnd={(e) => {
-              e.stopPropagation()
-              forceCloseRecording()
-            }}
+            className="relative z-10 w-full flex flex-col items-center justify-end pb-14 h-[180px]"
+            onClick={(e) => e.stopPropagation()} // 修复：内部子元素阻止冒泡，避免误触关闭
           >
-            <div
-              className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-700 via-blue-600 to-blue-500/70"
-              style={{
-                height: '180px',
-                borderRadius: '50% / 100% 100% 0 0',
-                filter: 'blur(8px)',
-                border: 'none',
-                transform: 'scaleX(1.05)',
-              }}
-            />
-            <div 
-              className="relative z-10 w-full flex flex-col items-center justify-end pb-14 h-[180px]"
-              onClick={(e) => e.stopPropagation()} // 阻止内部点击关闭弹框（可选）
-            >
-              <div className="text-white text-lg font-medium mb-5">
-                {dragY < -30 ? '松开取消' : '松手发送，上移取消'}
-              </div>
-              <div className="flex items-center justify-center gap-[3px] h-4 w-[88%]">
-                {waveDots.map((h, i) => (
-                  <div
-                    key={i}
-                    className="w-[2.5px] rounded-full bg-white opacity-100 transition-all duration-150"
-                    style={{ height: `${h}px` }}
-                  />
-                ))}
-              </div>
-              {isWeChat() && (
-                <div className="text-white text-xs mt-4 opacity-80">
-                  点击空白处可手动关闭
-                </div>
-              )}
+            <div className="text-white text-lg font-medium mb-5">
+              {dragY < -30 ? '松开取消' : '松手发送，上移取消'}
             </div>
+            <div className="flex items-center justify-center gap-[3px] h-4 w-[88%]">
+              {waveDots.map((h, i) => (
+                <div
+                  key={i}
+                  className="w-[2.5px] rounded-full bg-white opacity-100 transition-all duration-150"
+                  style={{ height: `${h}px` }}
+                />
+              ))}
+            </div>
+            {isWeChat() && (
+              <div className="text-white text-xs mt-4 opacity-80">
+                点击空白处可手动关闭
+              </div>
+            )}
           </div>
-        </>
+        </div>
       )}
 
-      {/* 输入框容器：增强关闭逻辑 */}
+      {/* 输入框容器：样式不变，加点击关闭弹框 */}
       <div
         className={cn(
           'relative z-10 rounded-full border border-gray-200 bg-white py-2.5 px-4 shadow-sm transition-all',
@@ -542,11 +450,6 @@ const ChatInputArea = ({
         onClick={() => {
           if (recordingAnim) {
             forceCloseRecording() // 点击输入框关闭弹框
-          }
-        }}
-        onTouchEnd={() => {
-          if (recordingAnim) {
-            forceCloseRecording()
           }
         }}
       >

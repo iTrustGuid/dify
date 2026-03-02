@@ -41,44 +41,24 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
       setOriginDuration(p => p + 1)
     }, 1000, { enabled: startRecord })
 
-    // 开始录音 - 增强错误处理
+    // 开始录音
     const handleStartRecord = useCallback(async () => {
       try {
         if (recorder.current) {
           recorder.current.destroy()
           recorder.current = null
         }
-        
-        // 先检测麦克风权限
-        const permission = await navigator.permissions.query({ 
-          name: 'microphone' as PermissionName 
-        })
-        
-        // 如果权限被拒绝，直接调用取消回调
-        if (permission.state === 'denied') {
-          onCancel()
-          return
-        }
-        
         recorder.current = new Recorder({
           sampleBits: 16,
           sampleRate: 16000,
           numChannels: 1,
           compiling: false,
         })
-        
-        // 微信环境下，授权后可能需要延迟启动录音
-        if (/MicroMessenger/i.test(navigator.userAgent)) {
-          await new Promise(resolve => setTimeout(resolve, 300))
-        }
-        
         await recorder.current.start()
         setStartRecord(true)
         setOriginDuration(0)
       } catch (err) {
-        console.error('录音启动失败:', err)
-        // 确保错误时也关闭弹框
-        onCancel()
+        onCancel() // 授权失败时关闭弹框
       }
     }, [onCancel])
 
@@ -114,18 +94,12 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
         const res = await audioToText(url, isPublic, formData)
         onConverted(res?.text || '')
       } catch (e) {
-        console.error('语音识别失败:', e)
         onConverted('')
       } finally {
         setStartConvert(false)
         setStartRecord(false)
         setOriginDuration(0)
-        if (recorder.current) {
-          try {
-            recorder.current.destroy()
-          } catch (err) {}
-          recorder.current = null
-        }
+        recorder.current = null
       }
     }, [startRecord, onConverted, onCancel, params.appId, params.token, pathname, wordTimestamps])
 
@@ -137,10 +111,7 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
     useEffect(() => {
       return () => {
         if (recorder.current) {
-          try { 
-            recorder.current.stop(); 
-            recorder.current.destroy() 
-          } catch {}
+          try { recorder.current.stop(); recorder.current.destroy() } catch {}
           recorder.current = null
         }
       }
