@@ -8,7 +8,6 @@ import ActionButton from '@/app/components/base/action-button'
 import { FileUploaderInChatInput } from '@/app/components/base/file-uploader'
 import type { FileUpload } from '@/app/components/base/features/types'
 
-// 适配原始props（移除多余参数，保留核心）
 type OperationProps = {
   fileConfig?: FileUpload
   speechToTextConfig?: EnableType
@@ -16,12 +15,12 @@ type OperationProps = {
   toggleVoiceMode: () => void
   onMicLongPress: (isClick?: boolean, e?: React.MouseEvent | React.TouchEvent) => void
   onMicEnd: (e?: React.MouseEvent | React.TouchEvent) => void
-  onSend: () => void // 原始发送函数
+  onSend: () => void
   theme?: Theme | null
   ref?: Ref<HTMLDivElement>
   isMobile?: boolean
-  onButtonClick: () => void // 关闭键盘函数
-  onShowVoiceInput?: () => void // 原始语音输入触发函数
+  onButtonClick: (e?: React.MouseEvent | React.TouchEvent) => void
+  onShowVoiceInput?: () => void
 }
 
 const Operation: FC<OperationProps> = ({
@@ -36,20 +35,21 @@ const Operation: FC<OperationProps> = ({
   theme,
   isMobile = false,
   onButtonClick,
-  onShowVoiceInput // 原始语音输入函数
+  onShowVoiceInput
 }) => {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const isLongPressTriggered = useRef(false)
   const LONG_PRESS_DELAY = 300
 
-  // 单击麦克风：适配原始逻辑 + 关闭键盘
-  const handleMicClick = useCallback(() => {
-    onButtonClick() // 点击立即关闭键盘
+  // 修复：只阻止冒泡，不阻止默认行为
+  const handleMicClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation() // 只阻止冒泡
+    onButtonClick(e)
+    
     if (isLongPressTriggered.current) {
       isLongPressTriggered.current = false
       return
     }
-    // 优先调用原始语音输入函数
     if (onShowVoiceInput) {
       onShowVoiceInput()
     } else {
@@ -57,16 +57,21 @@ const Operation: FC<OperationProps> = ({
     }
   }, [toggleVoiceMode, isLongPressTriggered, onButtonClick, onShowVoiceInput])
 
-  // 长按麦克风：保留优化逻辑
+  // 修复：长按只阻止冒泡
   const handleTouchStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    e.stopPropagation()
+    onButtonClick(e)
+    
     isLongPressTriggered.current = false
     longPressTimer.current = setTimeout(() => {
       isLongPressTriggered.current = true
       onMicLongPress(false, e)
     }, LONG_PRESS_DELAY)
-  }, [onMicLongPress])
+  }, [onMicLongPress, onButtonClick])
 
   const handleTouchEnd = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    e.stopPropagation()
+    
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
@@ -79,9 +84,10 @@ const Operation: FC<OperationProps> = ({
     e.stopPropagation()
   }, [])
 
-  // 文件上传按钮点击：关闭键盘
-  const handleFileUploadClick = useCallback(() => {
-    onButtonClick() // 点击文件按钮关闭键盘
+  // 修复：文件上传只阻止冒泡
+  const handleFileUploadClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onButtonClick(e)
   }, [onButtonClick])
 
   return (
@@ -96,16 +102,14 @@ const Operation: FC<OperationProps> = ({
         WebkitTouchCallout: 'none'
       }}
     >
-      {/* 核心：文件上传按钮（还原原始逻辑 + 关闭键盘） */}
       {fileConfig?.enabled && (
         <FileUploaderInChatInput 
           fileConfig={fileConfig} 
           style={{ pointerEvents: 'auto' }}
-          onClick={handleFileUploadClick} // 点击关闭键盘
+          onClick={handleFileUploadClick}
         />
       )}
 
-      {/* 麦克风按钮（适配原始逻辑） */}
       {speechToTextConfig?.enabled && (
         <ActionButton
           size="sm"
@@ -128,15 +132,14 @@ const Operation: FC<OperationProps> = ({
         </ActionButton>
       )}
 
-      {/* 发送按钮（还原原始逻辑 + 关闭键盘） */}
       {!voiceMode && (
         <Button
           className="w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center p-0 border-none"
           variant="primary"
           onClick={(e) => {
-            e.stopPropagation()
-            onButtonClick() // 点击关闭键盘
-            onSend() // 调用原始发送函数
+            e.stopPropagation() // 只阻止冒泡
+            onButtonClick(e)
+            onSend()
           }}
           style={{
             backgroundColor: theme?.primaryColor || '#0071e3',
