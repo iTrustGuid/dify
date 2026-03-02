@@ -89,7 +89,7 @@ const ChatInputArea = ({
   const isTouching = useRef(false)
   const isLongPressing = useRef(false)
 
-  // 核心状态：只控制弹框显隐，样式完全保留
+  // 核心状态：只控制弹框显隐
   const [recordingAnim, setRecordingAnim] = useState(false)
   const [dragY, setDragY] = useState(0)
   const voiceInputRef = useRef<VoiceInputRef | null>(null)
@@ -146,98 +146,106 @@ const ChatInputArea = ({
     setWaveDots(Array(60).fill(0))
   }, [])
 
-  // ========== 核心修复：强制关闭弹框（只改逻辑，不改样式） ==========
+  // ========== 核心修复：强制关闭弹框（保证100%执行） ==========
   const forceCloseRecording = useCallback(() => {
-    // 清空计时器
+    // 1. 清空所有计时器（优先级最高）
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+    if (waveInterval.current) {
+      clearInterval(waveInterval.current)
+      waveInterval.current = null
+    }
+    
+    // 2. 重置所有状态（同步执行，不依赖任何条件）
+    isLongPressTriggered.current = false
+    isLongPressing.current = false
+    isTouching.current = false
+    setRecordingAnim(false) // 直接关闭弹框
+    stopWaveAnimation()
+    setDragY(0)
+    blurTextarea()
+
+    // 3. 微信环境额外兜底（立即执行，无延迟）
+    if (isWeChat()) {
+      setRecordingAnim(false)
+      stopWaveAnimation()
+    }
+  }, [stopWaveAnimation, blurTextarea])
+
+  // ========== 长按开始（简化逻辑，只做必要操作） ==========
+  const handleRecordPressStart = useCallback((isClick = false, e?: React.MouseEvent | React.TouchEvent) => {
+    // 前置校验：有一个不满足就直接返回
+    if (isClick || disabled || isResponding || recordingAnim || isLongPressing.current) return
+    
+    // 标记长按状态
+    isLongPressing.current = true
+    isTouching.current = e?.type === 'touchstart' || false
+    blurTextarea()
+
+    // 重置长按触发标记
+    isLongPressTriggered.current = false
+
+    // 启动长按计时器
+    longPressTimer.current = setTimeout(() => {
+      isLongPressTriggered.current = true
+      setRecordingAnim(true) // 显示弹框
+      startWaveAnimation()
+      // 开始录音（失败也不影响弹框关闭）
+      try {
+        voiceInputRef.current?.start()
+      } catch (err) {
+        console.error('录音启动失败:', err)
+      }
+    }, LONG_PRESS_DELAY)
+  }, [disabled, isResponding, recordingAnim, startWaveAnimation, blurTextarea])
+
+  // ========== 长按结束（核心修复：无论如何都关闭弹框） ==========
+  const handleRecordPressEnd = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
+    // 1. 立即清空计时器（不管任何条件）
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
     
-    // 重置状态（只改值，不改样式）
-    isLongPressTriggered.current = false
-    isLongPressing.current = false
+    // 2. 重置触摸/长按状态
     isTouching.current = false
-    setRecordingAnim(false)
-    stopWaveAnimation()
-    setDragY(0)
-    blurTextarea()
+    isLongPressing.current = false
 
-    // 微信环境授权后强制关闭弹框
-    if (isWeChat()) {
-      setTimeout(() => {
-        setRecordingAnim(false)
-        stopWaveAnimation()
-      }, 100)
-    }
-  }, [stopWaveAnimation, blurTextarea])
-
-  // ========== 长按开始（恢复弹框触发） ==========
-  const handleRecordPressStart = useCallback((isClick = false, e?: React.MouseEvent | React.TouchEvent) => {
-    if (isClick || disabled || isResponding || recordingAnim) return
-    
-    isLongPressing.current = true
-    blurTextarea()
-
-    if (e && 'touches' in e) {
-      isTouching.current = true
-      e.preventDefault()
+    // 3. 如果长按没触发（只是单击），恢复焦点
+    if (!isLongPressTriggered.current) {
+      setTimeout(() => focusTextarea(), 100)
+      return
     }
 
-    isLongPressTriggered.current = false
+    // 4. 强制关闭弹框（核心：这行必须优先执行）
+    forceCloseRecording()
 
-    longPressTimer.current = setTimeout(() => {
-      isLongPressTriggered.current = true
-      setRecordingAnim(true) // 弹框显示（样式不变）
-      startWaveAnimation()
-
-      // 开始录音（触发微信授权）
-      voiceInputRef.current?.start()
-    }, LONG_PRESS_DELAY)
-  }, [disabled, isResponding, recordingAnim, startWaveAnimation, blurTextarea])
-
-  // ========== 长按结束（恢复弹框关闭） ==========
-  const handleRecordPressEnd = useCallback(
-    (e?: React.MouseEvent | React.TouchEvent) => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current)
-        longPressTimer.current = null
-      }
-      
-      isTouching.current = false
-      isLongPressing.current = false
-
-      if (!isLongPressTriggered.current) {
-        setTimeout(() => focusTextarea(), 100)
-        return
-      }
-
-      blurTextarea()
-      const cancelSend = dragY < -30
-      
-      // 强制关闭弹框
-      forceCloseRecording()
-
-      if (cancelSend) {
-        notify({ type: 'info', message: '已取消发送' })
-        return
-      }
-
-      // 正常停止录音
-      setTimeout(() => {
+    // 5. 处理取消发送逻辑
+    const cancelSend = dragY < -30
+    if (cancelSend) {
+      notify({ type: 'info', message: '已取消发送' })
+      // 停止录音
+      try {
         voiceInputRef.current?.stop()
-      }, 100)
-    },
-    [dragY, notify, focusTextarea, blurTextarea, forceCloseRecording]
-  )
+      } catch (err) {}
+      return
+    }
 
-  // ========== 滑动处理（样式不变） ==========
+    // 6. 正常停止录音（延迟执行，避免阻塞弹框关闭）
+    setTimeout(() => {
+      try {
+        voiceInputRef.current?.stop()
+      } catch (err) {
+        console.error('录音停止失败:', err)
+      }
+    }, 50)
+  }, [dragY, notify, focusTextarea, forceCloseRecording])
+
+  // ========== 滑动处理（简化，只更新位置） ==========
   const handleRecordMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!recordingAnim || !isLongPressTriggered.current) return
-    
-    if ('touches' in e) {
-      e.preventDefault()
-    }
     
     let y = 0
     if ('touches' in e && e.touches.length > 0) {
@@ -250,9 +258,11 @@ const ChatInputArea = ({
     blurTextarea()
   }, [recordingAnim, blurTextarea])
 
-  // ========== 语音转换完成 ==========
+  // ========== 语音转换完成（强制关闭弹框） ==========
   const handleVoiceConverted = useCallback((voiceText: string) => {
-    forceCloseRecording() // 转换完成关闭弹框
+    // 转换完成立即关闭弹框（不管任何条件）
+    forceCloseRecording()
+    
     if (!onSend || dragY < -30) return
     if (!voiceText?.trim()) {
       notify({ type: 'info', message: '未识别到文字' })
@@ -272,12 +282,12 @@ const ChatInputArea = ({
     }, 50)
   }, [onSend, dragY, isResponding, filesStore, checkInputsForm, inputs, inputsForm, notify, blurTextarea, forceCloseRecording])
 
-  // ========== VoiceInput取消回调（只关弹框） ==========
+  // ========== VoiceInput取消回调（直接关闭弹框） ==========
   const handleVoiceCancel = useCallback(() => {
     forceCloseRecording()
   }, [forceCloseRecording])
 
-  // ========== 其他逻辑（完全保留） ==========
+  // ========== 其他逻辑（保留） ==========
   const handleQueryChange = useCallback(
     (value: string) => {
       setQuery(value)
@@ -286,23 +296,28 @@ const ChatInputArea = ({
     [handleTextareaResize],
   )
 
+  // ========== 全局兜底：页面卸载/切换时关闭弹框 ==========
   useEffect(() => {
     return () => {
-      if (waveInterval.current) clearInterval(waveInterval.current)
-      if (longPressTimer.current) clearTimeout(longPressTimer.current)
-      forceCloseRecording()
+      forceCloseRecording() // 页面卸载必关弹框
     }
   }, [forceCloseRecording])
 
-  const toggleVoiceMode = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
+  // ========== 全局监听：ESC键关闭弹框（浏览器端） ==========
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && recordingAnim) {
+        forceCloseRecording()
+      }
     }
-    isLongPressTriggered.current = false
-    isLongPressing.current = false
-    isTouching.current = false
-    
+    window.addEventListener('keydown', handleEscKey)
+    return () => {
+      window.removeEventListener('keydown', handleEscKey)
+    }
+  }, [recordingAnim, forceCloseRecording])
+
+  const toggleVoiceMode = useCallback(() => {
+    forceCloseRecording() // 切换模式时先关弹框
     setVoiceMode(prev => {
       const newMode = !prev
       setTimeout(() => {
@@ -315,7 +330,7 @@ const ChatInputArea = ({
       return newMode
     })
     setQuery('')
-  }, [focusTextarea, blurTextarea])
+  }, [focusTextarea, blurTextarea, forceCloseRecording])
 
   const handleContextMenu = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (isMobile()) {
@@ -367,7 +382,7 @@ const ChatInputArea = ({
     }
   }, [recordingAnim, blurTextarea])
 
-  // ========== 操作栏（仅修复麦克风长按事件绑定） ==========
+  // ========== 操作栏 ==========
   const operation = (
     <Operation
       ref={holdSpaceRef}
@@ -375,7 +390,6 @@ const ChatInputArea = ({
       speechToTextConfig={speechToTextConfig}
       voiceMode={voiceMode}
       toggleVoiceMode={toggleVoiceMode}
-      // 👇 核心修复：麦克风长按事件强制传isClick=false
       onMicLongPress={() => handleRecordPressStart(false)}
       onMicEnd={handleRecordPressEnd}
       onSend={() => {
@@ -390,18 +404,14 @@ const ChatInputArea = ({
     />
   )
 
-  // ========== 渲染部分（样式100%还原，只加点击关闭逻辑） ==========
+  // ========== 渲染部分（关键：弹框添加全局点击关闭） ==========
   return (
     <>
-      {/* 录音弹框：样式完全保留，只加点击关闭逻辑 */}
+      {/* 录音弹框：添加全局点击关闭，优先级最高 */}
       {recordingAnim && (
         <div 
-          className="fixed bottom-0 left-0 right-0 z-50 pointer-events-auto"
-          onContextMenu={handleContextMenu}
-          onClick={(e) => {
-            e.stopPropagation()
-            forceCloseRecording() // 点击弹框任意位置关闭
-          }}
+          className="fixed inset-0 z-50 pointer-events-auto flex items-end justify-center"
+          onClick={() => forceCloseRecording()} // 点击弹框外/内都关闭
         >
           <div
             className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-700 via-blue-600 to-blue-500/70"
@@ -415,7 +425,6 @@ const ChatInputArea = ({
           />
           <div 
             className="relative z-10 w-full flex flex-col items-center justify-end pb-14 h-[180px]"
-            onClick={(e) => e.stopPropagation()} // 修复：内部子元素阻止冒泡，避免误触关闭
           >
             <div className="text-white text-lg font-medium mb-5">
               {dragY < -30 ? '松开取消' : '松手发送，上移取消'}
@@ -438,7 +447,7 @@ const ChatInputArea = ({
         </div>
       )}
 
-      {/* 输入框容器：样式不变，加点击关闭弹框 */}
+      {/* 输入框容器：添加触摸禁止滚动 */}
       <div
         className={cn(
           'relative z-10 rounded-full border border-gray-200 bg-white py-2.5 px-4 shadow-sm transition-all',
@@ -446,11 +455,10 @@ const ChatInputArea = ({
           disabled && 'opacity-50 pointer-events-none',
           recordingAnim && 'opacity-30',
         )}
+        style={{ touchAction: 'none' }} // 禁止滚动，避免事件冲突
         onContextMenu={handleContextMenu}
         onClick={() => {
-          if (recordingAnim) {
-            forceCloseRecording() // 点击输入框关闭弹框
-          }
+          if (recordingAnim) forceCloseRecording() // 点击输入框关闭弹框
         }}
       >
         <div className="w-full flex items-center justify-between">
@@ -458,24 +466,12 @@ const ChatInputArea = ({
             <div
               className="w-full h-9 flex items-center justify-center"
               onContextMenu={handleContextMenu}
-              onTouchStart={(e) => {
-                handleRecordPressStart(false, e)
-              }}
-              onTouchEnd={(e) => {
-                handleRecordPressEnd(e)
-              }}
-              onTouchMove={(e) => {
-                handleRecordMove(e)
-              }}
-              onMouseDown={(e) => {
-                handleRecordPressStart(false, e)
-              }}
-              onMouseUp={(e) => {
-                handleRecordPressEnd(e)
-              }}
-              onMouseLeave={(e) => {
-                handleRecordPressEnd(e)
-              }}
+              onTouchStart={(e) => handleRecordPressStart(false, e)}
+              onTouchEnd={(e) => handleRecordPressEnd(e)}
+              onTouchMove={(e) => handleRecordMove(e)}
+              onMouseDown={(e) => handleRecordPressStart(false, e)}
+              onMouseUp={(e) => handleRecordPressEnd(e)}
+              onMouseLeave={(e) => handleRecordPressEnd(e)}
             >
               <span className="text-sm text-gray-500">按住说话</span>
               <div className="absolute right-0 top-1/2 translate-y-[-50%]">
@@ -488,24 +484,12 @@ const ChatInputArea = ({
               className="flex-1 flex items-center gap-2"
               onClick={handleInputClick}
               onContextMenu={handleContextMenu}
-              onTouchStart={(e) => {
-                handleInputLongPressStart(e)
-              }}
-              onTouchEnd={(e) => {
-                handleInputLongPressEnd(e)
-              }}
-              onTouchMove={(e) => {
-                handleRecordMove(e)
-              }}
-              onMouseDown={(e) => {
-                handleInputLongPressStart(e)
-              }}
-              onMouseUp={(e) => {
-                handleInputLongPressEnd(e)
-              }}
-              onMouseLeave={(e) => {
-                handleInputLongPressEnd(e)
-              }}
+              onTouchStart={(e) => handleInputLongPressStart(e)}
+              onTouchEnd={(e) => handleInputLongPressEnd(e)}
+              onTouchMove={(e) => handleRecordMove(e)}
+              onMouseDown={(e) => handleInputLongPressStart(e)}
+              onMouseUp={(e) => handleInputLongPressEnd(e)}
+              onMouseLeave={(e) => handleInputLongPressEnd(e)}
             >
               <div className="flex-1 relative">
                 <div ref={textValueRef} className="invisible absolute whitespace-pre px-1 text-sm">
@@ -541,7 +525,7 @@ const ChatInputArea = ({
         <VoiceInput
           ref={voiceInputRef}
           onConverted={handleVoiceConverted}
-          onCancel={handleVoiceCancel} // 绑定取消回调
+          onCancel={handleVoiceCancel}
           style={{ display: 'none' }}
         />
       </div>

@@ -37,7 +37,7 @@ const Operation: FC<OperationProps> = ({
   const isLongPressTriggered = useRef(false)
   const LONG_PRESS_DELAY = 300
 
-  // 单击：只切换
+  // 单击：只切换模式，不触发长按
   const handleMicClick = useCallback(() => {
     if (isLongPressTriggered.current) {
       isLongPressTriggered.current = false
@@ -46,22 +46,24 @@ const Operation: FC<OperationProps> = ({
     toggleVoiceMode()
   }, [toggleVoiceMode])
 
-  // 长按开始
+  // 长按开始：只记录，不立即触发
   const handleTouchStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     isLongPressTriggered.current = false
-
+    // 启动长按计时器
     longPressTimer.current = setTimeout(() => {
       isLongPressTriggered.current = true
-      onMicLongPress(false, e) // 真正长按才弹框
+      onMicLongPress(false, e) // 真正长按才触发弹框
     }, LONG_PRESS_DELAY)
   }, [onMicLongPress])
 
-  // 长按结束 / 离开
+  // 长按结束：必须执行，不管任何条件
   const handleTouchEnd = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    // 清空计时器
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
+    // 执行结束逻辑
     onMicEnd(e)
   }, [onMicEnd])
 
@@ -88,6 +90,7 @@ const Operation: FC<OperationProps> = ({
           onClick={handleMicClick}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd} // 新增：触摸取消时也执行
           onTouchMove={handleTouchEnd}
           onMouseDown={handleTouchStart}
           onMouseUp={handleTouchEnd}
