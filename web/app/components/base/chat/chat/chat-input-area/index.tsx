@@ -110,7 +110,32 @@ const ChatInputArea = ({
   } = useFile(visionConfig!)
   const { checkInputsForm } = useCheckInputsForms()
 
-  // ========== 新增：禁用长按默认行为 + 关闭键盘核心函数 ==========
+  // ========== 增强：通用关闭键盘函数（确保兼容性） ==========
+  const closeKeyboard = useCallback(() => {
+    // 1. 输入框失焦
+    if (textareaRef.current) {
+      textareaRef.current.blur()
+    }
+    
+    // 2. 移动端主动失焦当前激活元素
+    if (isMobile() && document.activeElement) {
+      ;(document.activeElement as HTMLElement).blur()
+    }
+    
+    // 3. 微信环境特殊处理
+    if (isWeChat()) {
+      setTimeout(() => {
+        document.activeElement?.blur()
+      }, 50)
+    }
+    
+    // 4. 强制隐藏键盘（兼容Android/iOS）
+    if (isMobile()) {
+      document.body.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [])
+
+  // ========== 禁用长按默认行为 + 关闭键盘核心函数 ==========
   const disableTextSelection = useCallback(() => {
     document.body.style.userSelect = 'none'
     document.body.style.WebkitUserSelect = 'none' 
@@ -134,18 +159,8 @@ const ChatInputArea = ({
 
   // 关闭键盘 + 输入框失焦
   const closeKeyboardAndBlur = useCallback(() => {
-    if (textareaRef.current) {
-      textareaRef.current.blur()
-    }
-    if (isMobile() && document.activeElement) {
-      ;(document.activeElement as HTMLElement).blur()
-    }
-    if (isWeChat()) {
-      setTimeout(() => {
-        document.activeElement?.blur()
-      }, 50)
-    }
-  }, [])
+    closeKeyboard() // 调用增强版关闭键盘函数
+  }, [closeKeyboard])
 
   // ========== 基础工具函数 ==========
   const blurTextarea = useCallback(() => {
@@ -202,12 +217,14 @@ const ChatInputArea = ({
     stopWaveAnimation()
     setDragY(0)
     blurTextarea()
-
+    closeKeyboard() // 新增：强制关闭键盘
+    
     if (isWeChat()) {
       setRecordingAnim(false)
       stopWaveAnimation()
+      closeKeyboard() // 微信环境额外确保
     }
-  }, [stopWaveAnimation, blurTextarea])
+  }, [stopWaveAnimation, blurTextarea, closeKeyboard])
 
   // ========== 长按开始 ==========
   const handleRecordPressStart = useCallback((isClick = false, e?: React.MouseEvent | React.TouchEvent) => {
@@ -216,6 +233,7 @@ const ChatInputArea = ({
     isLongPressing.current = true
     isTouching.current = e?.type === 'touchstart' || false
     blurTextarea()
+    closeKeyboard() // 新增：长按开始就关闭键盘
 
     isLongPressTriggered.current = false
 
@@ -229,7 +247,7 @@ const ChatInputArea = ({
         console.error('录音启动失败:', err)
       }
     }, LONG_PRESS_DELAY)
-  }, [disabled, isResponding, recordingAnim, startWaveAnimation, blurTextarea])
+  }, [disabled, isResponding, recordingAnim, startWaveAnimation, blurTextarea, closeKeyboard])
 
   // ========== 长按结束 ==========
   const handleRecordPressEnd = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
@@ -254,6 +272,7 @@ const ChatInputArea = ({
       try {
         voiceInputRef.current?.stop()
       } catch (err) {}
+      closeKeyboard() // 新增：取消发送也关闭键盘
       return
     }
 
@@ -263,8 +282,9 @@ const ChatInputArea = ({
       } catch (err) {
         console.error('录音停止失败:', err)
       }
+      closeKeyboard() // 新增：停止录音后确保关闭键盘
     }, 50)
-  }, [dragY, notify, focusTextarea, forceCloseRecording])
+  }, [dragY, notify, focusTextarea, forceCloseRecording, closeKeyboard])
 
   // ========== 滑动处理 ==========
   const handleRecordMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -279,11 +299,13 @@ const ChatInputArea = ({
     
     setDragY(window.innerHeight / 2 - y)
     blurTextarea()
-  }, [recordingAnim, blurTextarea])
+    closeKeyboard() // 新增：滑动时也保持键盘关闭
+  }, [recordingAnim, blurTextarea, closeKeyboard])
 
   // ========== 语音转换完成 ==========
   const handleVoiceConverted = useCallback((voiceText: string) => {
     forceCloseRecording()
+    closeKeyboard() // 新增：语音识别完成后关闭键盘
     
     if (!onSend || dragY < -30) return
     if (!voiceText?.trim()) {
@@ -292,6 +314,7 @@ const ChatInputArea = ({
         message: '未识别到文字',
         className: 'ml-4' // 保留样式：提示框左侧间距
       })
+      closeKeyboard() // 新增：未识别到文字也关闭键盘
       return
     }
     
@@ -306,13 +329,15 @@ const ChatInputArea = ({
       handleQueryChange('')
       setFiles([])
       blurTextarea()
+      closeKeyboard() // 新增：发送完成后再次确保关闭键盘
     }, 50)
-  }, [onSend, dragY, isResponding, filesStore, checkInputsForm, inputs, inputsForm, notify, blurTextarea, forceCloseRecording])
+  }, [onSend, dragY, isResponding, filesStore, checkInputsForm, inputs, inputsForm, notify, blurTextarea, forceCloseRecording, closeKeyboard])
 
   // ========== VoiceInput取消回调 ==========
   const handleVoiceCancel = useCallback(() => {
     forceCloseRecording()
-  }, [forceCloseRecording])
+    closeKeyboard() // 新增：取消语音时关闭键盘
+  }, [forceCloseRecording, closeKeyboard])
 
   // ========== 其他逻辑 ==========
   const handleQueryChange = useCallback(
@@ -329,22 +354,24 @@ const ChatInputArea = ({
     
     return () => {
       forceCloseRecording()
+      closeKeyboard() // 新增：组件卸载时关闭键盘
       cleanup()
     }
-  }, [forceCloseRecording, disableTextSelection])
+  }, [forceCloseRecording, disableTextSelection, closeKeyboard])
 
   // ========== 全局监听ESC键 ==========
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && recordingAnim) {
         forceCloseRecording()
+        closeKeyboard() // 新增：ESC关闭录音时也关闭键盘
       }
     }
     window.addEventListener('keydown', handleEscKey)
     return () => {
       window.removeEventListener('keydown', handleEscKey)
     }
-  }, [recordingAnim, forceCloseRecording])
+  }, [recordingAnim, forceCloseRecording, closeKeyboard])
 
   // ========== 处理按钮点击时关闭键盘 ==========
   const handleButtonClick = useCallback(() => {
@@ -359,6 +386,7 @@ const ChatInputArea = ({
       setTimeout(() => {
         if (newMode) {
           blurTextarea()
+          closeKeyboard() // 新增：切换到语音模式时关闭键盘
         } else {
           focusTextarea()
         }
@@ -366,7 +394,7 @@ const ChatInputArea = ({
       return newMode
     })
     setQuery('')
-  }, [focusTextarea, blurTextarea, forceCloseRecording, handleButtonClick])
+  }, [focusTextarea, blurTextarea, forceCloseRecording, handleButtonClick, closeKeyboard])
 
   const handleContextMenu = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
@@ -382,9 +410,10 @@ const ChatInputArea = ({
     if ('button' in e && e.button !== 0) return
     if (!voiceMode && !recordingAnim) {
       blurTextarea()
+      closeKeyboard() // 新增：输入框长按开始时关闭键盘
       handleRecordPressStart(false, e)
     }
-  }, [voiceMode, recordingAnim, handleRecordPressStart, blurTextarea])
+  }, [voiceMode, recordingAnim, handleRecordPressStart, blurTextarea, closeKeyboard])
 
   const handleInputLongPressEnd = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     handleRecordPressEnd(e)
@@ -404,6 +433,7 @@ const ChatInputArea = ({
       handleQueryChange('')
       setFiles([]) // 发送后清空文件
       blurTextarea()
+      closeKeyboard() // 新增：回车发送时关闭键盘
     }
   }
 
@@ -416,8 +446,9 @@ const ChatInputArea = ({
   useEffect(() => {
     if (recordingAnim) {
       blurTextarea()
+      closeKeyboard() // 新增：录音弹框显示时关闭键盘
     }
-  }, [recordingAnim, blurTextarea])
+  }, [recordingAnim, blurTextarea, closeKeyboard])
 
   // ========== 操作栏 ==========
   const operation = (
@@ -442,6 +473,7 @@ const ChatInputArea = ({
           handleQueryChange('')
           setFiles([]) // 发送后清空文件
           blurTextarea()
+          closeKeyboard() // 新增：点击发送按钮时关闭键盘
         }
       }}
       theme={theme}

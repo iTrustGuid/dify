@@ -37,6 +37,18 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
     const pathname = usePathname()
     const params = useParams()
 
+    // 新增：关闭键盘辅助函数
+    const closeKeyboard = useCallback(() => {
+      // 确保所有场景下都关闭键盘
+      if (document.activeElement) {
+        ;(document.activeElement as HTMLElement).blur()
+      }
+      // 兼容移动端特殊处理
+      if (/Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        document.body.scrollIntoView({ behavior: 'smooth' })
+      }
+    }, [])
+
     const clearInterval = useRafInterval(() => {
       setOriginDuration(p => p + 1)
     }, 1000, { enabled: startRecord })
@@ -57,13 +69,18 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
         await recorder.current.start()
         setStartRecord(true)
         setOriginDuration(0)
+        closeKeyboard() // 新增：开始录音立即关闭键盘
       } catch (err) {
+        closeKeyboard() // 新增：录音启动失败也关闭键盘
         onCancel() // 授权失败时关闭弹框
       }
-    }, [onCancel])
+    }, [onCancel, closeKeyboard])
 
     // 停止并识别
     const handleStopRecorder = useCallback(async () => {
+      // 先关闭键盘，不管识别是否成功
+      closeKeyboard()
+      
       if (!startRecord || !recorder.current) {
         onCancel()
         return
@@ -94,14 +111,15 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
         const res = await audioToText(url, isPublic, formData)
         onConverted(res?.text || '')
       } catch (e) {
-        onConverted('')
+        onConverted('') // 识别失败也调用回调
       } finally {
         setStartConvert(false)
         setStartRecord(false)
         setOriginDuration(0)
         recorder.current = null
+        closeKeyboard() // 新增：最终兜底关闭键盘
       }
-    }, [startRecord, onConverted, onCancel, params.appId, params.token, pathname, wordTimestamps])
+    }, [startRecord, onConverted, onCancel, params.appId, params.token, pathname, wordTimestamps, closeKeyboard])
 
     useImperativeHandle(ref, () => ({
       start: handleStartRecord,
@@ -111,11 +129,15 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(
     useEffect(() => {
       return () => {
         if (recorder.current) {
-          try { recorder.current.stop(); recorder.current.destroy() } catch {}
+          try { 
+            recorder.current.stop(); 
+            recorder.current.destroy();
+            closeKeyboard() // 新增：组件卸载时关闭键盘
+          } catch {}
           recorder.current = null
         }
       }
-    }, [])
+    }, [closeKeyboard])
 
     return <div className="hidden" />
   }
