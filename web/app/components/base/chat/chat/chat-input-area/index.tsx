@@ -18,7 +18,7 @@ import { useCheckInputsForms } from '../check-input-forms-hooks'
 import { useTextAreaHeight } from './hooks'
 import Operation from './operation'
 import cn from '@/utils/classnames'
-import { FileListInChatInput } from '@/app/components/base/file-uploader' // 仅新增：文件回显组件
+import { FileListInChatInput } from '@/app/components/base/file-uploader'
 import { useFile } from '@/app/components/base/file-uploader/hooks'
 import {
   FileContextProvider,
@@ -89,6 +89,11 @@ const ChatInputArea = ({
   const isLongPressTriggered = useRef(false)
   const isTouching = useRef(false)
   const isLongPressing = useRef(false)
+  
+  // 新增：记录长按起始位置
+  const pressStartY = useRef<number>(0)
+  // 新增：取消阈值（调大一点，避免轻微滑动就触发）
+  const CANCEL_THRESHOLD = -50 // 从-30调整为-50，需要更大的上滑距离才取消
 
   // 核心状态：只控制弹框显隐
   const [recordingAnim, setRecordingAnim] = useState(false)
@@ -216,6 +221,7 @@ const ChatInputArea = ({
     setRecordingAnim(false)
     stopWaveAnimation()
     setDragY(0)
+    pressStartY.current = 0 // 重置起始位置
     blurTextarea()
     closeKeyboard() // 新增：强制关闭键盘
     
@@ -230,6 +236,15 @@ const ChatInputArea = ({
   const handleRecordPressStart = useCallback((isClick = false, e?: React.MouseEvent | React.TouchEvent) => {
     if (isClick || disabled || isResponding || recordingAnim || isLongPressing.current) return
     
+    // 记录长按起始Y坐标
+    if (e) {
+      if ('touches' in e && e.touches.length > 0) {
+        pressStartY.current = e.touches[0].clientY
+      } else if ('clientY' in e) {
+        pressStartY.current = e.clientY
+      }
+    }
+
     isLongPressing.current = true
     isTouching.current = e?.type === 'touchstart' || false
     blurTextarea()
@@ -266,7 +281,8 @@ const ChatInputArea = ({
 
     forceCloseRecording()
 
-    const cancelSend = dragY < -30
+    // 修改：使用更大的阈值判断取消
+    const cancelSend = dragY < CANCEL_THRESHOLD
     if (cancelSend) {
       notify({ type: 'info', message: '已取消发送' })
       try {
@@ -284,20 +300,27 @@ const ChatInputArea = ({
       }
       closeKeyboard() // 新增：停止录音后确保关闭键盘
     }, 50)
-  }, [dragY, notify, focusTextarea, forceCloseRecording, closeKeyboard])
+  }, [dragY, notify, focusTextarea, forceCloseRecording, closeKeyboard, CANCEL_THRESHOLD])
 
-  // ========== 滑动处理 ==========
+  // ========== 滑动处理（核心修复） ==========
   const handleRecordMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!recordingAnim || !isLongPressTriggered.current) return
     
-    let y = 0
+    let currentY = 0
     if ('touches' in e && e.touches.length > 0) {
-      y = e.touches[0].clientY
+      currentY = e.touches[0].clientY
     } else if ('clientY' in e) {
-      y = e.clientY
+      currentY = e.clientY
     }
     
-    setDragY(window.innerHeight / 2 - y)
+    // 修改：基于起始位置计算偏移，而非屏幕中间
+    // 上滑为负，下滑为正
+    const offsetY = pressStartY.current - currentY
+    // 限制：只有偏移超过10px才更新dragY，过滤微小移动
+    if (Math.abs(offsetY) > 10) {
+      setDragY(offsetY)
+    }
+
     blurTextarea()
     closeKeyboard() // 新增：滑动时也保持键盘关闭
   }, [recordingAnim, blurTextarea, closeKeyboard])
@@ -307,7 +330,8 @@ const ChatInputArea = ({
     forceCloseRecording()
     closeKeyboard() // 新增：语音识别完成后关闭键盘
     
-    if (!onSend || dragY < -30) return
+    // 修改：使用更大的阈值判断取消
+    if (!onSend || dragY < CANCEL_THRESHOLD) return
     if (!voiceText?.trim()) {
       notify({ 
         type: 'info', 
@@ -331,7 +355,7 @@ const ChatInputArea = ({
       blurTextarea()
       closeKeyboard() // 新增：发送完成后再次确保关闭键盘
     }, 50)
-  }, [onSend, dragY, isResponding, filesStore, checkInputsForm, inputs, inputsForm, notify, blurTextarea, forceCloseRecording, closeKeyboard])
+  }, [onSend, dragY, isResponding, filesStore, checkInputsForm, inputs, inputsForm, notify, blurTextarea, forceCloseRecording, closeKeyboard, CANCEL_THRESHOLD])
 
   // ========== VoiceInput取消回调 ==========
   const handleVoiceCancel = useCallback(() => {
@@ -416,6 +440,15 @@ const ChatInputArea = ({
   }, [voiceMode, recordingAnim, handleRecordPressStart, blurTextarea, closeKeyboard])
 
   const handleInputLongPressEnd = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    // 修改：只有真正离开按钮区域才触发结束，避免轻微移动就结束
+    if (e && 'relatedTarget' in e && e.relatedTarget) {
+      const target = e.target as HTMLElement
+      const relatedTarget = e.relatedTarget as HTMLElement
+      // 判断是否还在按钮/弹框区域内
+      if (target.closest('.chat-input-area') || relatedTarget.closest('.chat-input-area')) {
+        return // 还在区域内，不触发结束
+      }
+    }
     handleRecordPressEnd(e)
   }, [handleRecordPressEnd])
 
@@ -485,10 +518,10 @@ const ChatInputArea = ({
   // ========== 渲染部分（核心：仅新增文件回显组件，保留所有样式） ==========
   return (
     <>
-      {/* 录音弹框（保留所有样式） */}
+      {/* 录音弹框（保留所有样式，新增class便于判断区域） */}
       {recordingAnim && (
         <div 
-          className="fixed inset-0 z-50 pointer-events-auto flex items-end justify-center"
+          className="fixed inset-0 z-50 pointer-events-auto flex items-end justify-center chat-input-area"
           onClick={() => forceCloseRecording()}
           onContextMenu={handleContextMenu}
           style={{
@@ -512,7 +545,8 @@ const ChatInputArea = ({
             className="relative z-10 w-full flex flex-col items-center justify-end pb-14 h-[180px]"
           >
             <div className="text-white text-lg font-medium mb-5">
-              {dragY < -30 ? '松开取消' : '松手发送，上移取消'}
+              {/* 修改：显示当前阈值提示 */}
+              {dragY < CANCEL_THRESHOLD ? '松开取消' : '松手发送，上移取消'}
             </div>
             <div className="flex items-center justify-center gap-[3px] h-4 w-[88%]">
               {waveDots.map((h, i) => (
@@ -532,10 +566,10 @@ const ChatInputArea = ({
         </div>
       )}
 
-      {/* 输入框容器（保留所有样式，仅新增文件拖拽事件） */}
+      {/* 输入框容器（保留所有样式，仅新增文件拖拽事件，新增class） */}
       <div
         className={cn(
-          'relative z-10 rounded-full border border-gray-200 bg-white py-2.5 px-4 shadow-sm transition-all',
+          'relative z-10 rounded-full border border-gray-200 bg-white py-2.5 px-4 shadow-sm transition-all chat-input-area',
           isDragActive && 'border-dashed border-blue-400',
           disabled && 'opacity-50 pointer-events-none',
           recordingAnim && 'opacity-30',
@@ -562,7 +596,7 @@ const ChatInputArea = ({
         <div className="w-full flex items-center justify-between">
           {voiceMode ? (
             <div
-              className="w-full h-9 flex items-center justify-center"
+              className="w-full h-9 flex items-center justify-center chat-input-area"
               onContextMenu={handleContextMenu}
               onTouchStart={(e) => handleRecordPressStart(false, e)}
               onTouchEnd={(e) => handleRecordPressEnd(e)}
@@ -584,7 +618,7 @@ const ChatInputArea = ({
           ) : (
             <div
               ref={wrapperRef}
-              className="flex-1 flex items-center gap-2"
+              className="flex-1 flex items-center gap-2 chat-input-area"
               onClick={handleInputClick}
               onContextMenu={handleContextMenu}
               onTouchStart={(e) => handleInputLongPressStart(e)}
@@ -605,7 +639,7 @@ const ChatInputArea = ({
                 <Textarea
                   ref={ref => textareaRef.current = ref as any}
                   className="w-full resize-none bg-transparent px-1 text-sm outline-none text-gray-800"
-                  placeholder={decode(t('common.chat.inputPlaceholder', { botName }) || '聊天')}
+                  placeholder={decode(t('common.chat.inputPlaceholder') || '发消息或按住说话...')}
                   minRows={1} maxRows={4}
                   value={query}
                   onChange={e => handleQueryChange(e.target.value)}

@@ -41,6 +41,8 @@ const Operation: FC<OperationProps> = ({
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const isLongPressTriggered = useRef(false)
   const LONG_PRESS_DELAY = 300
+  // 新增：记录麦克风按钮起始位置
+  const micPressStartY = useRef<number>(0)
 
   // 单击麦克风：适配原始逻辑 + 关闭键盘
   const handleMicClick = useCallback(() => {
@@ -57,8 +59,15 @@ const Operation: FC<OperationProps> = ({
     }
   }, [toggleVoiceMode, isLongPressTriggered, onButtonClick, onShowVoiceInput])
 
-  // 长按麦克风：保留优化逻辑
+  // 长按麦克风：保留优化逻辑，记录起始位置
   const handleTouchStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    // 记录麦克风按钮长按起始位置
+    if ('touches' in e && e.touches.length > 0) {
+      micPressStartY.current = e.touches[0].clientY
+    } else if ('clientY' in e) {
+      micPressStartY.current = e.clientY
+    }
+
     isLongPressTriggered.current = false
     longPressTimer.current = setTimeout(() => {
       isLongPressTriggered.current = true
@@ -66,13 +75,43 @@ const Operation: FC<OperationProps> = ({
     }, LONG_PRESS_DELAY)
   }, [onMicLongPress])
 
+  // 修改：优化触摸结束逻辑，避免轻微移动就触发
   const handleTouchEnd = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
+    
+    // 只有真正离开按钮区域才触发结束
+    if (e && 'relatedTarget' in e && e.relatedTarget) {
+      const target = e.target as HTMLElement
+      const relatedTarget = e.relatedTarget as HTMLElement
+      if (target.closest('.action-button') || relatedTarget.closest('.action-button')) {
+        return
+      }
+    }
+    
     onMicEnd(e)
   }, [onMicEnd])
+
+  // 新增：优化触摸移动逻辑，只在超出范围时才触发结束
+  const handleTouchMove = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    // 只有长按触发后才处理移动
+    if (!isLongPressTriggered.current) return
+    
+    let currentY = 0
+    if ('touches' in e && e.touches.length > 0) {
+      currentY = e.touches[0].clientY
+    } else if ('clientY' in e) {
+      currentY = e.clientY
+    }
+    
+    // 只有移动超过50px才触发结束（避免轻微移动）
+    const offsetY = micPressStartY.current - currentY
+    if (Math.abs(offsetY) > 50) {
+      handleTouchEnd(e)
+    }
+  }, [handleTouchEnd, isLongPressTriggered])
 
   const handleContextMenu = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
@@ -105,16 +144,16 @@ const Operation: FC<OperationProps> = ({
         />
       )}
 
-      {/* 麦克风按钮（适配原始逻辑） */}
+      {/* 麦克风按钮（适配原始逻辑，新增class） */}
       {speechToTextConfig?.enabled && (
         <ActionButton
           size="sm"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 action-button"
           onClick={handleMicClick}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchEnd}
-          onTouchMove={handleTouchEnd}
+          onTouchMove={handleTouchMove} // 新增：处理触摸移动
           onMouseDown={handleTouchStart}
           onMouseUp={handleTouchEnd}
           onMouseLeave={handleTouchEnd}
