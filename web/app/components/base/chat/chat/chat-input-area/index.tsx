@@ -98,6 +98,8 @@ const ChatInputArea = ({
   // 核心状态：只控制弹框显隐
   const [recordingAnim, setRecordingAnim] = useState(false)
   const [dragY, setDragY] = useState(0)
+  // 修复：新增isOutOfBoundary状态，用于判断是否超出边界
+  const [isOutOfBoundary, setIsOutOfBoundary] = useState(false)
   const voiceInputRef = useRef<VoiceInputRef | null>(null)
 
   const [waveDots, setWaveDots] = useState<number[]>(Array(60).fill(0))
@@ -221,6 +223,7 @@ const ChatInputArea = ({
     setRecordingAnim(false)
     stopWaveAnimation()
     setDragY(0)
+    setIsOutOfBoundary(false) // 修复：重置边界状态
     pressStartY.current = 0 // 重置起始位置
     blurTextarea()
     closeKeyboard() // 新增：强制关闭键盘
@@ -282,7 +285,7 @@ const ChatInputArea = ({
     forceCloseRecording()
 
     // 修改：使用更大的阈值判断取消
-    const cancelSend = dragY < CANCEL_THRESHOLD
+    const cancelSend = dragY < CANCEL_THRESHOLD || isOutOfBoundary // 修复：加入边界判断
     if (cancelSend) {
       notify({ type: 'info', message: '已取消发送' })
       try {
@@ -300,9 +303,9 @@ const ChatInputArea = ({
       }
       closeKeyboard() // 新增：停止录音后确保关闭键盘
     }, 50)
-  }, [dragY, notify, focusTextarea, forceCloseRecording, closeKeyboard, CANCEL_THRESHOLD])
+  }, [dragY, isOutOfBoundary, notify, focusTextarea, forceCloseRecording, closeKeyboard, CANCEL_THRESHOLD])
 
-  // ========== 滑动处理（核心修复） ==========
+  // ========== 滑动处理（核心修复：添加边界判断逻辑） ==========
   const handleRecordMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!recordingAnim || !isLongPressTriggered.current) return
     
@@ -321,6 +324,10 @@ const ChatInputArea = ({
       setDragY(offsetY)
     }
 
+    // 核心修复：计算是否超出边界（当前Y坐标 < 弹框边界Y坐标）
+    const popupBoundaryTop = window.innerHeight - 180 - 20
+    setIsOutOfBoundary(currentY < popupBoundaryTop)
+
     blurTextarea()
     closeKeyboard() // 新增：滑动时也保持键盘关闭
   }, [recordingAnim, blurTextarea, closeKeyboard])
@@ -331,7 +338,7 @@ const ChatInputArea = ({
     closeKeyboard() // 新增：语音识别完成后关闭键盘
     
     // 修改：使用更大的阈值判断取消
-    if (!onSend || dragY < CANCEL_THRESHOLD) return
+    if (!onSend || dragY < CANCEL_THRESHOLD || isOutOfBoundary) return // 修复：加入边界判断
     if (!voiceText?.trim()) {
       notify({ 
         type: 'info', 
@@ -355,7 +362,7 @@ const ChatInputArea = ({
       blurTextarea()
       closeKeyboard() // 新增：发送完成后再次确保关闭键盘
     }, 50)
-  }, [onSend, dragY, isResponding, filesStore, checkInputsForm, inputs, inputsForm, notify, blurTextarea, forceCloseRecording, closeKeyboard, CANCEL_THRESHOLD])
+  }, [onSend, dragY, isOutOfBoundary, isResponding, filesStore, checkInputsForm, inputs, inputsForm, notify, blurTextarea, forceCloseRecording, closeKeyboard, CANCEL_THRESHOLD])
 
   // ========== VoiceInput取消回调 ==========
   const handleVoiceCancel = useCallback(() => {
@@ -515,10 +522,10 @@ const ChatInputArea = ({
     />
   )
 
-  // ========== 渲染部分（核心：仅新增文件回显组件，保留所有样式） ==========
+  // ========== 渲染部分（仅修改样式绑定逻辑） ==========
   return (
     <>
-      {/* 录音弹框（保留所有样式，新增class便于判断区域） */}
+      {/* 录音弹框（修复：使用isOutOfBoundary判断样式） */}
       {recordingAnim && (
         <div 
           className="fixed inset-0 z-50 pointer-events-auto flex items-end justify-center chat-input-area"
@@ -531,34 +538,54 @@ const ChatInputArea = ({
             WebkitTouchCallout: 'none'
           }}
         >
+          {/* 核心修复：用isOutOfBoundary判断背景色，而非dragY */}
           <div
-            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-700 via-blue-600 to-blue-500/70"
+            className="absolute bottom-0 left-0 right-0"
             style={{
               height: '180px',
               borderRadius: '50% / 100% 100% 0 0',
               filter: 'blur(8px)',
               border: 'none',
               transform: 'scaleX(1.05)',
+              // 修复：超出边界时显示淡红色，否则显示蓝色
+              background: isOutOfBoundary 
+                ? 'linear-gradient(to top, #f86b6b, #faa0a0, rgba(255, 200, 200, 0.4))' 
+                : 'linear-gradient(to top, #1976d2, #2196f3, rgba(100, 181, 246, 0.7))',
             }}
           />
           <div 
             className="relative z-10 w-full flex flex-col items-center justify-end pb-14 h-[180px]"
           >
-            <div className="text-white text-lg font-medium mb-5">
-              {/* 修改：显示当前阈值提示 */}
-              {dragY < CANCEL_THRESHOLD ? '松开取消' : '松手发送，上移取消'}
+            {/* 修复：用isOutOfBoundary判断文字显示和样式 */}
+            <div 
+              className="text-lg font-medium mb-5"
+              style={{
+                color: isOutOfBoundary ? '#e63946' : 'white',
+                textShadow: isOutOfBoundary ? '0 0 1px rgba(0,0,0,0.15)' : '0 0 2px rgba(0,0,0,0.2)',
+                fontWeight: 500
+              }}
+            >
+              {isOutOfBoundary ? '松开取消' : '松手发送，上移取消'}
             </div>
+            {/* 修复：用isOutOfBoundary判断波纹颜色 */}
             <div className="flex items-center justify-center gap-[3px] h-4 w-[88%]">
               {waveDots.map((h, i) => (
                 <div
                   key={i}
-                  className="w-[2.5px] rounded-full bg-white opacity-100 transition-all duration-150"
-                  style={{ height: `${h}px` }}
+                  className="w-[2.5px] rounded-full opacity-100 transition-all duration-150"
+                  style={{ 
+                    height: `${h}px`,
+                    backgroundColor: isOutOfBoundary ? '#e63946' : 'white',
+                    opacity: 0.9
+                  }}
                 />
               ))}
             </div>
             {isWeChat() && (
-              <div className="text-white text-xs mt-4 opacity-80">
+              <div 
+                className="text-xs mt-4 opacity-80"
+                style={{ color: isOutOfBoundary ? '#e63946' : 'white' }}
+              >
                 点击空白处可手动关闭
               </div>
             )}
@@ -566,7 +593,7 @@ const ChatInputArea = ({
         </div>
       )}
 
-      {/* 输入框容器（保留所有样式，仅新增文件拖拽事件，新增class） */}
+      {/* 输入框容器（完全保留） */}
       <div
         className={cn(
           'relative z-10 rounded-full border border-gray-200 bg-white py-2.5 px-4 shadow-sm transition-all chat-input-area',
@@ -584,13 +611,11 @@ const ChatInputArea = ({
         onClick={() => {
           if (recordingAnim) forceCloseRecording()
         }}
-        // 仅新增：文件拖拽事件（文件上传核心）
         onDragEnter={handleDragFileEnter}
         onDragLeave={handleDragFileLeave}
         onDragOver={handleDragFileOver}
         onDrop={handleDropFile}
       >
-        {/* 核心新增：文件列表回显组件（仅这一行是新增，保留原有样式结构） */}
         <FileListInChatInput fileConfig={visionConfig!} className="mr-2" />
         
         <div className="w-full flex items-center justify-between">
@@ -610,7 +635,6 @@ const ChatInputArea = ({
               }}
             >
               <span className="text-sm text-gray-500">按住说话</span>
-              {/* 保留样式：操作栏右外边距10px */}
               <div className="absolute right-0 top-1/2 translate-y-[-50%]" style={{ marginRight: '10px' }}>
                 {operation}
               </div>
@@ -646,7 +670,6 @@ const ChatInputArea = ({
                   onKeyDown={handleKeyDown}
                   onCompositionStart={handleCompositionStart}
                   onCompositionEnd={handleCompositionEnd}
-                  // 仅新增：粘贴文件事件
                   onPaste={handleClipboardPasteFile}
                   onDrop={handleDropFile}
                   onContextMenu={handleContextMenu}
