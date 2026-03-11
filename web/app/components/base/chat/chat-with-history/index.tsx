@@ -21,13 +21,6 @@ import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
 import cn from '@/utils/classnames'
 import useDocumentTitle from '@/hooks/use-document-title'
 
-// 声明微信JS-SDK全局类型（避免TS报错）
-declare global {
-  interface Window {
-    wx: any;
-  }
-}
-
 type ChatWithHistoryProps = {
   className?: string
 }
@@ -47,93 +40,35 @@ const ChatWithHistory: FC<ChatWithHistoryProps> = ({
   const site = appData?.site
 
   const [showSidePanel, setShowSidePanel] = useState(false)
-  // 新增：微信JS-SDK初始化状态
-  const [wxReady, setWxReady] = useState(false)
 
-  // ========== 核心：微信JS-SDK初始化（测试模式，无需后端签名） ==========
-  useEffect(() => {
-    // 1. 动态加载微信JS-SDK
-    const loadWxJsSdk = () => {
-      return new Promise((resolve) => {
-        if (window.wx) {
-          resolve(true)
-          return
-        }
-        const script = document.createElement('script')
-        script.src = 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js'
-        script.onload = () => resolve(true)
-        script.onerror = () => resolve(false)
-        document.body.appendChild(script)
-      })
-    }
-
-    // 2. 初始化微信配置（测试模式，签名随便填）
-    const initWxConfig = async () => {
-      try {
-        const loadSuccess = await loadWxJsSdk()
-        if (!loadSuccess) throw new Error('微信JS-SDK加载失败')
-
-        // 测试模式配置（仅需改appId为小程序A的AppID）
-        window.wx.config({
-          debug: true, // 调试模式，可看到初始化日志（生产环境改false）
-          appId: 'wxad0a1aff5f570168', // 【必填】替换成小程序A的AppID
-          timestamp: '1710000000', // 随便填，测试模式无效
-          nonceStr: 'test123456', // 随便填，测试模式无效
-          signature: 'test', // 随便填，测试模式无效
-          jsApiList: ['miniProgram.navigateToMiniProgram'] // 仅声明跳转接口
-        })
-
-        // 初始化成功回调
-        window.wx.ready(() => {
-          console.log('✅ 微信JS-SDK初始化成功')
-          setWxReady(true)
-        })
-
-        // 初始化失败回调
-        window.wx.error((err: any) => {
-          console.error('❌ 微信JS-SDK初始化失败', err)
-          setWxReady(false)
-        })
-      } catch (err) {
-        console.error('❌ 微信配置加载失败', err)
-        setWxReady(false)
+  // ========== 核心：明文URL Scheme跳转逻辑 ==========
+  const jumpToMiniProgramB = useCallback(() => {
+    try {
+      // 拼接明文URL Scheme（替换成你的参数）
+      const schemeParams = {
+        appid: 'wxad0a1aff5f570168', // 【必填】小程序B的AppID
+        path: 'pages/index/index',   // 【必填】小程序B的页面路径（不能带query）
+        query: '',                   // 【选填】跳转参数（需URL编码）
+        env_version: 'trial'       // 【选填】版本：develop/trial/release
       }
-    }
 
-    initWxConfig()
+      // 拼接明文Scheme链接
+      const scheme = `weixin://dl/business/?appid=${schemeParams.appid}&path=${schemeParams.path}&query=${schemeParams.query}&env_version=${schemeParams.env_version}`
+      
+      // 执行跳转
+      window.location.href = scheme
 
-    // 组件卸载时清理
-    return () => {
-      const scripts = document.querySelectorAll('script[src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"]')
-      scripts.forEach(script => script.remove())
+      // 兼容处理：部分浏览器需要延迟跳转
+      setTimeout(() => {
+        window.location.href = scheme
+      }, 100)
+
+      console.log('✅ 明文Scheme跳转触发：', scheme)
+    } catch (err) {
+      console.error('❌ 跳转失败', err)
+      alert('❌ 跳转失败，请重试')
     }
   }, [])
-
-  // ========== 核心：跳转小程序B的方法 ==========
-  const jumpToMiniProgramB = useCallback(() => {
-    if (!wxReady) {
-      alert('⚠️ 微信环境初始化中，请稍后再试')
-      return
-    }
-
-    try {
-      window.wx.miniProgram.navigateToMiniProgram({
-        appId: 'wxd722482ef0676afc', // 【必填】替换成小程序B的AppID
-        path: 'pages/index/index', // 可选：小程序B的目标页面路径
-        envVersion: 'develop', // 环境：develop(开发版)/trial(体验版)/release(正式版)
-        success: () => {
-          console.log('✅ 跳转小程序B成功')
-          alert('✅ 跳转成功！')
-        },
-        fail: (err: any) => {
-          console.error('❌ 跳转小程序B失败', err)
-          alert(`❌ 跳转失败：${err.errMsg}`)
-        }
-      })
-    } catch (err) {
-      alert('❌ 跳转异常，请重试')
-    }
-  }, [wxReady])
 
   // ========== 原有逻辑完全保留 ==========
   useEffect(() => {
@@ -153,10 +88,10 @@ const ChatWithHistory: FC<ChatWithHistoryProps> = ({
       isMobile && 'flex-col',
       className,
     )}>
-      {/* ========== 新增：跳转小程序B的按钮 ========== */}
+      {/* ========== 跳转按钮（无需等待初始化） ========== */}
       <button
         onClick={jumpToMiniProgramB}
-        disabled={!wxReady || appChatListDataLoading}
+        disabled={appChatListDataLoading}
         className={cn(
           'fixed z-50 px-4 py-2 text-white bg-green-600 rounded-lg transition-all duration-200 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed',
           isMobile ? 'bottom-20 right-4' : 'bottom-4 right-4'
