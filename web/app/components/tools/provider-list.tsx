@@ -137,7 +137,7 @@ const ProviderList = () => {
             currentProviderId && 'pr-6',
           )}>
             <div style={{
-    width: '1808px',
+    width: '100%',
     height: '52px',
     backgroundColor: '#FFFFFF',
     borderRadius: '8px',

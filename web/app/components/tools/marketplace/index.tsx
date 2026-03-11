@@ -45,7 +45,7 @@ const Marketplace = ({
   }}>
   <div
                style={{
-    width: '1808px',
+    width: '100%',
 background: '#FFFFFF',
 borderRadius: '8px 8px 8px 8px',
 overflowY: 'auto',

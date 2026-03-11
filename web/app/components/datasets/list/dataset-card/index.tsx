@@ -158,7 +158,6 @@ const DatasetCard = ({
       <div
         className='group relative col-span-1 flex h-[190px] cursor-pointer flex-col rounded-xl border-[0.5px] border-solid border-components-card-border bg-components-card-bg shadow-xs shadow-shadow-shadow-3 transition-all duration-200 ease-in-out hover:bg-components-card-bg-alt hover:shadow-md hover:shadow-shadow-shadow-5'
         style={{
-    width: '349px',
     height: '185px',
     background: '#FFFFFF',
     borderRadius: 'ce8px 8px 8px 8pxnter'

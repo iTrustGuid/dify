@@ -350,7 +350,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
           getRedirection(isCurrentWorkspaceEditor, app, push)
         }}
         className='group relative col-span-1 inline-flex h-[160px] cursor-pointer flex-col rounded-xl border-[1px] border-solid border-components-card-border bg-components-card-bg shadow-sm transition-all duration-200 ease-in-out hover:shadow-lg'
-      style={{ width: '349px',background: '#FFFFFF !important',
+      style={{ background: '#FFFFFF !important',
     height: '185px',
     borderRadius: '8px 8px 8px 8px'}}>
         <div className='flex h-[56px] w-[283px] shrink-0 grow-0 items-center gap-3 px-[14px] mb-[16px] mt-[16px]'>

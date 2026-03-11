@@ -64,7 +64,7 @@ const List = () => {
       <div className='sticky top-0 z-10 flex items-center justify-end gap-x-1 bg-background-body px-12  pt-4'>
         {/* sticky top-0 z-10 flex flex-wrap items-center justify-between gap-y-2  px-12  pt-7 */}
         <div style={{
-    width: '1808px',
+    width: '100%',
     height: '52px',
     backgroundColor: '#FFFFFF',
     borderRadius: '8px',
@@ -114,7 +114,7 @@ const List = () => {
       <div className='sticky top-0 z-10 flex items-center justify-end gap-x-1 bg-background-body px-12  pt-4'>
         {/* sticky top-0 z-10 flex flex-wrap items-center justify-between gap-y-2  px-12  pt-7 */}
         <div style={{
-    width: '1808px',
+    width: '100%',
     height: '52px',
     borderRadius: '8px',
     display: 'flex',
