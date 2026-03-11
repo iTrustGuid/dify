@@ -49,7 +49,7 @@ const ChatWithHistory: FC<ChatWithHistoryProps> = ({
         appid: 'wxad0a1aff5f570168', // 【必填】小程序B的AppID
         path: 'pages/index/index',   // 【必填】小程序B的页面路径（不能带query）
         query: '',                   // 【选填】跳转参数（需URL编码）
-        env_version: 'trial'       // 【选填】版本：develop/trial/release
+        env_version: ''       // 【选填】版本：develop/trial/release
       }
 
       // 拼接明文Scheme链接
