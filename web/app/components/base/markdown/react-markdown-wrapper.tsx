@@ -9,6 +9,7 @@ import RemarkBreaks from 'remark-breaks'
 import RemarkGfm from 'remark-gfm'
 import RemarkMath from 'remark-math'
 import { customUrlTransform } from './markdown-utils'
+import { remarkRestoreHtmlTagsAdvanced } from './react-markdown-code-plugin'
 
 const CodeBlock = dynamic(() => import('@/app/components/base/markdown-blocks/code-block'), { ssr: false })
 
@@ -26,6 +27,7 @@ export type ReactMarkdownWrapperProps = {
 
 export const ReactMarkdownWrapper: FC<ReactMarkdownWrapperProps> = (props) => {
   const { customComponents, latexContent, pluginInfo } = props
+  console.log('customDisallowedElements', latexContent, customComponents)
 
   return (
     <ReactMarkdown
@@ -33,6 +35,7 @@ export const ReactMarkdownWrapper: FC<ReactMarkdownWrapperProps> = (props) => {
         RemarkGfm,
         [RemarkMath, { singleDollarTextMath: ENABLE_SINGLE_DOLLAR_LATEX }],
         RemarkBreaks,
+        remarkRestoreHtmlTagsAdvanced
       ]}
       rehypePlugins={[
         RehypeKatex,
@@ -70,6 +73,16 @@ export const ReactMarkdownWrapper: FC<ReactMarkdownWrapperProps> = (props) => {
         form: MarkdownForm,
         script: ScriptBlock as any,
         details: ThinkBlock,
+        div: ({ children, ...props }) => (
+          <div {...props} className={`custom-div ${props.className || ''}`}>
+            {children}
+          </div>
+        ),
+        span: ({ children, ...props }) => (
+          <span {...props} className={`custom-div ${props.className || ''}`}>
+            {children}
+          </span>
+        ),
         ...customComponents,
       }}
     >
