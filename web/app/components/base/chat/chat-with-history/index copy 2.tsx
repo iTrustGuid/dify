@@ -41,7 +41,7 @@ const ChatWithHistory: FC<ChatWithHistoryProps> = ({
 
   const [showSidePanel, setShowSidePanel] = useState(false)
 
-  // ========== 原有：明文URL Scheme跳转逻辑（保留） ==========
+  // ========== 核心：明文URL Scheme跳转逻辑 ==========
   const jumpToMiniProgramB = useCallback(() => {
     try {
       // 拼接明文URL Scheme（替换成你的参数）
@@ -70,35 +70,6 @@ const ChatWithHistory: FC<ChatWithHistoryProps> = ({
     }
   }, [])
 
-  // ========== 新增：postMessage中转跳转逻辑（适配Android） ==========
-  const jumpToMiniProgramBByPostMessage = useCallback(() => {
-    try {
-      // 1. 检测是否在微信小程序web-view环境
-      const isWechatMiniProgram = /miniProgram/i.test(navigator.userAgent)
-      if (!isWechatMiniProgram) {
-        alert('请在微信小程序内操作！')
-        return
-      }
-
-      // 2. 向小程序发送跳转指令（参数可自定义）
-      window.wx?.miniProgram?.postMessage({
-        data: {
-          type: 'jumpToMiniProgram',
-          appId: 'wxad0a1aff5f570168', // 目标小程序B的AppID
-          path: 'pages/index/index',   // 目标页面路径
-          envVersion: 'trial'       // 版本：develop/trial/release
-        }
-      })
-
-      // 3. 友好提示
-      alert('正在跳转小程序，请稍候...')
-      console.log('✅ 已向小程序发送跳转指令')
-    } catch (err) {
-      console.error('❌ 中转跳转指令发送失败', err)
-      alert('❌ 跳转指令发送失败，请重试')
-    }
-  }, [])
-
   // ========== 原有逻辑完全保留 ==========
   useEffect(() => {
     themeBuilder?.buildTheme(site?.chat_color_theme, site?.chat_color_theme_inverted)
@@ -117,7 +88,7 @@ const ChatWithHistory: FC<ChatWithHistoryProps> = ({
       isMobile && 'flex-col',
       className,
     )}>
-      {/* ========== 原有：Scheme跳转按钮（保留） ========== */}
+      {/* ========== 跳转按钮（无需等待初始化） ========== */}
       <button
         onClick={jumpToMiniProgramB}
         disabled={appChatListDataLoading}
@@ -126,19 +97,7 @@ const ChatWithHistory: FC<ChatWithHistoryProps> = ({
           isMobile ? 'bottom-20 right-4' : 'bottom-4 right-4'
         )}
       >
-        办理业务（Scheme跳转）
-      </button>
-
-      {/* ========== 新增：postMessage中转跳转按钮 ========== */}
-      <button
-        onClick={jumpToMiniProgramBByPostMessage}
-        disabled={appChatListDataLoading}
-        className={cn(
-          'fixed z-50 px-4 py-2 text-white bg-blue-600 rounded-lg transition-all duration-200 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed',
-          isMobile ? 'bottom-40 right-4' : 'bottom-16 right-4'
-        )}
-      >
-        办理业务（中转跳转）
+        办理业务（跳转小程序B）
       </button>
 
       {/* ========== 原有页面结构完全保留 ========== */}
