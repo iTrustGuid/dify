@@ -39,6 +39,11 @@ const isWeChat = () => {
   return /MicroMessenger/i.test(navigator.userAgent)
 }
 
+// 判断是否为iOS设备
+const isIOS = () => {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.MSStream
+}
+
 type ChatInputAreaProps = {
   botName?: string
   showFeatureBar?: boolean
@@ -137,7 +142,7 @@ const ChatInputArea = ({
     
     // 4. 强制隐藏键盘（兼容Android/iOS）
     if (isMobile()) {
-      document.body.scrollIntoView({ behavior: 'smooth' })
+      document.body.scrollIntoView({ behavior: 'smooth', block: 'end' })
     }
   }, [])
 
@@ -178,6 +183,7 @@ const ChatInputArea = ({
     }
   }, [])
 
+  // 修复iOS焦点问题：增加主动聚焦逻辑
   const focusTextarea = useCallback(() => {
     if (
       textareaRef.current && 
@@ -186,7 +192,15 @@ const ChatInputArea = ({
       !disabled &&
       !isLongPressing.current
     ) {
-      textareaRef.current.focus()
+      // iOS特殊处理：先触发点击再聚焦
+      if (isIOS()) {
+        textareaRef.current.click()
+        setTimeout(() => {
+          textareaRef.current?.focus({ preventScroll: true })
+        }, 0)
+      } else {
+        textareaRef.current.focus({ preventScroll: true })
+      }
     }
   }, [voiceMode, recordingAnim, disabled])
 
@@ -445,17 +459,27 @@ const ChatInputArea = ({
     e.stopPropagation()
   }, [])
 
-  const handleInputClick = useCallback(() => {
-    if (isTouching.current || isLongPressing.current) return
-    if (!voiceMode && !recordingAnim) focusTextarea()
+  // ========== 核心修复：限制输入框点击作用域 ==========
+  const handleInputClick = useCallback((e: React.MouseEvent) => {
+    // 只允许输入框区域触发聚焦
+    const target = e.target as HTMLElement
+    if (target.closest('textarea') || target.closest('.text-input-area')) {
+      if (isTouching.current || isLongPressing.current) return
+      if (!voiceMode && !recordingAnim) focusTextarea()
+    }
   }, [voiceMode, recordingAnim, focusTextarea])
 
+  // ========== 限制长按作用域到输入框区域 ==========
   const handleInputLongPressStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if ('button' in e && e.button !== 0) return
-    if (!voiceMode && !recordingAnim) {
-      blurTextarea()
-      closeKeyboard()
-      handleRecordPressStart(false, e)
+    // 只在输入框区域触发长按录音
+    const target = e.target as HTMLElement
+    if (target.closest('textarea') || target.closest('.text-input-area')) {
+      if ('button' in e && e.button !== 0) return
+      if (!voiceMode && !recordingAnim) {
+        blurTextarea()
+        closeKeyboard()
+        handleRecordPressStart(false, e)
+      }
     }
   }, [voiceMode, recordingAnim, handleRecordPressStart, blurTextarea, closeKeyboard])
 
@@ -473,6 +497,7 @@ const ChatInputArea = ({
   const handleCompositionStart = () => { isComposingRef.current = true }
   const handleCompositionEnd = () => { setTimeout(() => { isComposingRef.current = false }, 50) }
 
+  // ========== 修复发送逻辑：确保发送后键盘关闭 ==========
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (voiceMode || recordingAnim) return
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -484,12 +509,23 @@ const ChatInputArea = ({
       setFiles([])
       blurTextarea()
       closeKeyboard()
+      
+      // 额外确保键盘关闭
+      setTimeout(() => {
+        closeKeyboard()
+      }, 100)
     }
   }
 
+  // ========== 修复iOS新对话焦点问题 ==========
   useEffect(() => {
     if (!voiceMode) {
-      focusTextarea()
+      // iOS延迟聚焦，确保DOM已渲染完成
+      const timer = setTimeout(() => {
+        focusTextarea()
+      }, isIOS() ? 100 : 0)
+      
+      return () => clearTimeout(timer)
     }
   }, [voiceMode, focusTextarea])
 
@@ -523,6 +559,11 @@ const ChatInputArea = ({
           setFiles([])
           blurTextarea()
           closeKeyboard()
+          
+          // 发送后强制关闭键盘（修复安卓问题）
+          setTimeout(() => {
+            closeKeyboard()
+          }, 100)
         }
       }}
       theme={theme}
@@ -616,7 +657,8 @@ const ChatInputArea = ({
           WebkitTouchCallout: 'none'
         }}
         onContextMenu={handleContextMenu}
-        onClick={() => {
+        onClick={(e) => {
+          // 容器点击不触发任何操作，只让输入框区域响应
           if (recordingAnim) {
             stopVoiceRecording()
             forceCloseRecording()
@@ -654,47 +696,53 @@ const ChatInputArea = ({
             <div
               ref={wrapperRef}
               className="flex-1 flex items-center gap-2 chat-input-area"
-              onClick={handleInputClick}
               onContextMenu={handleContextMenu}
-              onTouchStart={(e) => handleInputLongPressStart(e)}
-              onTouchEnd={(e) => handleInputLongPressEnd(e)}
-              onTouchMove={(e) => handleRecordMove(e)}
-              onMouseDown={(e) => handleInputLongPressStart(e)}
-              onMouseUp={(e) => handleInputLongPressEnd(e)}
-              onMouseLeave={(e) => handleInputLongPressEnd(e)}
               style={{
                 userSelect: 'none',
                 WebkitUserSelect: 'none'
               }}
             >
-              <div className="flex-1 relative">
-                <div ref={textValueRef} className="invisible absolute whitespace-pre px-1 text-sm">
-                  {query}
+              {/* ========== 核心修改：限制交互作用域 ========== */}
+              <div 
+                className="flex-1 text-input-area"
+                onClick={handleInputClick}
+                onTouchStart={handleInputLongPressStart}
+                onTouchEnd={handleInputLongPressEnd}
+                onTouchMove={handleRecordMove}
+                onMouseDown={handleInputLongPressStart}
+                onMouseUp={handleInputLongPressEnd}
+                onMouseLeave={handleInputLongPressEnd}
+              >
+                <div className="flex-1 relative">
+                  <div ref={textValueRef} className="invisible absolute whitespace-pre px-1 text-sm">
+                    {query}
+                  </div>
+                  <Textarea
+                    ref={ref => textareaRef.current = ref as any}
+                    className="w-full resize-none bg-transparent px-1 text-sm outline-none text-gray-800"
+                    placeholder={decode(t('common.chat.inputPlaceholder') || '发消息或按住说话...')}
+                    minRows={1} maxRows={4}
+                    value={query}
+                    onChange={e => handleQueryChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onCompositionStart={handleCompositionStart}
+                    onCompositionEnd={handleCompositionEnd}
+                    onPaste={handleClipboardPasteFile}
+                    onDrop={handleDropFile}
+                    onContextMenu={handleContextMenu}
+                    disabled={disabled}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                    style={{
+                      userSelect: 'text', // 恢复文本选择
+                      WebkitUserSelect: 'text'
+                    }}
+                  />
                 </div>
-                <Textarea
-                  ref={ref => textareaRef.current = ref as any}
-                  className="w-full resize-none bg-transparent px-1 text-sm outline-none text-gray-800"
-                  placeholder={decode(t('common.chat.inputPlaceholder') || '发消息或按住说话...')}
-                  minRows={1} maxRows={4}
-                  value={query}
-                  onChange={e => handleQueryChange(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onCompositionStart={handleCompositionStart}
-                  onCompositionEnd={handleCompositionEnd}
-                  onPaste={handleClipboardPasteFile}
-                  onDrop={handleDropFile}
-                  onContextMenu={handleContextMenu}
-                  disabled={disabled}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck="false"
-                  style={{
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none'
-                  }}
-                />
               </div>
+              {/* 操作按钮区域：不再响应输入框相关事件 */}
               <div className="flex-shrink-0">
                 {operation}
               </div>
