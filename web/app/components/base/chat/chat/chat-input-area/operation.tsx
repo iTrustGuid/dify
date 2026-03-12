@@ -42,7 +42,9 @@ const Operation: FC<OperationProps> = ({
   const micPressStartY = useRef<number>(0)
 
   // 单击麦克风
-  const handleMicClick = useCallback(() => {
+  const handleMicClick = useCallback((e: React.MouseEvent) => {
+    // 阻止事件冒泡到父级
+    e.stopPropagation()
     onButtonClick()
     if (isLongPressTriggered.current) {
       isLongPressTriggered.current = false
@@ -57,6 +59,8 @@ const Operation: FC<OperationProps> = ({
 
   // 长按麦克风开始
   const handleTouchStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    // 阻止事件冒泡
+    e.stopPropagation()
     if ('touches' in e && e.touches.length > 0) {
       micPressStartY.current = e.touches[0].clientY
     } else if ('clientY' in e) {
@@ -72,6 +76,8 @@ const Operation: FC<OperationProps> = ({
 
   // 长按麦克风结束
   const handleTouchEnd = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    // 阻止事件冒泡
+    e.stopPropagation()
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
@@ -90,6 +96,8 @@ const Operation: FC<OperationProps> = ({
 
   // 滑动处理
   const handleTouchMove = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    // 阻止事件冒泡
+    e.stopPropagation()
     if (!isLongPressTriggered.current) return
     
     let currentY = 0
@@ -111,7 +119,9 @@ const Operation: FC<OperationProps> = ({
   }, [])
 
   // 文件上传按钮点击
-  const handleFileUploadClick = useCallback(() => {
+  const handleFileUploadClick = useCallback((e: React.MouseEvent) => {
+    // 阻止事件冒泡
+    e.stopPropagation()
     onButtonClick()
   }, [onButtonClick])
 
@@ -120,6 +130,7 @@ const Operation: FC<OperationProps> = ({
       ref={ref as Ref<HTMLDivElement>} 
       className="flex items-center gap-1" 
       onContextMenu={handleContextMenu}
+      onClick={(e) => e.stopPropagation()} // 阻止点击冒泡
       style={{
         userSelect: 'none',
         WebkitUserSelect: 'none',
