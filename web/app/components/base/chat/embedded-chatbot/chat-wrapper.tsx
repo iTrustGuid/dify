@@ -127,6 +127,20 @@ const ChatWrapper = () => {
   }, [respondingState, setIsResponding])
 
   const doSend: OnSend = useCallback((message, files, isRegenerate = false, parentAnswer: ChatItem | null = null) => {
+    
+  // 1. 新增：解析URL中的userToken（小程序传过来的）
+  const getUserTokenFromUrl = () => {
+    if (typeof window === 'undefined') return '';
+    // 解析URL参数
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('userToken');
+    // 解码（对应小程序侧的encodeURIComponent）
+    return token ? decodeURIComponent(token) : '';
+  };
+  const userTokenFromUrl = getUserTokenFromUrl();
+  // 打印验证：确认拿到小程序传的token
+  console.log('🔴 WebView读取到的userToken：', userTokenFromUrl);
+
     const data: any = {
       query: message,
       files,
@@ -135,8 +149,11 @@ const ChatWrapper = () => {
       parent_message_id: (isRegenerate ? parentAnswer?.id : getLastAnswer(chatList)?.id) || null,
     }
 
-    data.inputs = { ...data.inputs, ...((window.difyChatbotConfig || {}).inputs || {}) }
+    data.inputs = { ...data.inputs, ...((window.difyChatbotConfig || {}).inputs || {}),...(userTokenFromUrl ? { userToken: userTokenFromUrl } : {}) }
 
+      // 打印验证：确认最终传给Dify的inputs包含userToken
+    console.log('🟢 传给Dify的inputs：', data.inputs);
+    
     handleSend(
       getUrl('chat-messages', isInstalledApp, appId || ''),
       data,
