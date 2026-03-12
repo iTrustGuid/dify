@@ -40,60 +40,29 @@ const ChatWithHistory: FC<ChatWithHistoryProps> = ({
   const site = appData?.site
 
   const [showSidePanel, setShowSidePanel] = useState(false)
-  // ========== 新增：安全区高度状态 ==========
-  const [safeAreaBottom, setSafeAreaBottom] = useState(0)
-
-  // ========== 初始化：加载微信JS-SDK + 计算安全区 ==========
-  useEffect(() => {
-    // 1. 动态加载微信JS-SDK（避免重复加载）
-    if (!window.wx) {
-      const script = document.createElement('script')
-      script.src = 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js'
-      script.onload = () => console.log('✅ 微信JS-SDK加载完成')
-      script.onerror = (err) => console.error('❌ 微信JS-SDK加载失败', err)
-      document.head.appendChild(script)
-    }
-
-    // 2. 计算iPhone安全区高度
-    const calcSafeArea = () => {
-      if (typeof window === 'undefined') return 0
-      // 兼容不同浏览器的安全区API
-      const bottom = window.safeAreaInsets?.bottom || 
-                     parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-bottom')) ||
-                     parseInt(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)')) ||
-                     0
-      setSafeAreaBottom(bottom)
-      
-      // 给html/body添加内联样式（无需全局文件）
-      document.documentElement.style.paddingBottom = `${bottom}px`
-      document.documentElement.style.boxSizing = 'border-box'
-      document.body.style.paddingBottom = `${bottom}px`
-      document.body.style.boxSizing = 'border-box'
-      document.body.style.height = '100%'
-      document.body.style.margin = '0'
-      document.body.style.overflowX = 'hidden'
-    }
-
-    // 初始化计算 + 窗口变化时重新计算
-    calcSafeArea()
-    window.addEventListener('resize', calcSafeArea)
-    return () => window.removeEventListener('resize', calcSafeArea)
-  }, [])
 
   // ========== 原有：明文URL Scheme跳转逻辑（保留） ==========
   const jumpToMiniProgramB = useCallback(() => {
     try {
+      // 拼接明文URL Scheme（替换成你的参数）
       const schemeParams = {
-        appid: 'wxad0a1aff5f570168',
-        path: 'pages/index/index',
-        query: '',
-        env_version: ''
+        appid: 'wxad0a1aff5f570168', // 【必填】小程序B的AppID
+        path: 'pages/index/index',   // 【必填】小程序B的页面路径（不能带query）
+        query: '',                   // 【选填】跳转参数（需URL编码）
+        env_version: ''       // 【选填】版本：develop/trial/release
       }
+
+      // 拼接明文Scheme链接
       const scheme = `weixin://dl/business/?appid=${schemeParams.appid}&path=${schemeParams.path}&query=${schemeParams.query}&env_version=${schemeParams.env_version}`
+      
+      // 执行跳转
       window.location.href = scheme
+
+      // 兼容处理：部分浏览器需要延迟跳转
       setTimeout(() => {
         window.location.href = scheme
       }, 100)
+
       console.log('✅ 明文Scheme跳转触发：', scheme)
     } catch (err) {
       console.error('❌ 跳转失败', err)
@@ -101,30 +70,29 @@ const ChatWithHistory: FC<ChatWithHistoryProps> = ({
     }
   }, [])
 
-  // ========== 优化：postMessage中转跳转逻辑（强制触发） ==========
+  // ========== 新增：postMessage中转跳转逻辑（适配Android） ==========
   const jumpToMiniProgramBByPostMessage = useCallback(() => {
     try {
+      // 1. 检测是否在微信小程序web-view环境
       const isWechatMiniProgram = /miniProgram/i.test(navigator.userAgent)
       if (!isWechatMiniProgram) {
         alert('请在微信小程序内操作！')
         return
       }
-      if (!window.wx || !window.wx.miniProgram) {
-        alert('微信环境初始化中，请稍候重试！')
-        return
-      }
-      window.wx.miniProgram.postMessage({
+
+      // 2. 向小程序发送跳转指令（参数可自定义）
+      window.wx?.miniProgram?.postMessage({
         data: {
           type: 'jumpToMiniProgram',
-          appId: 'wxad0a1aff5f570168',
-          path: 'pages/index/index',
-          envVersion: 'trial'
+          appId: 'wxad0a1aff5f570168', // 目标小程序B的AppID
+          path: 'pages/index/index',   // 目标页面路径
+          envVersion: 'trial'       // 版本：develop/trial/release
         }
       })
-      // 强制触发消息传递
-      window.wx.miniProgram.navigateTo({ url: '/' })
+
+      // 3. 友好提示
       alert('正在跳转小程序，请稍候...')
-      console.log('✅ 已向小程序发送跳转指令 + 强制触发')
+      console.log('✅ 已向小程序发送跳转指令')
     } catch (err) {
       console.error('❌ 中转跳转指令发送失败', err)
       alert('❌ 跳转指令发送失败，请重试')
@@ -144,24 +112,35 @@ const ChatWithHistory: FC<ChatWithHistoryProps> = ({
   useDocumentTitle(site?.title || 'Chat')
 
   return (
-    <div 
-      className={cn(
-        'flex h-full bg-background-default-burn',
-        isMobile && 'flex-col',
-        className,
-      )}
-      style={{
-        // 核心：iPhone安全区适配（内联样式）
-        height: '100vh',
-        height: `calc(100vh - ${safeAreaBottom}px)`,
-        paddingBottom: `${safeAreaBottom}px`,
-        boxSizing: 'border-box',
-        position: 'relative',
-        overflow: 'hidden',
-        margin: '0',
-      }}
-    >
-  
+    <div className={cn(
+      'flex h-full bg-background-default-burn',
+      isMobile && 'flex-col',
+      className,
+    )}>
+      {/* ========== 原有：Scheme跳转按钮（保留） ========== */}
+      <button
+        onClick={jumpToMiniProgramB}
+        disabled={appChatListDataLoading}
+        className={cn(
+          'fixed z-50 px-4 py-2 text-white bg-green-600 rounded-lg transition-all duration-200 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed',
+          isMobile ? 'bottom-20 right-4' : 'bottom-4 right-4'
+        )}
+      >
+        办理业务（Scheme跳转）
+      </button>
+
+      {/* ========== 新增：postMessage中转跳转按钮 ========== */}
+      <button
+        onClick={jumpToMiniProgramBByPostMessage}
+        disabled={appChatListDataLoading}
+        className={cn(
+          'fixed z-50 px-4 py-2 text-white bg-blue-600 rounded-lg transition-all duration-200 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed',
+          isMobile ? 'bottom-40 right-4' : 'bottom-16 right-4'
+        )}
+      >
+        办理业务（中转跳转）
+      </button>
+
       {/* ========== 原有页面结构完全保留 ========== */}
       {!isMobile && (
         <div className={cn(
