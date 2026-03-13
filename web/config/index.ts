@@ -463,3 +463,6 @@ export const PARTNER_STACK_CONFIG = {
   cookieName: 'partner_stack_info',
   saveCookieDays: 90,
 }
+
+// 不动产登记平台互联网+地址
+export const INTELNET_BDCDJPT_URL = 'https://wnxai.esconsoft.com/'

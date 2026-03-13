@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import styles from './CertificateList.module.css';
+import { INTELNET_BDCDJPT_URL } from '@/config';
 
 interface Certificate {
   id?: string;
@@ -30,7 +31,7 @@ interface PreviewResponse {
   };
 }
 
-const baseUrl = location.href.startsWith('https') && 'https://www.wnxbdcdjzx.com/' || 'http://localhost:9000/';
+const baseUrl = location.href.startsWith('https') && INTELNET_BDCDJPT_URL || 'http://localhost:9000/';
 
 export function AppMyCertList() {
   const searchParams = useSearchParams();
