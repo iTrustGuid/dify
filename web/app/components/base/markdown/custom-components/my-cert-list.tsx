@@ -162,6 +162,15 @@ export function AppMyCertList() {
           url: url,
         },
       });
+      wx.miniProgram.navigateBack({delta: 1})
+    }else if (wx?.miniProgram?.redirectTo) {
+      // 或者通过postMessage通知小程序
+      wx.miniProgram.redirectTo({
+        data: {
+          action: 'openPreview2',
+          url: url,
+        },
+      });
     }
   };
 
