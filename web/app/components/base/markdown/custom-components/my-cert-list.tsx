@@ -254,7 +254,7 @@ export function AppMyCertList() {
               )}
             </div>
 
-            <div className={styles.cardContent}>
+            {cert.types !== '无房证明' && <div className={styles.cardContent}>
               <div className={styles.infoGroup}>
                 <label className={styles.label}>证件号</label>
                 <p className={styles.value} title={cert.bdcqzh}>
@@ -268,7 +268,7 @@ export function AppMyCertList() {
                   {cert.zl}
                 </p>
               </div>
-            </div>
+            </div>}
 
             <div className={styles.cardFooter}>
               <button

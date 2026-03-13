@@ -27,7 +27,6 @@ export type ReactMarkdownWrapperProps = {
 
 export const ReactMarkdownWrapper: FC<ReactMarkdownWrapperProps> = (props) => {
   const { customComponents, latexContent, pluginInfo } = props
-  console.log('customDisallowedElements', latexContent, customComponents)
 
   return (
     <ReactMarkdown
