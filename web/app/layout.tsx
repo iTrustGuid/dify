@@ -1,3 +1,4 @@
+// app/layout.tsx
 import { ReactScan } from './components/react-scan'
 import RoutePrefixHandle from './routePrefixHandle'
 import type { Viewport } from 'next'
@@ -13,8 +14,9 @@ import GlobalPublicStoreProvider from '@/context/global-public-context'
 import { DatasetAttr } from '@/types/feature'
 import { Instrument_Serif } from 'next/font/google'
 import cn from '@/utils/classnames'
-// 🔥 新增：引入 React 的 useEffect（客户端渲染用）
-import { useEffect } from 'react'
+
+// 🔥 导入同级的微信SDK初始化组件（app/WechatJSSDKInitializer.tsx）
+import WechatJSSDKInitializer from './WechatJSSDKInitializer'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -91,6 +93,8 @@ const LocaleLayout = async ({
         {...datasetMap}
       >
         <ReactScan />
+        {/* 🔥 引入微信SDK初始化组件（无UI，仅执行逻辑） */}
+        <WechatJSSDKInitializer />
         <ThemeProvider
           attribute='data-theme'
           defaultTheme='system'
@@ -99,9 +103,6 @@ const LocaleLayout = async ({
           enableColorScheme={false}
         >
           <BrowserInitializer>
-            {/* 🔥 新增：全局引入微信 JS-SDK（客户端执行） */}
-            <WechatJSSDKInitializer />
-            
             <SentryInitializer>
               <TanstackQueryInitializer>
                 <I18nServer>
@@ -118,46 +119,5 @@ const LocaleLayout = async ({
     </html>
   )
 }
-
-// 🔥 新增：微信 JS-SDK 全局初始化组件（确保仅客户端执行）
-const WechatJSSDKInitializer = () => {
-  // 仅在客户端执行，避免服务端 window 报错
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // 检查是否已加载，避免重复引入
-    if ((window as any).wx) {
-      console.log('✅ 微信 JS-SDK 已全局加载，无需重复引入');
-      return;
-    }
-
-    // 动态创建并插入微信 JS-SDK 脚本
-    const script = document.createElement('script');
-    script.src = 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js';
-    script.type = 'text/javascript';
-    script.charset = 'utf-8';
-    
-    script.onload = () => {
-      console.log('✅ 微信 JS-SDK 全局加载完成');
-    };
-    
-    script.onerror = () => {
-      console.error('❌ 微信 JS-SDK 全局加载失败');
-      alert('微信环境初始化失败，预览功能可能无法使用');
-    };
-    
-    document.head.appendChild(script);
-
-    // 组件卸载时移除脚本（可选，SDK 全局生效后无需移除）
-    return () => {
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-    };
-  }, []);
-
-  // 无UI渲染，仅执行逻辑
-  return null;
-};
 
 export default LocaleLayout
