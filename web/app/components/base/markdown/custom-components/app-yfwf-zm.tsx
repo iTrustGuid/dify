@@ -4,6 +4,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './app-yfwf-zm.module.css';
 import { INTELNET_BDCDJPT_URL } from '@/config';
+// 🔥 1. 导入通用Hook（同级路径）
+import { useWxMiniProgramPreview } from './WxMiniProgramPreview';
 
 interface PropertyInfo {
   id: string;
@@ -75,6 +77,9 @@ export function PropertyCertificate() {
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+
+  // 🔥 2. 使用通用Hook，传入小程序预览页路径（注意路径和原逻辑一致）
+  const { openPreview } = useWxMiniProgramPreview('/pages/preview/index');
 
   // 获取房产信息
   const fetchPropertyInfo = useCallback(async () => {
@@ -230,29 +235,6 @@ export function PropertyCertificate() {
       try {
         setPreviewLoading(true);
 
-        // const response = await fetch(
-        //   `${baseUrl}bdcpt/a/json/elec/getelecmsg?url=${encodeURIComponent(
-        //     fileUrl
-        //   )}`,
-        //   {
-        //     method: 'GET',
-        //     headers: {
-        //       'Authorization': userToken,
-        //       'Content-Type': 'application/json',
-        //     },
-        //   }
-        // );
-
-        // if (!response.ok) {
-        //   throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        // }
-
-        // const data: PreviewResponse = await response.json();
-
-        // if (data.result_code !== '200') {
-        //   throw new Error(data.result_msg || '获取预览链接失败');
-        // }
-
         setPreviewUrl(`https://www.wnxbdcdjzx.com/estate/${fileUrl}`);
         setShowPreview(true);
       } catch (err) {
@@ -267,51 +249,17 @@ export function PropertyCertificate() {
     [userToken]
   );
 
-  // 打开预览
-  const handleOpenPreview = useCallback(() => {
+  // 🔥 3. 简化打开预览逻辑：直接调用通用Hook的openPreview
+  const handleOpenPreview = useCallback(async () => {
     if (!previewUrl) return;
+    await openPreview(previewUrl); // 直接使用通用方法
+  }, [previewUrl, openPreview]);
 
-    if (isInWechatMiniProgram()) {
-      openInWechatMiniProgram(previewUrl);
-    } else if (isInWechatBrowser()) {
-      openInWechatBrowser(previewUrl);
-    } else {
-      window.open(previewUrl, '_blank', 'noopener,noreferrer');
-    }
-  }, [previewUrl]);
-
-  // 检测是否在微信小程序webview中
-  const isInWechatMiniProgram = (): boolean => {
-    return typeof (window as any).wx !== 'undefined' && (window as any).wx.miniProgram;
-  };
-
-  // 检测是否在微信浏览器中
-  const isInWechatBrowser = (): boolean => {
-    const ua = navigator.userAgent.toLowerCase();
-    return /micromessenger/.test(ua);
-  };
-
-  // 在微信小程序中打开
-  const openInWechatMiniProgram = (url: string) => {
-    const wx = (window as any).wx;
-    if (wx?.miniProgram?.navigateTo) {
-      wx.miniProgram.navigateTo({
-        url: `/pages/preview/index?url=${encodeURIComponent(url)}`,
-      });
-    } else if (wx?.miniProgram?.postMessage) {
-      wx.miniProgram.postMessage({
-        data: {
-          action: 'openPreview',
-          url: url,
-        },
-      });
-    }
-  };
-
-  // 在微信浏览器中打开
-  const openInWechatBrowser = (url: string) => {
-    window.location.href = url;
-  };
+  // 🔥 4. 删除原组件内重复的以下方法：
+  // - isInWechatMiniProgram
+  // - isInWechatBrowser
+  // - openInWechatMiniProgram
+  // - openInWechatBrowser
 
   // 重置表单
   const handleReset = () => {
