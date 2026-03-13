@@ -1,0 +1,563 @@
+.container {
+  background: #f5f5f5;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 16px;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.subheader {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f0f0f0;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinner2 {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading p {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 错误状态 */
+.error {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  gap: 16px;
+  padding: 20px;
+}
+
+.errorIcon {
+  font-size: 48px;
+  margin: 0;
+}
+
+.errorMessage {
+  text-align: center;
+  color: #d32f2f;
+  font-size: 14px;
+  margin: 0;
+  max-width: 300px;
+}
+
+.retryButton {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.retryButton:hover {
+  background: #5568d3;
+}
+
+/* 提示条 */
+.successBanner {
+  margin: 12px;
+  padding: 12px 16px;
+  background: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  border-radius: 4px;
+  color: #2e7d32;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.successIcon {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.errorBanner {
+  margin: 12px;
+  padding: 12px 16px;
+  background: #ffebee;
+  border-left: 4px solid #f44336;
+  border-radius: 4px;
+  color: #c62828;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.errorBannerIcon {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* 表单容器 */
+.formContainer {
+  background: white;
+  margin: 12px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formGroup:last-of-type {
+  margin-bottom: 24px;
+}
+
+.formLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.required {
+  color: #d32f2f;
+}
+
+.select {
+  width: 100%;
+  padding: 12px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  background: white;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.select:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 房产信息展示 */
+.propertyInfo {
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  border-left: 4px solid #667eea;
+}
+
+.infoRow {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.infoRow:last-child {
+  margin-bottom: 0;
+}
+
+.infoLabel {
+  color: #999;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.infoValue {
+  color: #333;
+  flex: 1;
+  word-break: break-all;
+}
+
+/* 无房提示 */
+.unownedTip {
+  padding: 20px;
+  background: #f0f4ff;
+  border-radius: 6px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.unownedIcon {
+  font-size: 40px;
+  margin: 0 0 8px 0;
+}
+
+.unownedText {
+  margin: 0;
+  color: #667eea;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 按钮组 */
+.buttonGroup {
+  display: flex;
+  gap: 12px;
+}
+
+.generateButton {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 14px 16px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.generateButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.generateButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.resetButton {
+  flex: 1;
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 14px 16px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.resetButton:active:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.resetButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 模态框 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  z-index: 1000;
+  justify-content: center;
+}
+
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.modalContent {
+  background: white;
+  max-height: 90vh;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+  z-index: 1001;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.modalHeader {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.closeButton:active {
+  color: #333;
+}
+
+.modalBody {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.previewInfo {
+  text-align: center;
+  padding: 20px;
+}
+
+.previewInfo p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.modalFooter {
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  gap: 12px;
+}
+
+.previewButton {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.previewButton:active:not(:disabled) {
+  opacity: 0.9;
+}
+
+.previewButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.closeModalButton {
+  flex: 1;
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.closeModalButton:active {
+  background: #e0e0e0;
+}
+
+/* 响应式设计 */
+@media (min-width: 768px) {
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .modal {
+    align-items: center;
+  }
+
+  .modalContent {
+    max-height: 80vh;
+    border-radius: 12px;
+  }
+}
+
+/* 暗色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .container {
+    background: #121212;
+  }
+
+  .formContainer {
+    background: #1e1e1e;
+  }
+
+  .formLabel {
+    color: #e0e0e0;
+  }
+
+  .select {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+    border-color: #404040;
+  }
+
+  .select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+  }
+
+  .propertyInfo {
+    background: #2a2a2a;
+    border-left-color: #667eea;
+  }
+
+  .infoLabel {
+    color: #b0b0b0;
+  }
+
+  .infoValue {
+    color: #e0e0e0;
+  }
+
+  .unownedTip {
+    background: #1a2a4a;
+  }
+
+  .unownedText {
+    color: #90caf9;
+  }
+
+  .resetButton {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border-color: #404040;
+  }
+
+  .resetButton:active:not(:disabled) {
+    background: #333;
+  }
+
+  .modalContent {
+    background: #1e1e1e;
+  }
+
+  .modalHeader {
+    border-bottom-color: #333;
+  }
+
+  .modalHeader h2 {
+    color: #e0e0e0;
+  }
+
+  .closeButton {
+    color: #b0b0b0;
+  }
+
+  .closeButton:active {
+    color: #e0e0e0;
+  }
+
+  .previewInfo p {
+    color: #b0b0b0;
+  }
+
+  .modalFooter {
+    border-top-color: #333;
+  }
+
+  .closeModalButton {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border-color: #404040;
+  }
+
+  .closeModalButton:active {
+    background: #333;
+  }
+}
