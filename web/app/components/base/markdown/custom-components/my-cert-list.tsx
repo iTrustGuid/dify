@@ -45,7 +45,8 @@ export function AppMyCertList() {
   const [previewLoading, setPreviewLoading] = useState(false);
 
   // 使用通用Hook，传入小程序预览页路径
-  const { openPreview } = useWxMiniProgramPreview('/pagesB/my/preview/preview');
+  // const { openPreview } = useWxMiniProgramPreview('/pagesB/my/preview/preview');
+  const { openPreview } = useWxMiniProgramPreview('/pagesB/my/chat_room');
 
   // 获取证照列表（保持不变）
   const fetchCertificateList = useCallback(async () => {
