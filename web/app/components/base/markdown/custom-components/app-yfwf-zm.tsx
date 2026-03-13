@@ -79,7 +79,7 @@ export function PropertyCertificate() {
   const [showPreview, setShowPreview] = useState(false);
 
   // 🔥 2. 使用通用Hook，传入小程序预览页路径（注意路径和原逻辑一致）
-  const { openPreview } = useWxMiniProgramPreview('/pages/preview/index');
+  const { openPreview } = useWxMiniProgramPreview('/pagesB/my/preview/preview');
 
   // 获取房产信息
   const fetchPropertyInfo = useCallback(async () => {
