@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Image from 'next/image';
 import styles from './CertificateList.module.css';
 import { INTELNET_BDCDJPT_URL } from '@/config';
 
@@ -42,6 +41,41 @@ export function AppMyCertList() {
   const [error, setError] = useState<string | null>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  // 第一步：重复引入微信 JS-SDK（浏览器会缓存，不会重复下载）
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // 先检查是否已加载，避免重复创建脚本标签（可选，仅优化）
+    if ((window as any).wx) {
+      console.log('✅ 微信 JS-SDK 已全局加载，无需重复引入');
+      return;
+    }
+
+    // 动态创建并插入微信 JS-SDK 脚本
+    const script = document.createElement('script');
+    script.src = 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js';
+    script.type = 'text/javascript';
+    script.charset = 'utf-8';
+    
+    script.onload = () => {
+      console.log('✅ 当前页面微信 JS-SDK 加载完成');
+    };
+    
+    script.onerror = () => {
+      console.error('❌ 当前页面微信 JS-SDK 加载失败');
+      alert('微信环境初始化失败，预览功能可能无法使用');
+    };
+    
+    document.head.appendChild(script);
+
+    // 组件卸载时移除脚本（可选，SDK 是全局的，移除不影响其他页面）
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, []);
 
   // 获取证照列表
   const fetchCertificateList = useCallback(async () => {
@@ -121,11 +155,39 @@ export function AppMyCertList() {
     }
   }, [userToken]);
 
+  // 等待 wx 对象加载完成（最多等3秒）
+  const waitForWxReady = useCallback(async (): Promise<any> => {
+    return new Promise((resolve) => {
+      let checkTimer: NodeJS.Timeout;
+      const maxWaitTime = 3000; // 最大等待3秒
+
+      // 立即检查一次
+      if ((window as any).wx) {
+        resolve((window as any).wx);
+        return;
+      }
+
+      // 轮询检查 wx 是否加载完成
+      checkTimer = setInterval(() => {
+        if ((window as any).wx) {
+          clearInterval(checkTimer);
+          resolve((window as any).wx);
+        }
+      }, 100);
+
+      // 超时未加载完成，返回 null
+      setTimeout(() => {
+        clearInterval(checkTimer);
+        resolve(null);
+      }, maxWaitTime);
+    });
+  }, []);
+
   // 打开预览链接 - 适配不同环境
-  const openPreview = useCallback((url: string) => {
+  const openPreview = useCallback(async (url: string) => {
     // 检测是否在微信小程序中
     if (isInWechatMiniProgram()) {
-      openInWechatMiniProgram(url);
+      await openInWechatMiniProgram(url);
     } else if (isInWechatBrowser()) {
       // 微信浏览器
       openInWechatBrowser(url);
@@ -133,7 +195,7 @@ export function AppMyCertList() {
       // PC浏览器或其他环境
       window.open(url, '_blank', 'noopener,noreferrer');
     }
-  }, []);
+  }, [waitForWxReady]);
 
   // 检测是否在微信小程序webview中
   const isInWechatMiniProgram = (): boolean => {
@@ -146,22 +208,53 @@ export function AppMyCertList() {
     return /micromessenger/.test(ua);
   };
 
-  // 在微信小程序中打开
-  const openInWechatMiniProgram = (url: string) => {
-    const wx = (window as any).wx;
-    if (wx?.miniProgram?.navigateTo) {
-      // 如果是小程序环境，跳转到web-view页面
+  // 在微信小程序中打开（修复核心逻辑）
+  const openInWechatMiniProgram = async (url: string) => {
+    // 等待 wx 对象加载完成
+    const wx = await waitForWxReady();
+    
+    if (!wx) {
+      alert('微信环境初始化失败，请刷新页面重试');
+      return;
+    }
+
+    if (!wx.miniProgram) {
+      alert('当前未在微信小程序环境中');
+      return;
+    }
+
+    // 核心修复：改为你小程序的实际预览页路径（pagesB 分包）
+    const miniProgramPreviewUrl = `/pagesB/my/preview/preview?url=${encodeURIComponent(url)}`;
+
+    // 优先使用 navigateTo 直接跳转（实时生效）
+    if (wx.miniProgram.navigateTo) {
       wx.miniProgram.navigateTo({
-        url: `/pages/preview/index?url=${encodeURIComponent(url)}`,
+        url: miniProgramPreviewUrl,
+        success: () => {
+          console.log('✅ 跳转小程序预览页成功');
+        },
+        fail: (err: any) => {
+          console.error('❌ navigateTo 跳转失败：', err);
+          // 备选方案：用 redirectTo 重试
+          if (wx.miniProgram.redirectTo) {
+            wx.miniProgram.redirectTo({
+              url: miniProgramPreviewUrl,
+            });
+          } else {
+            alert('跳转失败，请手动返回小程序重试');
+          }
+        }
       });
-    } else if (wx?.miniProgram?.postMessage) {
-      // 或者通过postMessage通知小程序
+    } 
+    // 兜底：postMessage（非实时，仅备用）
+    else if (wx.miniProgram.postMessage) {
       wx.miniProgram.postMessage({
         data: {
           action: 'openPreview',
           url: url,
         },
       });
+      alert('已发送预览请求，请返回小程序页面查看');
     }
   };
 
