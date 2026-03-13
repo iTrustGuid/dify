@@ -155,19 +155,11 @@ export function AppMyCertList() {
         url: `/pages/preview/index?url=${encodeURIComponent(url)}`,
       });
     } else if (wx?.miniProgram?.postMessage) {
+      wx.miniProgram.navigateBack({delta: 1})
       // 或者通过postMessage通知小程序
       wx.miniProgram.postMessage({
         data: {
           action: 'openPreview',
-          url: url,
-        },
-      });
-      wx.miniProgram.navigateBack({delta: 1})
-    }else if (wx?.miniProgram?.redirectTo) {
-      // 或者通过postMessage通知小程序
-      wx.miniProgram.redirectTo({
-        data: {
-          action: 'openPreview2',
           url: url,
         },
       });
