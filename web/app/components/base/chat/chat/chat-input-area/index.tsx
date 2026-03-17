@@ -1,17 +1,8 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Textarea from 'react-textarea-autosize'
 import { useTranslation } from 'react-i18next'
-import Recorder from 'js-audio-recorder'
 import { decode } from 'html-entities'
-import type {
-  EnableType,
-  OnSend,
-} from '../../types'
+import type { EnableType, OnSend } from '../../types'
 import type { Theme } from '../../embedded-chatbot/theme/theme-context'
 import type { InputForm } from '../type'
 import { useCheckInputsForms } from '../check-input-forms-hooks'
@@ -20,15 +11,24 @@ import Operation from './operation'
 import cn from '@/utils/classnames'
 import { FileListInChatInput } from '@/app/components/base/file-uploader'
 import { useFile } from '@/app/components/base/file-uploader/hooks'
-import {
-  FileContextProvider,
-  useFileStore,
-} from '@/app/components/base/file-uploader/store'
-import VoiceInput from '@/app/components/base/voice-input'
+import { FileContextProvider, useFileStore } from '@/app/components/base/file-uploader/store'
 import { useToastContext } from '@/app/components/base/toast'
 import FeatureBar from '@/app/components/base/features/new-feature-panel/feature-bar'
 import type { FileUpload } from '@/app/components/base/features/types'
 import { TransferMethod } from '@/types/app'
+
+// WebView兼容：提前挂载SpeechRecognition到window
+const setupSpeechRecognition = () => {
+  if (typeof window !== 'undefined') {
+    const webkitSpeechRecognition = (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
+    (window as any).SpeechRecognition = SpeechRecognition;
+    return SpeechRecognition;
+  }
+  return null;
+};
+
+const SpeechRecognition = setupSpeechRecognition();
 
 type ChatInputAreaProps = {
   botName?: string
@@ -45,6 +45,7 @@ type ChatInputAreaProps = {
   isResponding?: boolean
   disabled?: boolean
 }
+
 const ChatInputArea = ({
   botName,
   showFeatureBar,
@@ -71,7 +72,6 @@ const ChatInputArea = ({
     isMultipleLine,
   } = useTextAreaHeight()
   const [query, setQuery] = useState('')
-  const [showVoiceInput, setShowVoiceInput] = useState(false)
   const filesStore = useFileStore()
   const {
     handleDragFileEnter,
@@ -86,6 +86,16 @@ const ChatInputArea = ({
   const [currentIndex, setCurrentIndex] = useState(-1)
   const isComposingRef = useRef(false)
 
+  // 语音识别相关状态
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const lastResultTimeRef = useRef<number>(Date.now())
+  const retryCountRef = useRef(0) // 重试计数器
+  const MAX_RETRY = 2; // 最大重试次数
+
+  // ========== 第一步：声明所有基础函数（按依赖顺序，先声明被依赖的） ==========
+  // 1. 最基础的handleQueryChange（无外部依赖，仅依赖handleTextareaResize）
   const handleQueryChange = useCallback(
     (value: string) => {
       setQuery(value)
@@ -94,6 +104,191 @@ const ChatInputArea = ({
     [handleTextareaResize],
   )
 
+  // 2. 网络/权限检查函数
+  const checkNetworkStatus = useCallback(() => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      notify({ 
+        type: 'warning', 
+        message: t('common.voiceInput.networkOff', { 
+          defaultValue: '当前网络已断开，请连接网络后使用语音输入' 
+        }) 
+      });
+      return false;
+    }
+    return true;
+  }, [t, notify]);
+
+  const checkMicPermission = useCallback(async () => {
+    try {
+      if (!navigator.permissions) {
+        console.warn('当前环境不支持权限查询，跳过检查');
+        return true;
+      }
+      const permission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      if (permission.state === 'denied') {
+        notify({ 
+          type: 'error', 
+          message: t('common.voiceInput.micDenied', { 
+            defaultValue: '麦克风权限被拒绝，请在系统设置中开启' 
+          }) 
+        });
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('检查麦克风权限失败:', err);
+      return true;
+    }
+  }, [t, notify]);
+
+  // 3. 核心控制函数（无外部依赖）
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch (err) {
+        console.warn('停止语音识别失败:', err);
+      }
+      recognitionRef.current = null
+    }
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current)
+      silenceTimerRef.current = null
+    }
+    retryCountRef.current = 0;
+    setIsListening(false)
+  }, [])
+
+  // 4. 计时器函数（依赖已声明的stopListening）
+  const resetSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+    silenceTimerRef.current = setTimeout(() => {
+      if (Date.now() - lastResultTimeRef.current >= 5000) {
+        stopListening()
+      }
+    }, 5000)
+  }, [stopListening])
+
+  // 5. 重试函数（依赖已声明的stopListening）
+  const restartListening = useCallback(() => {
+    if (retryCountRef.current < MAX_RETRY) {
+      retryCountRef.current += 1;
+      console.log(`语音识别重试 ${retryCountRef.current}/${MAX_RETRY}`);
+      setTimeout(() => {
+        if (isListening && recognitionRef.current) {
+          try {
+            recognitionRef.current.start()
+          } catch (err) {
+            console.error('重试启动识别失败:', err);
+            stopListening();
+            notify({ 
+              type: 'error', 
+              message: t('common.voiceInput.networkRetryFailed', { 
+                defaultValue: '多次尝试连接语音服务失败，请稍后再试' 
+              }) 
+            });
+          }
+        }
+      }, 1000 * retryCountRef.current);
+    } else {
+      stopListening();
+      notify({ 
+        type: 'error', 
+        message: t('common.voiceInput.networkRetryFailed', { 
+          defaultValue: '多次尝试连接语音服务失败，请稍后再试' 
+        }) 
+      });
+    }
+  }, [isListening, stopListening, notify, t]);
+
+  // 6. 启动函数（依赖前面所有已声明的函数）
+  const startListening = useCallback(async () => {
+    if (!checkNetworkStatus()) return;
+    if (!(await checkMicPermission())) return;
+
+    if (!SpeechRecognition) {
+      notify({ 
+        type: 'error', 
+        message: t('common.voiceInput.notSupport', { 
+          defaultValue: '当前浏览器/设备不支持语音识别，请更换环境重试' 
+        }) 
+      });
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition()
+      recognition.continuous = true
+      recognition.interimResults = true
+      recognition.lang = 'zh-CN'
+      recognition.maxAlternatives = 1;
+
+      // 实时识别结果处理
+      recognition.onresult = (event) => {
+        lastResultTimeRef.current = Date.now()
+        resetSilenceTimer()
+        const transcript = Array.from(event.results)
+          .map(result => result[0])
+          .map(result => result.transcript)
+          .join('')
+        handleQueryChange(transcript) // handleQueryChange已声明
+      }
+
+      // 增强错误处理
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error)
+        
+        const errorMessages = {
+          'network': t('common.voiceInput.networkError', { 
+            defaultValue: '网络异常，无法连接语音识别服务' 
+          }),
+          'not-allowed': t('common.voiceInput.micDenied', { 
+            defaultValue: '麦克风权限被拒绝，请开启权限后重试' 
+          }),
+          'no-speech': '',
+          'aborted': '',
+          'audio-capture': t('common.voiceInput.micError', { 
+            defaultValue: '无法访问麦克风，请检查设备连接' 
+          }),
+          'default': t('common.voiceInput.error', { 
+            defaultValue: '语音识别出错，请重试' 
+          })
+        };
+
+        const errorMsg = errorMessages[event.error as keyof typeof errorMessages] || errorMessages.default;
+        
+        if (event.error === 'network') {
+          restartListening(); // restartListening已声明
+        } else if (errorMsg) {
+          notify({ type: 'error', message: errorMsg });
+          stopListening(); // stopListening已声明
+        }
+      }
+
+      recognition.onend = () => {
+        if (isListening) {
+          recognition.start();
+        }
+      }
+
+      recognitionRef.current = recognition
+      recognition.start()
+      setIsListening(true)
+      lastResultTimeRef.current = Date.now()
+      resetSilenceTimer()
+    } catch (err) {
+      console.error('启动语音识别失败:', err)
+      notify({ 
+        type: 'error', 
+        message: t('common.voiceInput.startFailed', { 
+          defaultValue: '无法启动语音识别，请检查麦克风权限或网络' 
+        }) 
+      });
+      stopListening();
+    }
+  }, [checkNetworkStatus, checkMicPermission, t, notify, handleQueryChange, resetSilenceTimer, isListening, stopListening, restartListening])
+
+  // ========== 第二步：声明其他业务函数 ==========
   const handleOnMessage = (event: any) => {
     console.log('event.data.message', event.data.message)
     if (event.data.type === 'dify-chatbot-append-message') {
@@ -107,6 +302,7 @@ const ChatInputArea = ({
       }
     }
   }
+
   const configChangeHandler = (event: MessageEvent) => {
     const windowAny = window as any;
     if (event.data && event.data.type === 'dify-chatbot-config-change') {
@@ -115,13 +311,12 @@ const ChatInputArea = ({
       windowAny.difyChatbotConfig = newConfig;
     }
   }
+
   useEffect(() => {
     const windowAny = window as any;
-    // fixed by LP 接收外部消息，推入一条新增聊天消息
     windowAny.removeEventListener('message', handleOnMessage)
     windowAny.addEventListener('message', handleOnMessage)
 
-    // 监听message事件，更新chat配置
     windowAny.removeEventListener('message', configChangeHandler);
     windowAny.addEventListener('message', configChangeHandler);
   }, [])
@@ -149,13 +344,12 @@ const ChatInputArea = ({
       }
     }
   }
+
   const handleCompositionStart = () => {
-    // e: React.CompositionEvent<HTMLTextAreaElement>
     isComposingRef.current = true
   }
+
   const handleCompositionEnd = () => {
-    // safari or some browsers will trigger compositionend before keydown.
-    // delay 50ms for safari.
     setTimeout(() => {
       isComposingRef.current = false
     }, 50)
@@ -163,7 +357,6 @@ const ChatInputArea = ({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-      // if isComposing, exit
       if (isComposingRef.current) return
       e.preventDefault()
       setQuery(query.replace(/\n$/, ''))
@@ -172,40 +365,47 @@ const ChatInputArea = ({
       handleSend()
     }
     else if (e.key === 'ArrowUp' && !e.shiftKey && !e.nativeEvent.isComposing && e.metaKey) {
-      // When the cmd + up key is pressed, output the previous element
       if (currentIndex > 0) {
         setCurrentIndex(currentIndex - 1)
         handleQueryChange(historyRef.current[currentIndex - 1])
       }
     }
     else if (e.key === 'ArrowDown' && !e.shiftKey && !e.nativeEvent.isComposing && e.metaKey) {
-      // When the cmd + down key is pressed, output the next element
       if (currentIndex < historyRef.current.length - 1) {
         setCurrentIndex(currentIndex + 1)
         handleQueryChange(historyRef.current[currentIndex + 1])
       }
       else if (currentIndex === historyRef.current.length - 1) {
-        // If it is the last element, clear the input box
         setCurrentIndex(historyRef.current.length)
         handleQueryChange('')
       }
     }
   }
 
-  const handleShowVoiceInput = useCallback(() => {
-    (Recorder as any).getPermission().then(() => {
-      setShowVoiceInput(true)
-    }, () => {
-      notify({ type: 'error', message: t('common.voiceInput.notAllow') })
-    })
-  }, [t, notify])
+  // 切换语音识别状态
+  const toggleListening = useCallback(async () => {
+    if (isListening) {
+      stopListening()
+    } else {
+      await startListening()
+    }
+  }, [isListening, startListening, stopListening])
 
+  // 组件卸载时清理
+  useEffect(() => {
+    return () => {
+      stopListening()
+    }
+  }, [stopListening])
+
+  // ========== 渲染部分 ==========
   const operation = (
     <Operation
       ref={holdSpaceRef}
       fileConfig={visionConfig}
       speechToTextConfig={speechToTextConfig}
-      onShowVoiceInput={handleShowVoiceInput}
+      onToggleListening={toggleListening}
+      isListening={isListening}
       onSend={handleSend}
       theme={theme}
     />
@@ -222,10 +422,7 @@ const ChatInputArea = ({
       >
         <div className='relative max-h-[158px] overflow-y-auto overflow-x-hidden px-[9px] pt-[9px]'>
           <FileListInChatInput fileConfig={visionConfig!} />
-          <div
-            ref={wrapperRef}
-            className='flex items-center justify-between'
-          >
+          <div ref={wrapperRef} className='flex items-center justify-between'>
             <div className='relative flex w-full grow items-center'>
               <div
                 ref={textValueRef}
@@ -235,9 +432,7 @@ const ChatInputArea = ({
               </div>
               <Textarea
                 ref={ref => textareaRef.current = ref as any}
-                className={cn(
-                  'body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none',
-                )}
+                className={cn('body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none')}
                 placeholder={decode(t('common.chat.inputPlaceholder', { botName }) || '')}
                 autoFocus
                 minRows={1}
@@ -253,24 +448,10 @@ const ChatInputArea = ({
                 onDrop={handleDropFile}
               />
             </div>
-            {
-              !isMultipleLine && operation
-            }
+            {!isMultipleLine && operation}
           </div>
-          {
-            showVoiceInput && (
-              <VoiceInput
-                onCancel={() => setShowVoiceInput(false)}
-                onConverted={text => handleQueryChange(text)}
-              />
-            )
-          }
         </div>
-        {
-          isMultipleLine && (
-            <div className='px-[9px]'>{operation}</div>
-          )
-        }
+        {isMultipleLine && <div className='px-[9px]'>{operation}</div>}
       </div>
       {showFeatureBar && <FeatureBar showFileUpload={showFileUpload} disabled={featureBarDisabled} onFeatureBarClick={onFeatureBarClick} />}
     </>

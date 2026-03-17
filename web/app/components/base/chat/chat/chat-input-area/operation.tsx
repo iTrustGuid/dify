@@ -1,12 +1,10 @@
 import type { FC, Ref } from 'react'
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import {
   RiMicLine,
   RiSendPlane2Fill,
 } from '@remixicon/react'
-import type {
-  EnableType,
-} from '../../types'
+import type { EnableType } from '../../types'
 import type { Theme } from '../../embedded-chatbot/theme/theme-context'
 import Button from '@/app/components/base/button'
 import ActionButton from '@/app/components/base/action-button'
@@ -19,9 +17,13 @@ type OperationProps = {
   speechToTextConfig?: EnableType
   onShowVoiceInput?: () => void
   onSend: () => void
-  theme?: Theme | null,
-  ref?: Ref<HTMLDivElement>;
+  theme?: Theme | null
+  ref?: Ref<HTMLDivElement>
+  // 新增：语音识别状态控制
+  isListening: boolean
+  onToggleListening: () => void
 }
+
 const Operation: FC<OperationProps> = ({
   ref,
   fileConfig,
@@ -29,41 +31,31 @@ const Operation: FC<OperationProps> = ({
   onShowVoiceInput,
   onSend,
   theme,
+  isListening,
+  onToggleListening,
 }) => {
   return (
-    <div
-      className={cn(
-        'flex shrink-0 items-center justify-end',
-      )}
-    >
-      <div
-        className='flex items-center pl-1'
-        ref={ref}
-      >
+    <div className={cn('flex shrink-0 items-center justify-end')}>
+      <div className='flex items-center pl-1' ref={ref}>
         <div className='flex items-center space-x-1'>
           {fileConfig?.enabled && <FileUploaderInChatInput fileConfig={fileConfig} />}
-          {
-            speechToTextConfig?.enabled && (
-              <ActionButton
-                size='l'
-                onClick={onShowVoiceInput}
-              >
-                <RiMicLine className='h-5 w-5' />
-              </ActionButton>
-            )
-          }
+          {speechToTextConfig?.enabled && (
+            <ActionButton
+              size='l'
+              onClick={onToggleListening}
+              className={cn(
+                isListening ? 'text-[#10B981] hover:bg-[#D1FAE5]' : 'text-gray-500 hover:bg-gray-100'
+              )}
+            >
+              <RiMicLine className='h-5 w-5' />
+            </ActionButton>
+          )}
         </div>
         <Button
           className='ml-3 w-8 px-0'
           variant='primary'
           onClick={onSend}
-          style={
-            theme
-              ? {
-                backgroundColor: theme.primaryColor,
-              }
-              : {}
-          }
+          style={theme ? { backgroundColor: theme.primaryColor } : {}}
         >
           <RiSendPlane2Fill className='h-4 w-4' />
         </Button>
