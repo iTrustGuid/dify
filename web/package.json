@@ -138,6 +138,7 @@
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
+    "remixicon": "^4.9.1",
     "scheduler": "^0.26.0",
     "semver": "^7.7.3",
     "sharp": "^0.33.5",
@@ -149,6 +150,7 @@
     "unist-util-visit": "^5.1.0",
     "use-context-selector": "^2.0.0",
     "uuid": "^10.0.0",
+    "ws": "^8.19.0",
     "zod": "^3.25.76",
     "zundo": "^2.3.0",
     "zustand": "^5.0.9"

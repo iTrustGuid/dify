@@ -1,8 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import Textarea from 'react-textarea-autosize'
 import { useTranslation } from 'react-i18next'
 import { decode } from 'html-entities'
-import type { EnableType, OnSend } from '../../types'
+import type {
+  EnableType,
+  OnSend,
+} from '../../types'
 import type { Theme } from '../../embedded-chatbot/theme/theme-context'
 import type { InputForm } from '../type'
 import { useCheckInputsForms } from '../check-input-forms-hooks'
@@ -11,24 +19,20 @@ import Operation from './operation'
 import cn from '@/utils/classnames'
 import { FileListInChatInput } from '@/app/components/base/file-uploader'
 import { useFile } from '@/app/components/base/file-uploader/hooks'
-import { FileContextProvider, useFileStore } from '@/app/components/base/file-uploader/store'
+import {
+  FileContextProvider,
+  useFileStore,
+} from '@/app/components/base/file-uploader/store'
 import { useToastContext } from '@/app/components/base/toast'
 import FeatureBar from '@/app/components/base/features/new-feature-panel/feature-bar'
 import type { FileUpload } from '@/app/components/base/features/types'
 import { TransferMethod } from '@/types/app'
 
-// WebView兼容：提前挂载SpeechRecognition到window
-const setupSpeechRecognition = () => {
-  if (typeof window !== 'undefined') {
-    const webkitSpeechRecognition = (window as any).webkitSpeechRecognition;
-    const SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
-    (window as any).SpeechRecognition = SpeechRecognition;
-    return SpeechRecognition;
-  }
-  return null;
-};
-
-const SpeechRecognition = setupSpeechRecognition();
+// ================= 阿里云配置 =================
+const ALIYUN_TOKEN = '5fa5a06a276e4bc7870c26cd0db927cb' // ⚠️ 仅测试用！
+const ALIYUN_APP_KEY = 'PtcXfBxLzBd8HU4N'
+const ALIYUN_URL = 'wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1'
+// =============================================
 
 type ChatInputAreaProps = {
   botName?: string
@@ -87,15 +91,222 @@ const ChatInputArea = ({
   const isComposingRef = useRef(false)
 
   // 语音识别相关状态
-  const [isListening, setIsListening] = useState(false)
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
-  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const lastResultTimeRef = useRef<number>(Date.now())
-  const retryCountRef = useRef(0) // 重试计数器
-  const MAX_RETRY = 2; // 最大重试次数
+  const [isRecording, setIsRecording] = useState(false)
+  const wsRef = useRef<WebSocket | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const processorRef = useRef<ScriptProcessorNode | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const silenceTimerRef = useRef<number | null>(null)
+  const taskIdRef = useRef<string>(
+    Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
+  )
+  const finalSentencesRef = useRef<string[]>([])
 
-  // ========== 第一步：声明所有基础函数（按依赖顺序，先声明被依赖的） ==========
-  // 1. 最基础的handleQueryChange（无外部依赖，仅依赖handleTextareaResize）
+  // 生成 32 位小写十六进制 ID
+  const generateMessageId = useCallback(() => {
+    return Array(32)
+      .fill(0)
+      .map(() => Math.floor(Math.random() * 16).toString(16))
+      .join('')
+  }, [])
+
+  // 恢复 AudioContext
+  const resumeAudioContext = useCallback(() => {
+    const ctx = audioContextRef.current
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(console.error)
+    }
+  }, [])
+
+  // 重置静音计时器
+  const resetSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current)
+    }
+    silenceTimerRef.current = window.setTimeout(() => {
+      stopRecognition()
+    }, 5000) // 5秒静音自动停止
+  }, [])
+
+  // 清除静音计时器
+  const clearSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current)
+      silenceTimerRef.current = null
+    }
+  }, [])
+
+  // 开始语音识别
+  const startRecognition = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true
+        }
+      })
+      streamRef.current = stream
+
+      const wsUrl = `${ALIYUN_URL}?token=${ALIYUN_TOKEN}&appkey=${ALIYUN_APP_KEY}`
+      const ws = new WebSocket(wsUrl)
+      wsRef.current = ws
+
+      ws.onopen = () => {
+        console.log('✅ Aliyun NLS WebSocket Connected')
+        sendStartCommand(ws)
+        setIsRecording(true)
+        startAudioProcessing(stream)
+        resetSilenceTimer()
+      }
+
+      ws.onmessage = (event) => {
+        try {
+          if (typeof event.data !== 'string') return
+          const data = JSON.parse(event.data)
+          const header = data.header
+          if (!header || typeof header.name !== 'string') return
+
+          if (header.name === 'TranscriptionResultChanged') {
+            const text = data.payload?.result || ''
+            setQuery(prev => {
+              // 拼接新的识别结果
+              const base = prev.endsWith(' ') ? prev : prev + ' '
+              return base + text
+            })
+            resetSilenceTimer() // 有新语音，重置静音计时器
+          }
+          else if (header.name === 'SentenceEnd') {
+            const sentence = data.payload?.result?.trim() || ''
+            if (sentence) finalSentencesRef.current.push(sentence)
+          }
+          else if (header.name === 'TranscriptionCompleted') {
+            cleanup()
+          }
+          else if (header.name === 'TaskFailed') {
+            const errorMsg = data.header?.status_text || 'Unknown error'
+            console.error('❌ NLS Task Failed:', errorMsg)
+            cleanup()
+          }
+        } catch (e) {
+          console.error('Parse WS message error', e)
+        }
+      }
+
+      ws.onerror = (err) => {
+        console.error('❌ WebSocket Error:', err)
+        cleanup()
+      }
+
+      ws.onclose = () => {
+        cleanup()
+      }
+
+    } catch (err) {
+      console.error('Init recognition failed:', err)
+      cleanup()
+    }
+  }
+
+  const sendStartCommand = (ws: WebSocket) => {
+    ws.send(JSON.stringify({
+      header: {
+        message_id: generateMessageId(),
+        task_id: taskIdRef.current,
+        namespace: 'SpeechTranscriber',
+        name: 'StartTranscription',
+        appkey: ALIYUN_APP_KEY,
+      },
+      payload: {
+        format: 'pcm',
+        sample_rate: 16000,
+        enable_intermediate_result: true,
+        enable_punctuation_prediction: true,
+        enable_inverse_text_normalization: true,
+      },
+    }))
+  }
+
+  const sendStopCommand = () => {
+    const ws = wsRef.current
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        header: {
+          message_id: generateMessageId(),
+          task_id: taskIdRef.current,
+          namespace: 'SpeechTranscriber',
+          name: 'StopTranscription',
+          appkey: ALIYUN_APP_KEY,
+        },
+        payload: {},
+      }))
+    }
+  }
+
+  const startAudioProcessing = (stream: MediaStream) => {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    const audioContext = new AudioContextClass({ sampleRate: 16000 })
+    audioContextRef.current = audioContext
+
+    if (audioContext.state === 'suspended') {
+      resumeAudioContext()
+    }
+
+    const source = audioContext.createMediaStreamSource(stream)
+    const processor = audioContext.createScriptProcessor(4096, 1, 1)
+    processorRef.current = processor
+
+    processor.onaudioprocess = (e) => {
+      const ws = wsRef.current
+      if (!ws || ws.readyState !== WebSocket.OPEN) return
+
+      const inputData = e.inputBuffer.getChannelData(0)
+      const output = new Int16Array(inputData.length)
+
+      // 转换为 16-bit PCM
+      for (let i = 0; i < inputData.length; i++) {
+        const s = Math.max(-1, Math.min(1, inputData[i]))
+        output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
+      }
+
+      ws.send(output.buffer)
+    }
+
+    source.connect(processor)
+    processor.connect(audioContext.destination)
+  }
+
+  const stopRecognition = () => {
+    setIsRecording(false)
+    clearSilenceTimer()
+    sendStopCommand()
+  }
+
+  const cleanup = () => {
+    finalSentencesRef.current = []
+    clearSilenceTimer()
+
+    processorRef.current?.disconnect()
+    streamRef.current?.getTracks().forEach(track => track.stop())
+    audioContextRef.current?.close()
+    if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.close()
+
+    processorRef.current = null
+    streamRef.current = null
+    audioContextRef.current = null
+    wsRef.current = null
+  }
+
+  // 切换录音状态
+  const toggleVoiceInput = useCallback(() => {
+    if (isRecording) {
+      stopRecognition()
+    } else {
+      startRecognition()
+    }
+  }, [isRecording])
+
   const handleQueryChange = useCallback(
     (value: string) => {
       setQuery(value)
@@ -104,191 +315,6 @@ const ChatInputArea = ({
     [handleTextareaResize],
   )
 
-  // 2. 网络/权限检查函数
-  const checkNetworkStatus = useCallback(() => {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      notify({ 
-        type: 'warning', 
-        message: t('common.voiceInput.networkOff', { 
-          defaultValue: '当前网络已断开，请连接网络后使用语音输入' 
-        }) 
-      });
-      return false;
-    }
-    return true;
-  }, [t, notify]);
-
-  const checkMicPermission = useCallback(async () => {
-    try {
-      if (!navigator.permissions) {
-        console.warn('当前环境不支持权限查询，跳过检查');
-        return true;
-      }
-      const permission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-      if (permission.state === 'denied') {
-        notify({ 
-          type: 'error', 
-          message: t('common.voiceInput.micDenied', { 
-            defaultValue: '麦克风权限被拒绝，请在系统设置中开启' 
-          }) 
-        });
-        return false;
-      }
-      return true;
-    } catch (err) {
-      console.warn('检查麦克风权限失败:', err);
-      return true;
-    }
-  }, [t, notify]);
-
-  // 3. 核心控制函数（无外部依赖）
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop()
-      } catch (err) {
-        console.warn('停止语音识别失败:', err);
-      }
-      recognitionRef.current = null
-    }
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current)
-      silenceTimerRef.current = null
-    }
-    retryCountRef.current = 0;
-    setIsListening(false)
-  }, [])
-
-  // 4. 计时器函数（依赖已声明的stopListening）
-  const resetSilenceTimer = useCallback(() => {
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
-    silenceTimerRef.current = setTimeout(() => {
-      if (Date.now() - lastResultTimeRef.current >= 5000) {
-        stopListening()
-      }
-    }, 5000)
-  }, [stopListening])
-
-  // 5. 重试函数（依赖已声明的stopListening）
-  const restartListening = useCallback(() => {
-    if (retryCountRef.current < MAX_RETRY) {
-      retryCountRef.current += 1;
-      console.log(`语音识别重试 ${retryCountRef.current}/${MAX_RETRY}`);
-      setTimeout(() => {
-        if (isListening && recognitionRef.current) {
-          try {
-            recognitionRef.current.start()
-          } catch (err) {
-            console.error('重试启动识别失败:', err);
-            stopListening();
-            notify({ 
-              type: 'error', 
-              message: t('common.voiceInput.networkRetryFailed', { 
-                defaultValue: '多次尝试连接语音服务失败，请稍后再试' 
-              }) 
-            });
-          }
-        }
-      }, 1000 * retryCountRef.current);
-    } else {
-      stopListening();
-      notify({ 
-        type: 'error', 
-        message: t('common.voiceInput.networkRetryFailed', { 
-          defaultValue: '多次尝试连接语音服务失败，请稍后再试' 
-        }) 
-      });
-    }
-  }, [isListening, stopListening, notify, t]);
-
-  // 6. 启动函数（依赖前面所有已声明的函数）
-  const startListening = useCallback(async () => {
-    if (!checkNetworkStatus()) return;
-    if (!(await checkMicPermission())) return;
-
-    if (!SpeechRecognition) {
-      notify({ 
-        type: 'error', 
-        message: t('common.voiceInput.notSupport', { 
-          defaultValue: '当前浏览器/设备不支持语音识别，请更换环境重试' 
-        }) 
-      });
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition()
-      recognition.continuous = true
-      recognition.interimResults = true
-      recognition.lang = 'zh-CN'
-      recognition.maxAlternatives = 1;
-
-      // 实时识别结果处理
-      recognition.onresult = (event) => {
-        lastResultTimeRef.current = Date.now()
-        resetSilenceTimer()
-        const transcript = Array.from(event.results)
-          .map(result => result[0])
-          .map(result => result.transcript)
-          .join('')
-        handleQueryChange(transcript) // handleQueryChange已声明
-      }
-
-      // 增强错误处理
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error)
-        
-        const errorMessages = {
-          'network': t('common.voiceInput.networkError', { 
-            defaultValue: '网络异常，无法连接语音识别服务' 
-          }),
-          'not-allowed': t('common.voiceInput.micDenied', { 
-            defaultValue: '麦克风权限被拒绝，请开启权限后重试' 
-          }),
-          'no-speech': '',
-          'aborted': '',
-          'audio-capture': t('common.voiceInput.micError', { 
-            defaultValue: '无法访问麦克风，请检查设备连接' 
-          }),
-          'default': t('common.voiceInput.error', { 
-            defaultValue: '语音识别出错，请重试' 
-          })
-        };
-
-        const errorMsg = errorMessages[event.error as keyof typeof errorMessages] || errorMessages.default;
-        
-        if (event.error === 'network') {
-          restartListening(); // restartListening已声明
-        } else if (errorMsg) {
-          notify({ type: 'error', message: errorMsg });
-          stopListening(); // stopListening已声明
-        }
-      }
-
-      recognition.onend = () => {
-        if (isListening) {
-          recognition.start();
-        }
-      }
-
-      recognitionRef.current = recognition
-      recognition.start()
-      setIsListening(true)
-      lastResultTimeRef.current = Date.now()
-      resetSilenceTimer()
-    } catch (err) {
-      console.error('启动语音识别失败:', err)
-      notify({ 
-        type: 'error', 
-        message: t('common.voiceInput.startFailed', { 
-          defaultValue: '无法启动语音识别，请检查麦克风权限或网络' 
-        }) 
-      });
-      stopListening();
-    }
-  }, [checkNetworkStatus, checkMicPermission, t, notify, handleQueryChange, resetSilenceTimer, isListening, stopListening, restartListening])
-
-  // ========== 第二步：声明其他业务函数 ==========
   const handleOnMessage = (event: any) => {
     console.log('event.data.message', event.data.message)
     if (event.data.type === 'dify-chatbot-append-message') {
@@ -319,6 +345,10 @@ const ChatInputArea = ({
 
     windowAny.removeEventListener('message', configChangeHandler);
     windowAny.addEventListener('message', configChangeHandler);
+
+    return () => {
+      cleanup()
+    }
   }, [])
 
   const handleSend = () => {
@@ -382,30 +412,13 @@ const ChatInputArea = ({
     }
   }
 
-  // 切换语音识别状态
-  const toggleListening = useCallback(async () => {
-    if (isListening) {
-      stopListening()
-    } else {
-      await startListening()
-    }
-  }, [isListening, startListening, stopListening])
-
-  // 组件卸载时清理
-  useEffect(() => {
-    return () => {
-      stopListening()
-    }
-  }, [stopListening])
-
-  // ========== 渲染部分 ==========
   const operation = (
     <Operation
       ref={holdSpaceRef}
       fileConfig={visionConfig}
       speechToTextConfig={speechToTextConfig}
-      onToggleListening={toggleListening}
-      isListening={isListening}
+      isRecording={isRecording}
+      onToggleVoiceInput={toggleVoiceInput}
       onSend={handleSend}
       theme={theme}
     />
@@ -422,7 +435,10 @@ const ChatInputArea = ({
       >
         <div className='relative max-h-[158px] overflow-y-auto overflow-x-hidden px-[9px] pt-[9px]'>
           <FileListInChatInput fileConfig={visionConfig!} />
-          <div ref={wrapperRef} className='flex items-center justify-between'>
+          <div
+            ref={wrapperRef}
+            className='flex items-center justify-between'
+          >
             <div className='relative flex w-full grow items-center'>
               <div
                 ref={textValueRef}
@@ -432,7 +448,9 @@ const ChatInputArea = ({
               </div>
               <Textarea
                 ref={ref => textareaRef.current = ref as any}
-                className={cn('body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none')}
+                className={cn(
+                  'body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none',
+                )}
                 placeholder={decode(t('common.chat.inputPlaceholder', { botName }) || '')}
                 autoFocus
                 minRows={1}
