@@ -29,7 +29,7 @@ import type { FileUpload } from '@/app/components/base/features/types'
 import { TransferMethod } from '@/types/app'
 
 // ================= 阿里云配置 =================
-const ALIYUN_TOKEN = '5fa5a06a276e4bc7870c26cd0db927cb' // ⚠️ 仅测试用！
+const ALIYUN_TOKEN = '5fa5a06a276e4bc7870c26cd0db927cb'
 const ALIYUN_APP_KEY = 'PtcXfBxLzBd8HU4N'
 const ALIYUN_URL = 'wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1'
 // =============================================
@@ -90,19 +90,20 @@ const ChatInputArea = ({
   const [currentIndex, setCurrentIndex] = useState(-1)
   const isComposingRef = useRef(false)
 
-  // 语音识别相关状态
+  // 语音识别相关
   const [isRecording, setIsRecording] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const processorRef = useRef<ScriptProcessorNode | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const silenceTimerRef = useRef<number | null>(null)
+  const lastStableTextRef = useRef('') // 记录已稳定的文本前缀
+
   const taskIdRef = useRef<string>(
     Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
   )
-  const finalSentencesRef = useRef<string[]>([])
 
-  // 生成 32 位小写十六进制 ID
+  // 生成 message_id
   const generateMessageId = useCallback(() => {
     return Array(32)
       .fill(0)
@@ -118,17 +119,14 @@ const ChatInputArea = ({
     }
   }, [])
 
-  // 重置静音计时器
+  // 5秒静音自动停止
   const resetSilenceTimer = useCallback(() => {
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current)
-    }
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
     silenceTimerRef.current = window.setTimeout(() => {
       stopRecognition()
-    }, 5000) // 5秒静音自动停止
+    }, 5000)
   }, [])
 
-  // 清除静音计时器
   const clearSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current)
@@ -136,7 +134,31 @@ const ChatInputArea = ({
     }
   }, [])
 
-  // 开始语音识别
+  // ✅ 手动编辑输入框时停止录音
+  const handleManualEdit = useCallback((value: string) => {
+    if (isRecording) {
+      stopRecognition()
+      setIsRecording(false)
+    }
+    setQuery(value)
+    setTimeout(handleTextareaResize, 0)
+  }, [isRecording, handleTextareaResize])
+
+  // ✅ 流式更新输入框（微信式纠错）
+  const updateQueryWithRecognition = useCallback((newText: string, isFinal: boolean = false) => {
+    setQuery(prev => {
+      if (isFinal) {
+        // 最终结果：直接替换不稳定部分
+        return lastStableTextRef.current + newText
+      } else {
+        // 中间结果：保留前缀，更新后半部分（模拟纠错）
+        return lastStableTextRef.current + newText
+      }
+    })
+    handleTextareaResize()
+  }, [handleTextareaResize])
+
+  // 开始识别
   const startRecognition = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -153,8 +175,12 @@ const ChatInputArea = ({
       const ws = new WebSocket(wsUrl)
       wsRef.current = ws
 
+      // 录音开始时，记录当前输入框内容作为稳定前缀
+      lastStableTextRef.current = query.trim()
+      if (lastStableTextRef.current) lastStableTextRef.current += ' '
+
       ws.onopen = () => {
-        console.log('✅ Aliyun NLS WebSocket Connected')
+        console.log('✅ 阿里云语音连接成功')
         sendStartCommand(ws)
         setIsRecording(true)
         startAudioProcessing(stream)
@@ -166,45 +192,61 @@ const ChatInputArea = ({
           if (typeof event.data !== 'string') return
           const data = JSON.parse(event.data)
           const header = data.header
-          if (!header || typeof header.name !== 'string') return
+          if (!header) return
 
+          // ========================
+          // ✅ 核心：流式实时纠正
+          // ========================
           if (header.name === 'TranscriptionResultChanged') {
-            const text = data.payload?.result || ''
-            setQuery(prev => {
-              // 拼接新的识别结果
-              const base = prev.endsWith(' ') ? prev : prev + ' '
-              return base + text
-            })
-            resetSilenceTimer() // 有新语音，重置静音计时器
+            const tempText = data.payload?.result || ''
+            updateQueryWithRecognition(tempText, false)
+            resetSilenceTimer()
           }
-          else if (header.name === 'SentenceEnd') {
-            const sentence = data.payload?.result?.trim() || ''
-            if (sentence) finalSentencesRef.current.push(sentence)
-          }
-          else if (header.name === 'TranscriptionCompleted') {
+
+          // ========================
+          // ✅ 最终确认：用完整结果修正
+          // ========================
+          if (header.name === 'TranscriptionCompleted') {
+            const finalText = data.payload?.result?.trim() || ''
+            if (finalText) {
+              updateQueryWithRecognition(finalText, true)
+            }
+            lastStableTextRef.current = '' // 重置稳定前缀
+            setIsRecording(false)
             cleanup()
           }
-          else if (header.name === 'TaskFailed') {
-            const errorMsg = data.header?.status_text || 'Unknown error'
-            console.error('❌ NLS Task Failed:', errorMsg)
+
+          if (header.name === 'SentenceEnd') {
+            // 句子结束时，将当前结果标记为稳定前缀
+            const sentence = data.payload?.result?.trim() || ''
+            if (sentence) {
+              lastStableTextRef.current += sentence + ' '
+            }
+          }
+
+          if (header.name === 'TaskFailed') {
+            console.error('识别失败', data.header?.status_text)
+            setIsRecording(false)
             cleanup()
           }
         } catch (e) {
-          console.error('Parse WS message error', e)
+          console.error('解析消息错误', e)
         }
       }
 
       ws.onerror = (err) => {
-        console.error('❌ WebSocket Error:', err)
+        console.error('ws 错误', err)
+        setIsRecording(false)
         cleanup()
       }
 
       ws.onclose = () => {
+        setIsRecording(false)
         cleanup()
       }
-
     } catch (err) {
-      console.error('Init recognition failed:', err)
+      console.error('启动录音失败', err)
+      setIsRecording(false)
       cleanup()
     }
   }
@@ -249,9 +291,7 @@ const ChatInputArea = ({
     const audioContext = new AudioContextClass({ sampleRate: 16000 })
     audioContextRef.current = audioContext
 
-    if (audioContext.state === 'suspended') {
-      resumeAudioContext()
-    }
+    if (audioContext.state === 'suspended') resumeAudioContext()
 
     const source = audioContext.createMediaStreamSource(stream)
     const processor = audioContext.createScriptProcessor(4096, 1, 1)
@@ -263,13 +303,10 @@ const ChatInputArea = ({
 
       const inputData = e.inputBuffer.getChannelData(0)
       const output = new Int16Array(inputData.length)
-
-      // 转换为 16-bit PCM
       for (let i = 0; i < inputData.length; i++) {
         const s = Math.max(-1, Math.min(1, inputData[i]))
         output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
       }
-
       ws.send(output.buffer)
     }
 
@@ -284,11 +321,11 @@ const ChatInputArea = ({
   }
 
   const cleanup = () => {
-    finalSentencesRef.current = []
     clearSilenceTimer()
+    lastStableTextRef.current = ''
 
     processorRef.current?.disconnect()
-    streamRef.current?.getTracks().forEach(track => track.stop())
+    streamRef.current?.getTracks().forEach(t => t.stop())
     audioContextRef.current?.close()
     if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.close()
 
@@ -298,7 +335,7 @@ const ChatInputArea = ({
     wsRef.current = null
   }
 
-  // 切换录音状态
+  // 切换录音
   const toggleVoiceInput = useCallback(() => {
     if (isRecording) {
       stopRecognition()
@@ -316,7 +353,6 @@ const ChatInputArea = ({
   )
 
   const handleOnMessage = (event: any) => {
-    console.log('event.data.message', event.data.message)
     if (event.data.type === 'dify-chatbot-append-message') {
       const message = event.data.message as string
       setQuery(message)
@@ -332,7 +368,6 @@ const ChatInputArea = ({
   const configChangeHandler = (event: MessageEvent) => {
     const windowAny = window as any;
     if (event.data && event.data.type === 'dify-chatbot-config-change') {
-      console.log('configChangeHandler', event)
       const newConfig = event.data.difyChatbotConfig;
       windowAny.difyChatbotConfig = newConfig;
     }
@@ -340,13 +375,11 @@ const ChatInputArea = ({
 
   useEffect(() => {
     const windowAny = window as any;
-    windowAny.removeEventListener('message', handleOnMessage)
     windowAny.addEventListener('message', handleOnMessage)
-
-    windowAny.removeEventListener('message', configChangeHandler);
-    windowAny.addEventListener('message', configChangeHandler);
-
+    windowAny.addEventListener('message', configChangeHandler)
     return () => {
+      windowAny.removeEventListener('message', handleOnMessage)
+      windowAny.removeEventListener('message', configChangeHandler)
       cleanup()
     }
   }, [])
@@ -356,7 +389,6 @@ const ChatInputArea = ({
       notify({ type: 'info', message: t('appDebug.errorMessage.waitForResponse') })
       return
     }
-
     if (onSend) {
       const { files, setFiles } = filesStore.getState()
       if (files.find(item => item.transferMethod === TransferMethod.local_file && !item.uploadedId)) {
@@ -394,22 +426,6 @@ const ChatInputArea = ({
       setCurrentIndex(historyRef.current.length)
       handleSend()
     }
-    else if (e.key === 'ArrowUp' && !e.shiftKey && !e.nativeEvent.isComposing && e.metaKey) {
-      if (currentIndex > 0) {
-        setCurrentIndex(currentIndex - 1)
-        handleQueryChange(historyRef.current[currentIndex - 1])
-      }
-    }
-    else if (e.key === 'ArrowDown' && !e.shiftKey && !e.nativeEvent.isComposing && e.metaKey) {
-      if (currentIndex < historyRef.current.length - 1) {
-        setCurrentIndex(currentIndex + 1)
-        handleQueryChange(historyRef.current[currentIndex + 1])
-      }
-      else if (currentIndex === historyRef.current.length - 1) {
-        setCurrentIndex(historyRef.current.length)
-        handleQueryChange('')
-      }
-    }
   }
 
   const operation = (
@@ -435,27 +451,19 @@ const ChatInputArea = ({
       >
         <div className='relative max-h-[158px] overflow-y-auto overflow-x-hidden px-[9px] pt-[9px]'>
           <FileListInChatInput fileConfig={visionConfig!} />
-          <div
-            ref={wrapperRef}
-            className='flex items-center justify-between'
-          >
+          <div ref={wrapperRef} className='flex items-center justify-between'>
             <div className='relative flex w-full grow items-center'>
-              <div
-                ref={textValueRef}
-                className='body-lg-regular pointer-events-none invisible absolute h-auto w-auto whitespace-pre p-1 leading-6'
-              >
+              <div ref={textValueRef} className='body-lg-regular pointer-events-none invisible absolute h-auto w-auto whitespace-pre p-1 leading-6'>
                 {query}
               </div>
               <Textarea
                 ref={ref => textareaRef.current = ref as any}
-                className={cn(
-                  'body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none',
-                )}
+                className={cn('body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none')}
                 placeholder={decode(t('common.chat.inputPlaceholder', { botName }) || '')}
                 autoFocus
                 minRows={1}
                 value={query}
-                onChange={e => handleQueryChange(e.target.value)}
+                onChange={e => handleManualEdit(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onCompositionStart={handleCompositionStart}
                 onCompositionEnd={handleCompositionEnd}
@@ -464,6 +472,7 @@ const ChatInputArea = ({
                 onDragLeave={handleDragFileLeave}
                 onDragOver={handleDragFileOver}
                 onDrop={handleDropFile}
+                readOnly={isRecording}
               />
             </div>
             {!isMultipleLine && operation}
