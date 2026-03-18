@@ -10,7 +10,7 @@ type VoiceInputTypes = {
 }
 
 // ================= 阿里云配置 =================
-const ALIYUN_TOKEN = '5fa5a06a276e4bc7870c26cd0db927cb' // ⚠️ 仅测试用！
+const ALIYUN_TOKEN = 'c0e798e91ab6432d937e3fe64f6c38f7' // ⚠️ 仅测试用！
 const ALIYUN_APP_KEY = 'PtcXfBxLzBd8HU4N'
 const ALIYUN_URL = 'wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1'
 // =============================================
