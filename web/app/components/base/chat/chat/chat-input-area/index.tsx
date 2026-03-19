@@ -1,3 +1,4 @@
+// chat-input-area/index.tsx 完整代码
 import {
   useCallback,
   useEffect,
@@ -15,7 +16,7 @@ import type { Theme } from '../../embedded-chatbot/theme/theme-context'
 import type { InputForm } from '../type'
 import { useCheckInputsForms } from '../check-input-forms-hooks'
 import { useTextAreaHeight } from './hooks'
-import Operation from './operation'
+import Operation from './operation' // 确认 Operation 组件导出正确
 import cn from '@/utils/classnames'
 import { FileListInChatInput } from '@/app/components/base/file-uploader'
 import { useFile } from '@/app/components/base/file-uploader/hooks'
@@ -54,6 +55,7 @@ type ChatInputAreaProps = {
   disabled?: boolean
 }
 
+// 1. 确保 ChatInputArea 是标准的 React 函数组件
 const ChatInputArea = ({
   botName,
   showFeatureBar,
@@ -80,12 +82,16 @@ const ChatInputArea = ({
     isMultipleLine,
   } = useTextAreaHeight()
 
+  // ========== 新增：键盘状态管理 ==========
+  const [keepKeyboardOpen, setKeepKeyboardOpen] = useState(false)
+  const ignoreBlurRef = useRef(false) // 忽略blur事件标记
+  
   // ========== 核心拆分：已确认文本 + 当前识别文本 ==========
-  const [confirmedText, setConfirmedText] = useState('') // 已说完的、稳定的文本
-  const [currentRecognizingText, setCurrentRecognizingText] = useState('') // 当前正在识别的文本
-  const lastRecognizedRef = useRef('') // 去重：上一次识别结果
-  const sentenceEndTimerRef = useRef<number | null>(null) // 句子结束计时器
-  const cursorPositionRef = useRef<number>(0) // 记录光标位置
+  const [confirmedText, setConfirmedText] = useState('')
+  const [currentRecognizingText, setCurrentRecognizingText] = useState('')
+  const lastRecognizedRef = useRef('')
+  const sentenceEndTimerRef = useRef<number | null>(null)
+  const cursorPositionRef = useRef<number>(0)
 
   const { isDragActive } = visionConfig ? useFile(visionConfig) : { isDragActive: false }
   const filesStore = useFileStore()
@@ -106,9 +112,10 @@ const ChatInputArea = ({
   const generateMessageId = () =>
     Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
 
-  // 最终显示的文本 = 已确认文本 + 当前识别文本
+  // 最终显示的文本
   const displayText = `${confirmedText} ${currentRecognizingText}`.trim()
 
+  // ========== 工具方法 ==========
   const clearSilenceTimer = () => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current)
@@ -123,7 +130,6 @@ const ChatInputArea = ({
     }
   }
 
-  // 2秒静音自动停止录音
   const resetSilenceTimer = () => {
     if (isStoppingRef.current) return
     clearSilenceTimer()
@@ -132,7 +138,6 @@ const ChatInputArea = ({
     }, 6000) as any
   }
 
-  // 句子结束：1秒无更新则合并到已确认文本
   const resetSentenceEndTimer = () => {
     clearSentenceEndTimer()
     sentenceEndTimerRef.current = window.setTimeout(() => {
@@ -140,7 +145,6 @@ const ChatInputArea = ({
         setConfirmedText(prev => `${prev} ${currentRecognizingText}`.trim())
         setCurrentRecognizingText('')
         lastRecognizedRef.current = ''
-        // 更新光标位置到末尾
         if (textareaRef.current) {
           const newPos = `${prev} ${currentRecognizingText}`.trim().length
           cursorPositionRef.current = newPos
@@ -151,17 +155,14 @@ const ChatInputArea = ({
     }, 1000) as any
   }
 
-  // 保存光标位置
   const saveCursorPosition = () => {
     if (textareaRef.current) {
       cursorPositionRef.current = textareaRef.current.selectionStart
     }
   }
 
-  // 恢复光标位置
   const restoreCursorPosition = () => {
     if (textareaRef.current && isRecording) {
-      // 语音输入时光标始终在末尾
       const endPos = displayText.length
       textareaRef.current.selectionStart = endPos
       textareaRef.current.selectionEnd = endPos
@@ -172,60 +173,68 @@ const ChatInputArea = ({
     }
   }
 
-  // ========== 核心：实时识别只更新当前句（不重叠），整句完成后拼接 ==========
+  // ========== 核心：实时识别更新 ==========
   const updateRecognitionResult = useCallback((text: string) => {
     if (isStoppingRef.current) return
     const clean = cleanText(text)
     
-    // 去重：相同结果不更新
     if (clean === lastRecognizedRef.current) return
     lastRecognizedRef.current = clean
 
-    // 只更新当前识别文本（不重叠）
     setCurrentRecognizingText(clean)
     handleTextareaResize()
     resetSilenceTimer()
     resetSentenceEndTimer()
     
-    // 确保光标在文本末尾
     setTimeout(restoreCursorPosition, 0)
-  }, [handleTextareaResize, displayText, isRecording])
+  }, [handleTextareaResize])
 
+  // ========== 事件处理 ==========
   const handleTextareaClick = () => {
     if (isRecording) {
       stopRecognition()
     }
   }
 
+  const handleTextareaBlur = () => {
+    if (ignoreBlurRef.current) {
+      ignoreBlurRef.current = false
+      return
+    }
+    if (keepKeyboardOpen && textareaRef.current) {
+      setTimeout(() => {
+        textareaRef.current?.focus()
+        restoreCursorPosition()
+      }, 0)
+    }
+  }
+
   const handleManualEdit = (value: string) => {
     if (isRecording) {
-      // 手动编辑时停止录音
       stopRecognition()
     }
     setConfirmedText(value)
     setCurrentRecognizingText('')
     lastRecognizedRef.current = ''
-    // 保存手动编辑后的光标位置
     saveCursorPosition()
     setTimeout(handleTextareaResize, 0)
   }
 
-  // 启动录音：清空所有内容并聚焦输入框
+  // ========== 录音控制 ==========
   const startRecognition = async () => {
     try {
-      // 重置所有状态
       setConfirmedText('')
       setCurrentRecognizingText('')
       lastRecognizedRef.current = ''
       isStoppingRef.current = false
       clearSentenceEndTimer()
+      setKeepKeyboardOpen(true)
 
       if (!navigator.mediaDevices?.getUserMedia) {
         notify({ type: 'error', message: '浏览器不支持录音' })
         return
       }
 
-      // 聚焦输入框并设置光标到末尾
       if (textareaRef.current) {
         textareaRef.current.focus()
         cursorPositionRef.current = 0
@@ -253,7 +262,6 @@ const ChatInputArea = ({
             startAudioPipe(stream)
             setIsRecording(true)
             resetSilenceTimer()
-            // 确保输入框聚焦且光标在末尾
             if (textareaRef.current) {
               textareaRef.current.focus()
               restoreCursorPosition()
@@ -269,34 +277,25 @@ const ChatInputArea = ({
           const h = data.header
           if (!h) return
 
-          // 实时识别结果更新
           if (h.name === 'TranscriptionResultChanged') {
             updateRecognitionResult(data.payload?.result || '')
-          }
-          // 句子结束：合并到已确认文本
-          else if (h.name === 'SentenceEnd') {
+          } else if (h.name === 'SentenceEnd') {
             const clean = cleanText(data.payload?.result || '')
             if (clean) {
               setConfirmedText(prev => `${prev} ${clean}`.trim())
               setCurrentRecognizingText('')
               lastRecognizedRef.current = ''
-              // 更新光标位置
               restoreCursorPosition()
             }
-          }
-          // 识别完成
-          else if (h.name === 'TranscriptionCompleted') {
+          } else if (h.name === 'TranscriptionCompleted') {
             const clean = cleanText(data.payload?.result || '')
             if (clean) {
               setConfirmedText(prev => `${prev} ${clean}`.trim())
               setCurrentRecognizingText('')
               lastRecognizedRef.current = ''
-              // 更新光标位置
               restoreCursorPosition()
             }
-          }
-          // 识别失败
-          else if (h.name === 'TaskFailed') {
+          } else if (h.name === 'TaskFailed') {
             notify({ type: 'error', message: '语音识别失败，请重试' })
             stopRecognition()
           }
@@ -388,21 +387,18 @@ const ChatInputArea = ({
     if (isStoppingRef.current) return
     isStoppingRef.current = true
 
-    // 清理计时器
     clearSilenceTimer()
     clearSentenceEndTimer()
 
-    // 合并最后识别的文本
     if (currentRecognizingText) {
       setConfirmedText(prev => `${prev} ${currentRecognizingText}`.trim())
       setCurrentRecognizingText('')
       lastRecognizedRef.current = ''
     }
 
-    // 更新状态
     setIsRecording(false)
+    setKeepKeyboardOpen(true)
 
-    // 清理音频资源
     if (processorRef.current) {
       processorRef.current.disconnect()
       processorRef.current = null
@@ -412,7 +408,6 @@ const ChatInputArea = ({
       streamRef.current = null
     }
 
-    // 关闭WebSocket
     setTimeout(() => {
       if (wsRef.current) {
         wsRef.current.close()
@@ -423,7 +418,6 @@ const ChatInputArea = ({
         audioContextRef.current = null
       }
       isStoppingRef.current = false
-      // 停止录音后保持输入框聚焦
       if (textareaRef.current) {
         textareaRef.current.focus()
         restoreCursorPosition()
@@ -438,22 +432,6 @@ const ChatInputArea = ({
       startRecognition()
     }
   }
-
-  useEffect(() => {
-    // 组件卸载清理
-    return () => {
-      stopRecognition()
-      clearSentenceEndTimer()
-    }
-  }, [])
-
-  // 监听输入框焦点变化，录音时自动聚焦
-  useEffect(() => {
-    if (isRecording && textareaRef.current && !document.activeElement?.isEqualNode(textareaRef.current)) {
-      textareaRef.current.focus()
-      restoreCursorPosition()
-    }
-  }, [isRecording])
 
   const handleSend = () => {
     if (isRecording) stopRecognition()
@@ -482,10 +460,15 @@ const ChatInputArea = ({
     const isValid = checkInputsForm(inputs, inputsForm)
     if (!isValid) return
 
-    // 发送消息
+    ignoreBlurRef.current = true
+    setKeepKeyboardOpen(false)
+    
+    if (textareaRef.current) {
+      textareaRef.current.blur()
+    }
+
     onSend(finalText, files)
     
-    // 清空输入
     setConfirmedText('')
     setCurrentRecognizingText('')
     lastRecognizedRef.current = ''
@@ -498,6 +481,22 @@ const ChatInputArea = ({
     }
   }
 
+  // ========== 副作用 ==========
+  useEffect(() => {
+    return () => {
+      stopRecognition()
+      clearSentenceEndTimer()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isRecording && textareaRef.current && !document.activeElement?.isEqualNode(textareaRef.current)) {
+      textareaRef.current.focus()
+      restoreCursorPosition()
+    }
+  }, [isRecording])
+
+  // ========== 提前定义 operation 变量 ==========
   const operation = (
     <Operation
       ref={holdSpaceRef}
@@ -511,6 +510,7 @@ const ChatInputArea = ({
     />
   )
 
+  // ========== 渲染 ==========
   return (
     <div className={cn(
       'relative z-10 overflow-hidden rounded-xl border border-components-chat-input-border bg-components-panel-bg-blur pb-[9px] shadow-md',
@@ -534,8 +534,8 @@ const ChatInputArea = ({
               onChange={e => handleManualEdit(e.target.value)}
               onClick={handleTextareaClick}
               onFocus={handleTextareaClick}
-              onSelect={saveCursorPosition} // 选择文本时保存光标位置
-              // 移除readOnly属性，保持输入框可编辑
+              onSelect={saveCursorPosition}
+              onBlur={handleTextareaBlur}
             />
           </div>
           {!isMultipleLine && operation}
@@ -546,8 +546,15 @@ const ChatInputArea = ({
   )
 }
 
+// 2. 定义包装组件并正确导出
 const ChatInputAreaWrapper = (props: ChatInputAreaProps) => (
-  <FileContextProvider><ChatInputArea {...props} /></FileContextProvider>
+  <FileContextProvider>
+    <ChatInputArea {...props} />
+  </FileContextProvider>
 )
 
+// 3. 确保默认导出的是组件函数（关键修复）
 export default ChatInputAreaWrapper
+
+// 可选：导出类型供外部使用
+export type { ChatInputAreaProps }

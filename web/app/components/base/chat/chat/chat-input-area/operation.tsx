@@ -1,5 +1,6 @@
+// operation.tsx
 import type { FC, Ref } from 'react'
-import { memo } from 'react'
+import { memo, forwardRef } from 'react' // 新增 forwardRef
 import { RiMicLine, RiSendPlane2Fill } from '@remixicon/react'
 import type { EnableType } from '../../types'
 import type { Theme } from '../../embedded-chatbot/theme/theme-context'
@@ -17,11 +18,10 @@ type OperationProps = {
   onSend: () => void
   onFileUploadClick?: () => void
   theme?: Theme | null
-  ref?: Ref<HTMLDivElement>
 }
 
-const Operation: FC<OperationProps> = ({
-  ref,
+// 使用 forwardRef 处理 ref 传递（关键修复）
+const Operation: FC<OperationProps> = forwardRef(({
   fileConfig,
   speechToTextConfig,
   isRecording,
@@ -29,47 +29,43 @@ const Operation: FC<OperationProps> = ({
   onSend,
   onFileUploadClick,
   theme,
-}) => {
+}, ref) => { // ref 通过 forwardRef 接收
+  const handleButtonClick = (e: React.MouseEvent, callback?: () => void) => {
+    e.preventDefault()
+    e.stopPropagation()
+    callback?.()
+  }
+
   return (
     <div className='flex shrink-0 items-center justify-end'>
       <div className='flex items-center pl-1' ref={ref}>
         <div className='flex items-center space-x-1'>
           {fileConfig?.enabled && (
-            <div onClick={onFileUploadClick}>
+            <div onClick={(e) => handleButtonClick(e, onFileUploadClick)}>
               <FileUploaderInChatInput fileConfig={fileConfig} />
             </div>
           )}
           {speechToTextConfig?.enabled && (
             <ActionButton
               size='l'
-              onClick={onToggleVoiceInput}
-              // 重构样式类名，使用更兼容的写法并禁用悬浮效果
+              onClick={(e) => handleButtonClick(e, onToggleVoiceInput)}
               className={cn(
                 'hover:bg-transparent hover:text-inherit focus:bg-transparent focus:text-inherit active:bg-transparent active:text-inherit',
-                isRecording
-                  ? 'text-[#10B981]'
-                  : 'text-gray-500 bg-transparent',
-                // 强制设置背景色，提高优先级
+                isRecording ? 'text-[#10B981]' : 'text-gray-500 bg-transparent',
                 isRecording && '!bg-[#D1FAE5]'
               )}
-              // 内联样式兜底，确保小程序环境生效
               style={{
                 backgroundColor: isRecording ? '#D1FAE5' : 'transparent',
                 color: isRecording ? '#10B981' : '#6b7280',
-                // 禁用所有交互样式
                 pointerEvents: 'auto',
                 userSelect: 'none',
-                // 强制覆盖默认样式
                 border: 'none',
                 outline: 'none',
               }}
             >
               <RiMicLine 
                 className='h-5 w-5'
-                style={{
-                  // 确保图标颜色继承
-                  color: 'inherit'
-                }}
+                style={{ color: 'inherit' }}
               />
             </ActionButton>
           )}
@@ -77,7 +73,7 @@ const Operation: FC<OperationProps> = ({
         <Button
           className='ml-3 w-8 px-0'
           variant='primary'
-          onClick={onSend}
+          onClick={(e) => handleButtonClick(e, onSend)}
           style={theme ? { backgroundColor: theme.primaryColor } : {}}
         >
           <RiSendPlane2Fill className='h-4 w-4' />
@@ -85,7 +81,7 @@ const Operation: FC<OperationProps> = ({
       </div>
     </div>
   )
-}
+})
 
 Operation.displayName = 'Operation'
-export default memo(Operation)
+export default memo(Operation) // 默认导出
