@@ -29,8 +29,12 @@ const Operation = forwardRef(({
   onFileUploadClick,
   theme,
 }: OperationProps, ref: Ref<HTMLDivElement>) => {
-  // 按钮点击处理（仅执行回调，不阻止任何事件，避免干扰焦点）
-  const handleButtonClick = (e: React.MouseEvent, callback?: () => void) => {
+  // 🔥 核心修改：用mousedown代替click，阻止默认行为避免抢焦点
+  const handleMouseDown = (e: React.MouseEvent, callback?: () => void) => {
+    // 阻止默认行为（关键：避免按钮抢走输入框焦点）
+    e.preventDefault()
+    // 阻止事件冒泡
+    e.stopPropagation()
     callback?.()
   }
 
@@ -40,7 +44,7 @@ const Operation = forwardRef(({
         <div className='flex items-center space-x-1'>
           {/* 文件上传按钮：仅执行回调，关闭语音但不干扰焦点 */}
           {fileConfig?.enabled && (
-            <div onClick={(e) => handleButtonClick(e, onFileUploadClick)}>
+            <div onMouseDown={(e) => handleMouseDown(e, onFileUploadClick)}>
               <FileUploaderInChatInput fileConfig={fileConfig} />
             </div>
           )}
@@ -49,7 +53,8 @@ const Operation = forwardRef(({
           {speechToTextConfig?.enabled && (
             <ActionButton
               size='l'
-              onClick={(e) => handleButtonClick(e, onToggleVoiceInput)}
+              // 🔥 改用onMouseDown
+              onMouseDown={(e) => handleMouseDown(e, onToggleVoiceInput)}
               className={cn(
                 'hover:bg-transparent hover:text-inherit focus:bg-transparent focus:text-inherit active:bg-transparent active:text-inherit',
                 isRecording ? 'text-[#10B981]' : 'text-gray-500 bg-transparent',
@@ -63,6 +68,14 @@ const Operation = forwardRef(({
                 pointerEvents: 'auto',
                 userSelect: 'none',
               }}
+              // 🔥 禁止按钮获得焦点，避免干扰输入框
+              tabIndex={-1}
+              // 禁用原生焦点样式
+              style={{
+                ...(theme?.primaryColor ? { '--primary-color': theme.primaryColor } : {}),
+                outline: 'none',
+                boxShadow: 'none',
+              }}
             >
               <RiMicLine className='h-5 w-5' style={{ color: 'inherit' }} />
             </ActionButton>
@@ -73,8 +86,15 @@ const Operation = forwardRef(({
         <Button
           className='ml-3 w-8 px-0'
           variant='primary'
-          onClick={(e) => handleButtonClick(e, onSend)}
-          style={theme ? { backgroundColor: theme.primaryColor } : {}}
+          // 🔥 改用onMouseDown
+          onMouseDown={(e) => handleMouseDown(e, onSend)}
+          style={theme ? { 
+            backgroundColor: theme.primaryColor,
+            outline: 'none',
+            boxShadow: 'none'
+          } : {}}
+          // 🔥 禁止按钮获得焦点
+          tabIndex={-1}
         >
           <RiSendPlane2Fill className='h-4 w-4' />
         </Button>

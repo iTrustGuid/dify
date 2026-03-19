@@ -230,7 +230,7 @@ const ChatInputArea = ({
         return
       }
 
-      // 聚焦输入框（打开键盘，光标闪烁）
+      // 聚焦输入框（打开键盘，光标闪烁）- 仅首次启动时执行
       safeFocusTextarea()
 
       // 获取麦克风权限
@@ -252,7 +252,6 @@ const ChatInputArea = ({
           startAudioPipe(stream)
           setIsRecording(true)
           resetSilenceTimer()
-          safeFocusTextarea() // 确保聚焦（光标不丢）
         }, 100)
       }
 
@@ -362,7 +361,7 @@ const ChatInputArea = ({
   }
 
   /**
-   * 停止录音（仅关闭语音功能，完全不碰焦点）
+   * 停止录音（仅关闭语音功能，完全不碰焦点/键盘）
    */
   const stopRecognition = () => {
     if (isStoppingRef.current) return
@@ -410,11 +409,7 @@ const ChatInputArea = ({
       }
 
       isStoppingRef.current = false
-      
-      // 兜底：确保关闭后焦点状态不变（聚焦则保持聚焦，失焦则保持失焦）
-      if (isTextareaFocused.current) {
-        safeFocusTextarea()
-      }
+      // 🔥 核心修改：移除所有焦点恢复逻辑，完全不碰输入框焦点
     }, 300)
   }
 
@@ -423,7 +418,7 @@ const ChatInputArea = ({
     if (isRecording) {
       stopRecognition() // 关闭语音：焦点/键盘/光标完全不变
     } else {
-      startRecognition() // 开启语音：聚焦输入框，键盘弹出，光标闪烁
+      startRecognition() // 开启语音：首次聚焦输入框，键盘弹出
     }
   }
 
@@ -525,6 +520,8 @@ const ChatInputArea = ({
               value={displayText}
               onChange={e => handleManualEdit(e.target.value)}
               onSelect={saveCursorPosition}
+              // 阻止冒泡，避免点击输入框外区域意外失焦
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
           {!isMultipleLine && operation}
