@@ -1,6 +1,5 @@
-// operation.tsx
 import type { FC, Ref } from 'react'
-import { memo, forwardRef } from 'react' // 新增 forwardRef
+import { memo, forwardRef } from 'react'
 import { RiMicLine, RiSendPlane2Fill } from '@remixicon/react'
 import type { EnableType } from '../../types'
 import type { Theme } from '../../embedded-chatbot/theme/theme-context'
@@ -20,8 +19,7 @@ type OperationProps = {
   theme?: Theme | null
 }
 
-// 使用 forwardRef 处理 ref 传递（关键修复）
-const Operation: FC<OperationProps> = forwardRef(({
+const Operation = forwardRef(({
   fileConfig,
   speechToTextConfig,
   isRecording,
@@ -29,11 +27,12 @@ const Operation: FC<OperationProps> = forwardRef(({
   onSend,
   onFileUploadClick,
   theme,
-}, ref) => { // ref 通过 forwardRef 接收
-  const handleButtonClick = (e: React.MouseEvent, callback?: () => void) => {
+}, ref: Ref<HTMLDivElement>) => {
+
+  const handleButtonClick = (e: React.MouseEvent, cb?: () => void) => {
     e.preventDefault()
     e.stopPropagation()
-    callback?.()
+    cb?.()
   }
 
   return (
@@ -57,16 +56,11 @@ const Operation: FC<OperationProps> = forwardRef(({
               style={{
                 backgroundColor: isRecording ? '#D1FAE5' : 'transparent',
                 color: isRecording ? '#10B981' : '#6b7280',
-                pointerEvents: 'auto',
-                userSelect: 'none',
                 border: 'none',
                 outline: 'none',
               }}
             >
-              <RiMicLine 
-                className='h-5 w-5'
-                style={{ color: 'inherit' }}
-              />
+              <RiMicLine className='h-5 w-5' />
             </ActionButton>
           )}
         </div>
@@ -84,4 +78,4 @@ const Operation: FC<OperationProps> = forwardRef(({
 })
 
 Operation.displayName = 'Operation'
-export default memo(Operation) // 默认导出
+export default memo(Operation)

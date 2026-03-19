@@ -1,4 +1,3 @@
-// chat-input-area/index.tsx 完整代码
 import {
   useCallback,
   useEffect,
@@ -16,7 +15,7 @@ import type { Theme } from '../../embedded-chatbot/theme/theme-context'
 import type { InputForm } from '../type'
 import { useCheckInputsForms } from '../check-input-forms-hooks'
 import { useTextAreaHeight } from './hooks'
-import Operation from './operation' // 确认 Operation 组件导出正确
+import Operation from './operation'
 import cn from '@/utils/classnames'
 import { FileListInChatInput } from '@/app/components/base/file-uploader'
 import { useFile } from '@/app/components/base/file-uploader/hooks'
@@ -28,11 +27,9 @@ import { useToastContext } from '@/app/components/base/toast'
 import type { FileUpload } from '@/app/components/base/features/types'
 import { TransferMethod } from '@/types/app'
 
-// ================= 阿里云配置 =================
 const ALIYUN_TOKEN = 'e5c99cf4e2534774ac17f348c522edf5'
 const ALIYUN_APP_KEY = 'PtcXfBxLzBd8HU4N'
 const ALIYUN_URL = 'wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1'
-// =============================================
 
 const cleanText = (text: string): string => {
   if (!text) return ''
@@ -55,7 +52,6 @@ type ChatInputAreaProps = {
   disabled?: boolean
 }
 
-// 1. 确保 ChatInputArea 是标准的 React 函数组件
 const ChatInputArea = ({
   botName,
   showFeatureBar,
@@ -82,11 +78,9 @@ const ChatInputArea = ({
     isMultipleLine,
   } = useTextAreaHeight()
 
-  // ========== 新增：键盘状态管理 ==========
   const [keepKeyboardOpen, setKeepKeyboardOpen] = useState(false)
-  const ignoreBlurRef = useRef(false) // 忽略blur事件标记
-  
-  // ========== 核心拆分：已确认文本 + 当前识别文本 ==========
+  const ignoreBlurRef = useRef(false)
+
   const [confirmedText, setConfirmedText] = useState('')
   const [currentRecognizingText, setCurrentRecognizingText] = useState('')
   const lastRecognizedRef = useRef('')
@@ -112,30 +106,19 @@ const ChatInputArea = ({
   const generateMessageId = () =>
     Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
 
-  // 最终显示的文本
   const displayText = `${confirmedText} ${currentRecognizingText}`.trim()
 
-  // ========== 工具方法 ==========
   const clearSilenceTimer = () => {
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current)
-      silenceTimerRef.current = null
-    }
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
   }
-
   const clearSentenceEndTimer = () => {
-    if (sentenceEndTimerRef.current) {
-      clearTimeout(sentenceEndTimerRef.current)
-      sentenceEndTimerRef.current = null
-    }
+    if (sentenceEndTimerRef.current) clearTimeout(sentenceEndTimerRef.current)
   }
 
   const resetSilenceTimer = () => {
     if (isStoppingRef.current) return
     clearSilenceTimer()
-    silenceTimerRef.current = window.setTimeout(() => {
-      stopRecognition()
-    }, 6000) as any
+    silenceTimerRef.current = window.setTimeout(() => stopRecognition(), 6000) as any
   }
 
   const resetSentenceEndTimer = () => {
@@ -145,55 +128,37 @@ const ChatInputArea = ({
         setConfirmedText(prev => `${prev} ${currentRecognizingText}`.trim())
         setCurrentRecognizingText('')
         lastRecognizedRef.current = ''
-        if (textareaRef.current) {
-          const newPos = `${prev} ${currentRecognizingText}`.trim().length
-          cursorPositionRef.current = newPos
-          textareaRef.current.selectionStart = newPos
-          textareaRef.current.selectionEnd = newPos
-        }
       }
     }, 1000) as any
   }
 
   const saveCursorPosition = () => {
-    if (textareaRef.current) {
+    if (textareaRef.current)
       cursorPositionRef.current = textareaRef.current.selectionStart
-    }
   }
 
   const restoreCursorPosition = () => {
-    if (textareaRef.current && isRecording) {
-      const endPos = displayText.length
-      textareaRef.current.selectionStart = endPos
-      textareaRef.current.selectionEnd = endPos
-      cursorPositionRef.current = endPos
-    } else if (textareaRef.current) {
-      textareaRef.current.selectionStart = cursorPositionRef.current
-      textareaRef.current.selectionEnd = cursorPositionRef.current
-    }
+    if (!textareaRef.current) return
+    const end = displayText.length
+    textareaRef.current.selectionStart = end
+    textareaRef.current.selectionEnd = end
+    cursorPositionRef.current = end
   }
 
-  // ========== 核心：实时识别更新 ==========
   const updateRecognitionResult = useCallback((text: string) => {
     if (isStoppingRef.current) return
     const clean = cleanText(text)
-    
     if (clean === lastRecognizedRef.current) return
     lastRecognizedRef.current = clean
-
     setCurrentRecognizingText(clean)
     handleTextareaResize()
     resetSilenceTimer()
     resetSentenceEndTimer()
-    
     setTimeout(restoreCursorPosition, 0)
   }, [handleTextareaResize])
 
-  // ========== 事件处理 ==========
   const handleTextareaClick = () => {
-    if (isRecording) {
-      stopRecognition()
-    }
+    if (isRecording) stopRecognition()
   }
 
   const handleTextareaBlur = () => {
@@ -202,17 +167,12 @@ const ChatInputArea = ({
       return
     }
     if (keepKeyboardOpen && textareaRef.current) {
-      setTimeout(() => {
-        textareaRef.current?.focus()
-        restoreCursorPosition()
-      }, 0)
+      setTimeout(() => textareaRef.current?.focus(), 0)
     }
   }
 
   const handleManualEdit = (value: string) => {
-    if (isRecording) {
-      stopRecognition()
-    }
+    if (isRecording) stopRecognition()
     setConfirmedText(value)
     setCurrentRecognizingText('')
     lastRecognizedRef.current = ''
@@ -220,7 +180,6 @@ const ChatInputArea = ({
     setTimeout(handleTextareaResize, 0)
   }
 
-  // ========== 录音控制 ==========
   const startRecognition = async () => {
     try {
       setConfirmedText('')
@@ -241,31 +200,24 @@ const ChatInputArea = ({
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
+        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
       })
       streamRef.current = stream
 
-      const wsUrl = `${ALIYUN_URL}?appkey=${ALIYUN_APP_KEY}&token=${ALIYUN_TOKEN}`
-      const ws = new WebSocket(wsUrl)
+      const ws = new WebSocket(`${ALIYUN_URL}?appkey=${ALIYUN_APP_KEY}&token=${ALIYUN_TOKEN}`)
       ws.binaryType = 'arraybuffer'
       wsRef.current = ws
 
       ws.onopen = () => {
         sendStartCmd(ws)
         setTimeout(() => {
-          if (!isStoppingRef.current) {
-            startAudioPipe(stream)
-            setIsRecording(true)
-            resetSilenceTimer()
-            if (textareaRef.current) {
-              textareaRef.current.focus()
-              restoreCursorPosition()
-            }
+          if (isStoppingRef.current) return
+          startAudioPipe(stream)
+          setIsRecording(true)
+          resetSilenceTimer()
+          if (textareaRef.current) {
+            textareaRef.current.focus()
+            restoreCursorPosition()
           }
         }, 100)
       }
@@ -276,111 +228,77 @@ const ChatInputArea = ({
           const data = JSON.parse(e.data)
           const h = data.header
           if (!h) return
-
           if (h.name === 'TranscriptionResultChanged') {
             updateRecognitionResult(data.payload?.result || '')
-          } else if (h.name === 'SentenceEnd') {
+          } else if (h.name === 'SentenceEnd' || h.name === 'TranscriptionCompleted') {
             const clean = cleanText(data.payload?.result || '')
             if (clean) {
-              setConfirmedText(prev => `${prev} ${clean}`.trim())
+              setConfirmedText(p => `${p} ${clean}`.trim())
               setCurrentRecognizingText('')
               lastRecognizedRef.current = ''
-              restoreCursorPosition()
-            }
-          } else if (h.name === 'TranscriptionCompleted') {
-            const clean = cleanText(data.payload?.result || '')
-            if (clean) {
-              setConfirmedText(prev => `${prev} ${clean}`.trim())
-              setCurrentRecognizingText('')
-              lastRecognizedRef.current = ''
-              restoreCursorPosition()
             }
           } else if (h.name === 'TaskFailed') {
-            notify({ type: 'error', message: '语音识别失败，请重试' })
+            notify({ type: 'error', message: '语音识别失败' })
             stopRecognition()
           }
-        } catch (err) {
-          console.error('解析识别结果失败:', err)
-        }
+        } catch {}
       }
 
-      ws.onerror = (err) => {
-        console.error('WebSocket错误:', err)
-        notify({ type: 'error', message: '语音连接失败，请检查网络' })
+      ws.onerror = () => {
+        notify({ type: 'error', message: '语音连接失败' })
         stopRecognition()
       }
 
-      ws.onclose = () => {
-        stopRecognition()
-      }
+      ws.onclose = () => stopRecognition()
 
     } catch (err) {
-      console.error('启动录音失败:', err)
-      notify({ type: 'error', message: '录音启动失败，请检查麦克风权限' })
+      notify({ type: 'error', message: '麦克风权限异常' })
       stopRecognition()
     }
   }
 
   const sendStartCmd = (ws: WebSocket) => {
-    try {
-      ws.send(JSON.stringify({
-        header: {
-          message_id: generateMessageId(),
-          task_id: taskIdRef.current,
-          namespace: 'SpeechTranscriber',
-          name: 'StartTranscription',
-          appkey: ALIYUN_APP_KEY
-        },
-        payload: {
-          format: 'pcm',
-          sample_rate: 16000,
-          enable_intermediate_result: true,
-          enable_punctuation_prediction: true,
-          enable_inverse_text_normalization: true,
-          max_sentence_silence: 1000,
-          disfluency: true,
-          language: 'zh-CN'
-        },
-      }))
-    } catch (err) {
-      console.error('发送启动指令失败:', err)
-    }
+    ws.send(JSON.stringify({
+      header: {
+        message_id: generateMessageId(),
+        task_id: taskIdRef.current,
+        namespace: 'SpeechTranscriber',
+        name: 'StartTranscription',
+        appkey: ALIYUN_APP_KEY
+      },
+      payload: {
+        format: 'pcm',
+        sample_rate: 16000,
+        enable_intermediate_result: true,
+        enable_punctuation_prediction: true,
+        enable_inverse_text_normalization: true,
+        max_sentence_silence: 1000,
+        disfluency: true,
+        language: 'zh-CN'
+      },
+    }))
   }
 
   const startAudioPipe = (stream: MediaStream) => {
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 })
-      audioContextRef.current = ctx
-      const source = ctx.createMediaStreamSource(stream)
-      const proc = ctx.createScriptProcessor(1024, 1, 1)
-      processorRef.current = proc
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 })
+    audioContextRef.current = ctx
+    const source = ctx.createMediaStreamSource(stream)
+    const proc = ctx.createScriptProcessor(1024, 1, 1)
+    processorRef.current = proc
 
-      proc.onaudioprocess = (e) => {
-        if (
-          isStoppingRef.current ||
-          !wsRef.current ||
-          wsRef.current.readyState !== WebSocket.OPEN
-        ) return
-
-        try {
-          const d = e.inputBuffer.getChannelData(0)
-          const out = new Int16Array(d.length)
-          for (let i = 0; i < d.length; i++) {
-            const s = Math.max(-1, Math.min(1, d[i]))
-            out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
-          }
-          wsRef.current.send(out.buffer)
-        } catch (err) {
-          console.error('发送音频数据失败:', err)
-        }
+    proc.onaudioprocess = (e) => {
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || isStoppingRef.current) return
+      const d = e.inputBuffer.getChannelData(0)
+      const out = new Int16Array(d.length)
+      for (let i = 0; i < d.length; i++) {
+        const s = Math.max(-1, Math.min(1, d[i]))
+        out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
       }
-
-      source.connect(proc)
-      proc.connect(ctx.destination)
-    } catch (err) {
-      console.error('初始化音频管道失败:', err)
-      stopRecognition()
+      wsRef.current.send(out.buffer)
     }
+
+    source.connect(proc)
+    proc.connect(ctx.destination)
   }
 
   const stopRecognition = () => {
@@ -391,7 +309,7 @@ const ChatInputArea = ({
     clearSentenceEndTimer()
 
     if (currentRecognizingText) {
-      setConfirmedText(prev => `${prev} ${currentRecognizingText}`.trim())
+      setConfirmedText(p => `${p} ${currentRecognizingText}`.trim())
       setCurrentRecognizingText('')
       lastRecognizedRef.current = ''
     }
@@ -413,8 +331,12 @@ const ChatInputArea = ({
         wsRef.current.close()
         wsRef.current = null
       }
-      if (audioContextRef.current) {
-        audioContextRef.current.close()
+      // ✅ 修复：判断状态后再 close，避免重复关闭
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().then(() => {
+          audioContextRef.current = null
+        }).catch(console.error)
+      } else {
         audioContextRef.current = null
       }
       isStoppingRef.current = false
@@ -426,26 +348,15 @@ const ChatInputArea = ({
   }
 
   const toggleVoice = () => {
-    if (isRecording) {
-      stopRecognition()
-    } else {
-      startRecognition()
-    }
+    isRecording ? stopRecognition() : startRecognition()
   }
 
   const handleSend = () => {
     if (isRecording) stopRecognition()
-
-    if (isResponding) {
-      notify({ type: 'info', message: t('appDebug.errorMessage.waitForResponse') })
-      return
-    }
-    if (!onSend) return
+    if (isResponding || !onSend) return
 
     const { files, setFiles } = filesStore.getState()
-    const hasUnuploaded = files.some(
-      item => item.transferMethod === TransferMethod.local_file && !item.uploadedId
-    )
+    const hasUnuploaded = files.some(i => i.transferMethod === TransferMethod.local_file && !i.uploadedId)
     if (hasUnuploaded) {
       notify({ type: 'info', message: t('appDebug.errorMessage.waitForFileUpload') })
       return
@@ -457,18 +368,13 @@ const ChatInputArea = ({
       return
     }
 
-    const isValid = checkInputsForm(inputs, inputsForm)
-    if (!isValid) return
+    if (!checkInputsForm(inputs, inputsForm)) return
 
     ignoreBlurRef.current = true
     setKeepKeyboardOpen(false)
-    
-    if (textareaRef.current) {
-      textareaRef.current.blur()
-    }
+    if (textareaRef.current) textareaRef.current.blur()
 
     onSend(finalText, files)
-    
     setConfirmedText('')
     setCurrentRecognizingText('')
     lastRecognizedRef.current = ''
@@ -476,12 +382,9 @@ const ChatInputArea = ({
   }
 
   const handleFileUploadClick = () => {
-    if (isRecording) {
-      stopRecognition()
-    }
+    if (isRecording) stopRecognition()
   }
 
-  // ========== 副作用 ==========
   useEffect(() => {
     return () => {
       stopRecognition()
@@ -489,14 +392,6 @@ const ChatInputArea = ({
     }
   }, [])
 
-  useEffect(() => {
-    if (isRecording && textareaRef.current && !document.activeElement?.isEqualNode(textareaRef.current)) {
-      textareaRef.current.focus()
-      restoreCursorPosition()
-    }
-  }, [isRecording])
-
-  // ========== 提前定义 operation 变量 ==========
   const operation = (
     <Operation
       ref={holdSpaceRef}
@@ -510,7 +405,6 @@ const ChatInputArea = ({
     />
   )
 
-  // ========== 渲染 ==========
   return (
     <div className={cn(
       'relative z-10 overflow-hidden rounded-xl border border-components-chat-input-border bg-components-panel-bg-blur pb-[9px] shadow-md',
@@ -546,15 +440,8 @@ const ChatInputArea = ({
   )
 }
 
-// 2. 定义包装组件并正确导出
 const ChatInputAreaWrapper = (props: ChatInputAreaProps) => (
-  <FileContextProvider>
-    <ChatInputArea {...props} />
-  </FileContextProvider>
+  <FileContextProvider><ChatInputArea {...props} /></FileContextProvider>
 )
 
-// 3. 确保默认导出的是组件函数（关键修复）
 export default ChatInputAreaWrapper
-
-// 可选：导出类型供外部使用
-export type { ChatInputAreaProps }
