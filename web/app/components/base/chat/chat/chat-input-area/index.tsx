@@ -84,8 +84,8 @@ const ChatInputArea = ({
   const [currentRecognizingText, setCurrentRecognizingText] = useState('')
   const [isRecording, setIsRecording] = useState(false)
   
-  // 辅助Ref（关键：避免重复操作导致键盘闪烁）
-  const isTextareaFocused = useRef(false) // 标记输入框是否已聚焦
+  // 辅助Ref（关键：精准跟踪焦点状态）
+  const isTextareaFocused = useRef(false)
   const lastRecognizedRef = useRef('')
   const sentenceEndTimerRef = useRef<number | null>(null)
   const cursorPositionRef = useRef<number>(0)
@@ -119,7 +119,7 @@ const ChatInputArea = ({
   const resetSilenceTimer = () => {
     if (isStoppingRef.current) return
     clearSilenceTimer()
-    silenceTimerRef.current = window.setTimeout(() => stopRecognition(false), 6000) as any
+    silenceTimerRef.current = window.setTimeout(() => stopRecognition(), 6000) as any
   }
 
   // 句子结束合并文本
@@ -183,7 +183,7 @@ const ChatInputArea = ({
     }
   }
 
-  // 监听输入框焦点状态（核心：精准跟踪焦点）
+  // 监听输入框焦点状态（核心：100%精准跟踪）
   useEffect(() => {
     const textarea = textareaRef.current
     if (!textarea) return
@@ -206,7 +206,7 @@ const ChatInputArea = ({
 
   // 手动编辑文本
   const handleManualEdit = (value: string) => {
-    if (isRecording) stopRecognition(false)
+    if (isRecording) stopRecognition()
     setConfirmedText(value)
     setCurrentRecognizingText('')
     lastRecognizedRef.current = ''
@@ -275,7 +275,7 @@ const ChatInputArea = ({
             }
           } else if (h.name === 'TaskFailed') {
             notify({ type: 'error', message: '语音识别失败，请重试' })
-            stopRecognition(false)
+            stopRecognition()
           }
         } catch (err) {
           console.error('解析识别结果失败:', err)
@@ -286,18 +286,18 @@ const ChatInputArea = ({
       ws.onerror = (err) => {
         console.error('WebSocket错误:', err)
         notify({ type: 'error', message: '语音连接失败，请检查网络' })
-        stopRecognition(false)
+        stopRecognition()
       }
 
       // WebSocket关闭
       ws.onclose = () => {
-        stopRecognition(false)
+        stopRecognition()
       }
 
     } catch (err) {
       console.error('启动录音失败:', err)
       notify({ type: 'error', message: '录音启动失败，请检查麦克风权限' })
-      stopRecognition(false)
+      stopRecognition()
     }
   }
 
@@ -357,15 +357,14 @@ const ChatInputArea = ({
       proc.connect(ctx.destination)
     } catch (err) {
       console.error('初始化音频管道失败:', err)
-      stopRecognition(false)
+      stopRecognition()
     }
   }
 
   /**
-   * 停止录音
-   * @param shouldBlur 是否失焦输入框（false：仅关语音，光标保留；true：失焦+关键盘）
+   * 停止录音（仅关闭语音功能，完全不碰焦点）
    */
-  const stopRecognition = (shouldBlur = false) => {
+  const stopRecognition = () => {
     if (isStoppingRef.current) return
     isStoppingRef.current = true
 
@@ -380,13 +379,8 @@ const ChatInputArea = ({
       lastRecognizedRef.current = ''
     }
 
-    // 更新状态（仅关闭语音功能，不碰焦点）
+    // 仅更新语音状态，不碰任何焦点相关逻辑
     setIsRecording(false)
-    
-    // 仅在明确要求时才失焦（发送时传true，关闭麦克风时传false）
-    if (shouldBlur) {
-      safeBlurTextarea()
-    }
 
     // 清理音频资源（安全关闭，避免重复操作）
     if (processorRef.current) {
@@ -416,22 +410,27 @@ const ChatInputArea = ({
       }
 
       isStoppingRef.current = false
+      
+      // 兜底：确保关闭后焦点状态不变（聚焦则保持聚焦，失焦则保持失焦）
+      if (isTextareaFocused.current) {
+        safeFocusTextarea()
+      }
     }, 300)
   }
 
-  // 切换麦克风状态（核心：关闭时不传shouldBlur，保留光标）
+  // 切换麦克风状态（仅开关语音，不影响焦点）
   const toggleVoice = () => {
     if (isRecording) {
-      stopRecognition(false) // 关闭语音：仅关功能，光标保留，键盘不关闭
+      stopRecognition() // 关闭语音：焦点/键盘/光标完全不变
     } else {
-      startRecognition()     // 开启语音：聚焦输入框，键盘弹出，光标闪烁
+      startRecognition() // 开启语音：聚焦输入框，键盘弹出，光标闪烁
     }
   }
 
-  // 发送消息（核心：传shouldBlur=true，失焦+关键盘）
+  // 发送消息（仅这里执行失焦，关闭键盘）
   const handleSend = () => {
-    if (isRecording) stopRecognition(true) // 发送时：先关语音，再失焦
-
+    if (isRecording) stopRecognition() // 先关语音（保留当前焦点状态）
+    
     if (isResponding) {
       notify({ type: 'info', message: t('appDebug.errorMessage.waitForResponse') })
       return
@@ -460,7 +459,7 @@ const ChatInputArea = ({
     const isValid = checkInputsForm(inputs, inputsForm)
     if (!isValid) return
 
-    // 失焦输入框（关闭键盘）
+    // 仅发送时失焦输入框（关闭键盘）
     safeBlurTextarea()
 
     // 发送消息
@@ -473,16 +472,20 @@ const ChatInputArea = ({
     setFiles([])
   }
 
-  // 点击上传文件（核心：不做任何焦点操作，仅触发弹窗）
+  // 点击上传文件（核心：仅关闭语音，不影响焦点/键盘状态）
   const handleFileUploadClick = () => {
-    // 不调用blur/focus，完全保留当前焦点状态，避免键盘闪烁
-    // 弹窗逻辑由FileUploaderInChatInput内部处理
+    // 1. 如果正在录音，先关闭实时语音（麦克风恢复默认）
+    if (isRecording) {
+      stopRecognition()
+    }
+    // 2. 完全不碰焦点/键盘相关逻辑，保持当前状态
+    // 3. 弹窗逻辑由FileUploaderInChatInput内部处理
   }
 
   // 组件卸载清理
   useEffect(() => {
     return () => {
-      stopRecognition(true)
+      stopRecognition()
       clearSentenceEndTimer()
     }
   }, [])
@@ -522,8 +525,6 @@ const ChatInputArea = ({
               value={displayText}
               onChange={e => handleManualEdit(e.target.value)}
               onSelect={saveCursorPosition}
-              // 移除autoFocus，避免自动弹键盘
-              // 保留原生焦点事件，由代码精准控制
             />
           </div>
           {!isMultipleLine && operation}

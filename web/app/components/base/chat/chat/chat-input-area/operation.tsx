@@ -29,10 +29,8 @@ const Operation = forwardRef(({
   onFileUploadClick,
   theme,
 }: OperationProps, ref: Ref<HTMLDivElement>) => {
-  // 按钮点击处理（仅阻止默认行为，不阻止冒泡，避免干扰焦点）
+  // 按钮点击处理（仅执行回调，不阻止任何事件，避免干扰焦点）
   const handleButtonClick = (e: React.MouseEvent, callback?: () => void) => {
-    e.preventDefault()
-    // 移除stopPropagation，避免阻断输入框原生焦点事件
     callback?.()
   }
 
@@ -40,14 +38,14 @@ const Operation = forwardRef(({
     <div className='flex shrink-0 items-center justify-end'>
       <div className='flex items-center pl-1' ref={ref}>
         <div className='flex items-center space-x-1'>
-          {/* 文件上传按钮：仅触发回调，不影响焦点 */}
+          {/* 文件上传按钮：仅执行回调，关闭语音但不干扰焦点 */}
           {fileConfig?.enabled && (
             <div onClick={(e) => handleButtonClick(e, onFileUploadClick)}>
               <FileUploaderInChatInput fileConfig={fileConfig} />
             </div>
           )}
           
-          {/* 麦克风按钮：仅切换语音状态，不影响焦点 */}
+          {/* 麦克风按钮：根据isRecording状态显示不同样式 */}
           {speechToTextConfig?.enabled && (
             <ActionButton
               size='l'
@@ -71,7 +69,7 @@ const Operation = forwardRef(({
           )}
         </div>
         
-        {/* 发送按钮：触发发送逻辑（内部处理失焦） */}
+        {/* 发送按钮：仅执行回调（内部处理失焦） */}
         <Button
           className='ml-3 w-8 px-0'
           variant='primary'
