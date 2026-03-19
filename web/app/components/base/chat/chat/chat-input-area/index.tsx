@@ -157,7 +157,7 @@ const ChatInputArea = ({
     handleTextareaResize()
     resetSilenceTimer()
     resetSentenceEndTimer()
-  }, [handleTextareaResize, currentRecognizingText])
+  }, [handleTextareaResize])
 
   const handleTextareaClick = () => {
     if (isRecording) {
@@ -208,7 +208,7 @@ const ChatInputArea = ({
         setTimeout(() => {
           if (!isStoppingRef.current) {
             startAudioPipe(stream)
-            setIsRecording(true)
+            setIsRecording(true) // 立即更新录制状态
             resetSilenceTimer()
           }
         }, 100)
@@ -347,7 +347,7 @@ const ChatInputArea = ({
       lastRecognizedRef.current = ''
     }
 
-    // 更新状态
+    // 立即更新录制状态
     setIsRecording(false)
 
     // 清理音频资源
