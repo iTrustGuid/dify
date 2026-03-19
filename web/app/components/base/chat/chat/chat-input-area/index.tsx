@@ -1,4 +1,3 @@
-// chat-input-area/index.tsx 完整修复版
 import {
   useCallback,
   useEffect,
@@ -428,9 +427,15 @@ const ChatInputArea = ({
     }
   }, [])
 
-  // 发送逻辑
+  // 发送逻辑 - 优化：发送时停止语音识别
   const handleSend = () => {
     console.log('点击发送:', { query, isResponding, disabled })
+
+    // 新增：发送时停止语音识别
+    if (isRecording) {
+      stopRecognition()
+      setIsRecording(false)
+    }
 
     if (isResponding) {
       notify({ type: 'info', message: t('appDebug.errorMessage.waitForResponse') })
@@ -463,6 +468,14 @@ const ChatInputArea = ({
     setFiles([])
   }
 
+  // 新增：点击文件上传图标时停止语音识别
+  const handleFileUploadClick = () => {
+    if (isRecording) {
+      stopRecognition()
+      setIsRecording(false)
+    }
+  }
+
   const operation = (
     <Operation
       ref={holdSpaceRef}
@@ -471,6 +484,7 @@ const ChatInputArea = ({
       isRecording={isRecording}
       onToggleVoiceInput={toggleVoice}
       onSend={handleSend}
+      onFileUploadClick={handleFileUploadClick}
       theme={theme}
     />
   )

@@ -1,4 +1,3 @@
-// operation.tsx 保持不变（已验证无bug）
 import type { FC, Ref } from 'react'
 import { memo } from 'react'
 import {
@@ -19,6 +18,7 @@ type OperationProps = {
   isRecording: boolean
   onToggleVoiceInput?: () => void
   onSend: () => void
+  onFileUploadClick?: () => void
   theme?: Theme | null
   ref?: Ref<HTMLDivElement>
 }
@@ -30,19 +30,26 @@ const Operation: FC<OperationProps> = ({
   isRecording,
   onToggleVoiceInput,
   onSend,
+  onFileUploadClick,
   theme,
 }) => {
   return (
     <div className='flex shrink-0 items-center justify-end'>
       <div className='flex items-center pl-1' ref={ref}>
         <div className='flex items-center space-x-1'>
-          {fileConfig?.enabled && <FileUploaderInChatInput fileConfig={fileConfig} />}
+          {fileConfig?.enabled && (
+            <div onClick={onFileUploadClick}>
+              <FileUploaderInChatInput fileConfig={fileConfig} />
+            </div>
+          )}
           {speechToTextConfig?.enabled && (
             <ActionButton
               size='l'
               onClick={onToggleVoiceInput}
               className={cn(
-                isRecording ? 'text-[#10B981] bg-green-100 hover:bg-green-200' 
+                // 统一样式：只有录音中/默认两种状态
+                isRecording 
+                  ? 'text-[#10B981] bg-green-100 hover:bg-green-200' 
                   : 'text-gray-500 hover:bg-gray-100'
               )}
             >
