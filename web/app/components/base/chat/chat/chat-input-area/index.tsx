@@ -29,7 +29,7 @@ import type { FileUpload } from '@/app/components/base/features/types'
 import { TransferMethod } from '@/types/app'
 
 // ================= 阿里云配置 =================
-const ALIYUN_TOKEN = 'c0e798e91ab6432d937e3fe64f6c38f7'
+const ALIYUN_TOKEN = 'f2870a6422ec4dbca2bdd2e3bd2de6db'
 const ALIYUN_APP_KEY = 'PtcXfBxLzBd8HU4N'
 const ALIYUN_URL = 'wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1'
 // =============================================
