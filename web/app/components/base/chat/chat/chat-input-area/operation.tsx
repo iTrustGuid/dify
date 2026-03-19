@@ -43,13 +43,34 @@ const Operation: FC<OperationProps> = ({
             <ActionButton
               size='l'
               onClick={onToggleVoiceInput}
+              // 重构样式类名，使用更兼容的写法并禁用悬浮效果
               className={cn(
+                'hover:bg-transparent hover:text-inherit focus:bg-transparent focus:text-inherit active:bg-transparent active:text-inherit',
                 isRecording
-                  ? 'text-[#10B981] bg-[#D1FAE5]'
-                  : 'text-gray-500 bg-transparent'
+                  ? 'text-[#10B981]'
+                  : 'text-gray-500 bg-transparent',
+                // 强制设置背景色，提高优先级
+                isRecording && '!bg-[#D1FAE5]'
               )}
+              // 内联样式兜底，确保小程序环境生效
+              style={{
+                backgroundColor: isRecording ? '#D1FAE5' : 'transparent',
+                color: isRecording ? '#10B981' : '#6b7280',
+                // 禁用所有交互样式
+                pointerEvents: 'auto',
+                userSelect: 'none',
+                // 强制覆盖默认样式
+                border: 'none',
+                outline: 'none',
+              }}
             >
-              <RiMicLine className='h-5 w-5' />
+              <RiMicLine 
+                className='h-5 w-5'
+                style={{
+                  // 确保图标颜色继承
+                  color: 'inherit'
+                }}
+              />
             </ActionButton>
           )}
         </div>
