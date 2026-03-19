@@ -85,6 +85,7 @@ const ChatInputArea = ({
   const [currentRecognizingText, setCurrentRecognizingText] = useState('') // 当前正在识别的文本
   const lastRecognizedRef = useRef('') // 去重：上一次识别结果
   const sentenceEndTimerRef = useRef<number | null>(null) // 句子结束计时器
+  const cursorPositionRef = useRef<number>(0) // 记录光标位置
 
   const { isDragActive } = visionConfig ? useFile(visionConfig) : { isDragActive: false }
   const filesStore = useFileStore()
@@ -139,8 +140,36 @@ const ChatInputArea = ({
         setConfirmedText(prev => `${prev} ${currentRecognizingText}`.trim())
         setCurrentRecognizingText('')
         lastRecognizedRef.current = ''
+        // 更新光标位置到末尾
+        if (textareaRef.current) {
+          const newPos = `${prev} ${currentRecognizingText}`.trim().length
+          cursorPositionRef.current = newPos
+          textareaRef.current.selectionStart = newPos
+          textareaRef.current.selectionEnd = newPos
+        }
       }
     }, 1000) as any
+  }
+
+  // 保存光标位置
+  const saveCursorPosition = () => {
+    if (textareaRef.current) {
+      cursorPositionRef.current = textareaRef.current.selectionStart
+    }
+  }
+
+  // 恢复光标位置
+  const restoreCursorPosition = () => {
+    if (textareaRef.current && isRecording) {
+      // 语音输入时光标始终在末尾
+      const endPos = displayText.length
+      textareaRef.current.selectionStart = endPos
+      textareaRef.current.selectionEnd = endPos
+      cursorPositionRef.current = endPos
+    } else if (textareaRef.current) {
+      textareaRef.current.selectionStart = cursorPositionRef.current
+      textareaRef.current.selectionEnd = cursorPositionRef.current
+    }
   }
 
   // ========== 核心：实时识别只更新当前句（不重叠），整句完成后拼接 ==========
@@ -157,7 +186,10 @@ const ChatInputArea = ({
     handleTextareaResize()
     resetSilenceTimer()
     resetSentenceEndTimer()
-  }, [handleTextareaResize, currentRecognizingText])
+    
+    // 确保光标在文本末尾
+    setTimeout(restoreCursorPosition, 0)
+  }, [handleTextareaResize, displayText, isRecording])
 
   const handleTextareaClick = () => {
     if (isRecording) {
@@ -166,14 +198,19 @@ const ChatInputArea = ({
   }
 
   const handleManualEdit = (value: string) => {
-    if (isRecording) stopRecognition()
+    if (isRecording) {
+      // 手动编辑时停止录音
+      stopRecognition()
+    }
     setConfirmedText(value)
     setCurrentRecognizingText('')
     lastRecognizedRef.current = ''
+    // 保存手动编辑后的光标位置
+    saveCursorPosition()
     setTimeout(handleTextareaResize, 0)
   }
 
-  // 启动录音：清空所有内容
+  // 启动录音：清空所有内容并聚焦输入框
   const startRecognition = async () => {
     try {
       // 重置所有状态
@@ -186,6 +223,12 @@ const ChatInputArea = ({
       if (!navigator.mediaDevices?.getUserMedia) {
         notify({ type: 'error', message: '浏览器不支持录音' })
         return
+      }
+
+      // 聚焦输入框并设置光标到末尾
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        cursorPositionRef.current = 0
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -210,6 +253,11 @@ const ChatInputArea = ({
             startAudioPipe(stream)
             setIsRecording(true)
             resetSilenceTimer()
+            // 确保输入框聚焦且光标在末尾
+            if (textareaRef.current) {
+              textareaRef.current.focus()
+              restoreCursorPosition()
+            }
           }
         }, 100)
       }
@@ -232,6 +280,8 @@ const ChatInputArea = ({
               setConfirmedText(prev => `${prev} ${clean}`.trim())
               setCurrentRecognizingText('')
               lastRecognizedRef.current = ''
+              // 更新光标位置
+              restoreCursorPosition()
             }
           }
           // 识别完成
@@ -241,6 +291,8 @@ const ChatInputArea = ({
               setConfirmedText(prev => `${prev} ${clean}`.trim())
               setCurrentRecognizingText('')
               lastRecognizedRef.current = ''
+              // 更新光标位置
+              restoreCursorPosition()
             }
           }
           // 识别失败
@@ -371,6 +423,11 @@ const ChatInputArea = ({
         audioContextRef.current = null
       }
       isStoppingRef.current = false
+      // 停止录音后保持输入框聚焦
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        restoreCursorPosition()
+      }
     }, 300)
   }
 
@@ -389,6 +446,14 @@ const ChatInputArea = ({
       clearSentenceEndTimer()
     }
   }, [])
+
+  // 监听输入框焦点变化，录音时自动聚焦
+  useEffect(() => {
+    if (isRecording && textareaRef.current && !document.activeElement?.isEqualNode(textareaRef.current)) {
+      textareaRef.current.focus()
+      restoreCursorPosition()
+    }
+  }, [isRecording])
 
   const handleSend = () => {
     if (isRecording) stopRecognition()
@@ -469,7 +534,8 @@ const ChatInputArea = ({
               onChange={e => handleManualEdit(e.target.value)}
               onClick={handleTextareaClick}
               onFocus={handleTextareaClick}
-              readOnly={isRecording}
+              onSelect={saveCursorPosition} // 选择文本时保存光标位置
+              // 移除readOnly属性，保持输入框可编辑
             />
           </div>
           {!isMultipleLine && operation}
