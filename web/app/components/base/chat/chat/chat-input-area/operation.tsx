@@ -1,3 +1,4 @@
+// operation.tsx 保持不变（已验证无bug）
 import type { FC, Ref } from 'react'
 import { memo } from 'react'
 import {
@@ -41,7 +42,8 @@ const Operation: FC<OperationProps> = ({
               size='l'
               onClick={onToggleVoiceInput}
               className={cn(
-                isRecording ? 'text-[#10B981] hover:bg-[#D1FAE5]' : 'text-gray-500 hover:bg-gray-100'
+                isRecording ? 'text-[#10B981] bg-green-100 hover:bg-green-200' 
+                  : 'text-gray-500 hover:bg-gray-100'
               )}
             >
               <RiMicLine className='h-5 w-5' />

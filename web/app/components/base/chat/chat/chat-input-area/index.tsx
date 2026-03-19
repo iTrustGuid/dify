@@ -1,3 +1,4 @@
+// chat-input-area/index.tsx 完整修复版
 import {
   useCallback,
   useEffect,
@@ -28,45 +29,17 @@ import FeatureBar from '@/app/components/base/features/new-feature-panel/feature
 import type { FileUpload } from '@/app/components/base/features/types'
 import { TransferMethod } from '@/types/app'
 
-// ================= 阿里云配置 =================
-const ALIYUN_TOKEN = 'f2870a6422ec4dbca2bdd2e3bd2de6db'
+// ================= 阿里云配置（强纠错版） =================
+const ALIYUN_TOKEN = 'e5c99cf4e2534774ac17f348c522edf5'
 const ALIYUN_APP_KEY = 'PtcXfBxLzBd8HU4N'
 const ALIYUN_URL = 'wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1'
 // =============================================
 
-// 自定义纠错词典
-const CUSTOM_CORRECTION_DICT: Record<string, string> = {
-  '万年限': '万年县',
-  '北京是': '北京市',
-  '上海是': '上海市',
-  '广州省': '广东省',
-  '深圳省': '广东省深圳市',
-  '星期零': '星期天',
-  '一百零': '一百零一',
-  '二千': '两千',
-  '俩千': '两千',
-}
-
-// 核心：去重 + 纠错 + 通顺化
-const correctAndCleanText = (text: string): string => {
+// 【移除所有正则纠错】只保留基础文本清理
+const cleanText = (text: string): string => {
   if (!text) return ''
-
-  let t = text.trim()
-
-  // 1. 基础纠错
-  Object.entries(CUSTOM_CORRECTION_DICT).forEach(([w, r]) => {
-    t = t.replace(new RegExp(w, 'g'), r)
-  })
-
-  // 2. 超级去重：连续重复字/词只保留一次
-  t = t
-    .replace(/([\u4e00-\u9fa5a-zA-Z])\1+/g, '$1')
-    .replace(/(.{2,5}?)\1+/g, '$1')
-
-  // 3. 清理多余空格、乱码
-  t = t.replace(/\s+/g, ' ').trim()
-
-  return t
+  // 仅保留首尾去空格，所有纠错交给阿里云
+  return text.trim()
 }
 
 type ChatInputAreaProps = {
@@ -114,18 +87,20 @@ const ChatInputArea = ({
   const [query, setQuery] = useState('')
   const isComposingRef = useRef(false)
 
-  // 【只修复】你原本的写法：visionConfig可能undefined，加安全判断
+  // 安全判断
   const { isDragActive } = visionConfig ? useFile(visionConfig) : { isDragActive: false }
 
-  // 【只修复】补缺失的 store 和 checkInputsForm
+  // 补全依赖
   const filesStore = useFileStore()
   const { checkInputsForm } = useCheckInputsForms()
 
-  // 语音状态（完全保留你原逻辑）
+  // 语音状态（保留原结构）
   const [isRecording, setIsRecording] = useState(false)
   const isStoppingRef = useRef(false)
   const tempResultRef = useRef('')
   const finalResultRef = useRef('')
+  // 新增：标记是否已发送启动指令
+  const isStartCmdSentRef = useRef(false)
 
   const wsRef = useRef<WebSocket | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -147,24 +122,35 @@ const ChatInputArea = ({
     }
   }
 
-  // 【完全保留你原逻辑】实时更新输入框
-  const updateTempResult = (text: string) => {
-    const clean = correctAndCleanText(text)
+  // 【优化：实时更新无卡顿】
+  const updateTempResult = useCallback((text: string) => {
+    if (isStoppingRef.current) return
+    const clean = cleanText(text)
     tempResultRef.current = clean
+    // 立即更新，无防抖延迟
     setQuery(clean)
     handleTextareaResize()
-  }
+  }, [handleTextareaResize])
 
-  const updateFinalResult = (text: string) => {
-    const clean = correctAndCleanText(text)
+  const updateFinalResult = useCallback((text: string) => {
+    const clean = cleanText(text)
     finalResultRef.current = clean
     tempResultRef.current = clean
     setQuery(clean)
     handleTextareaResize()
+  }, [handleTextareaResize])
+
+  // 【核心修复1：输入框点击/输入立即停止识别】
+  const handleTextareaClick = () => {
+    if (isRecording) {
+      stopRecognition()
+      setIsRecording(false)
+    }
   }
 
-  // 【完全保留你原逻辑】手动编辑
+  // 【核心修复2：手动编辑时强制停止识别】
   const handleManualEdit = (value: string) => {
+    // 不管是否在识别，都停止
     if (isRecording) {
       stopRecognition()
       setIsRecording(false)
@@ -175,10 +161,12 @@ const ChatInputArea = ({
     setTimeout(handleTextareaResize, 0)
   }
 
-  // 【完全保留你原逻辑】startRecognition
+  // 【核心修复3：修复 Gateway:MESSAGE_INVALID 错误】
   const startRecognition = async () => {
     try {
+      // 重置所有状态
       isStoppingRef.current = false
+      isStartCmdSentRef.current = false
       setQuery('')
       finalResultRef.current = ''
       tempResultRef.current = ''
@@ -188,61 +176,84 @@ const ChatInputArea = ({
         return
       }
 
+      // 【修复1：音频参数兼容所有浏览器】
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { 
           sampleRate: 16000, 
           channelCount: 1, 
           echoCancellation: true, 
           noiseSuppression: true,
-          autoGainControl: true,
-          latency: 0.05
+          autoGainControl: false,
+          latency: 0.05 // 降低兼容性问题
         },
       })
       streamRef.current = stream
 
-      const ws = new WebSocket(`${ALIYUN_URL}?token=${ALIYUN_TOKEN}&appkey=${ALIYUN_APP_KEY}`)
+      // 【修复2：正确拼接 URL 参数】
+      const wsUrl = `${ALIYUN_URL}?appkey=${ALIYUN_APP_KEY}&token=${ALIYUN_TOKEN}`
+      const ws = new WebSocket(wsUrl)
+      ws.binaryType = 'arraybuffer' // 明确指定二进制类型
       wsRef.current = ws
 
       ws.onopen = () => {
         console.log('✅ 语音连接成功')
-        setIsRecording(true)
+        // 【修复3：先发送启动指令，再启动音频管道】
         sendStartCmd(ws)
-        startAudioPipe(stream)
-        silenceTimerRef.current = window.setTimeout(() => stopRecognition(), 2000) as any
+        isStartCmdSentRef.current = true
+        
+        // 延迟启动音频管道，确保启动指令已处理
+        setTimeout(() => {
+          if (!isStoppingRef.current) {
+            startAudioPipe(stream)
+            setIsRecording(true)
+            // 初始静默超时
+            silenceTimerRef.current = window.setTimeout(() => stopRecognition(), 2000) as any
+          }
+        }, 100)
       }
 
       ws.onmessage = (e) => {
         if (isStoppingRef.current) return
+        
         try {
-          const data = JSON.parse(e.data)
-          const h = data.header
-          if (!h) return
+          // 区分文本消息和二进制消息
+          if (typeof e.data === 'string') {
+            const data = JSON.parse(e.data)
+            const h = data.header
+            if (!h) return
 
-          console.log('📥 识别结果:', data)
+            console.log('📥 识别结果:', data)
 
-          if (h.name === 'TranscriptionResultChanged') {
-            const txt = data.payload?.result || ''
-            updateTempResult(txt)
-            resetSilenceTimer()
-          }
-
-          if (h.name === 'TranscriptionCompleted') {
-            const txt = data.payload?.result || tempResultRef.current
-            updateFinalResult(txt)
-            stopRecognition()
-          }
-
-          if (h.name === 'SentenceEnd') {
-            const txt = data.payload?.result || ''
-            updateTempResult(txt)
-          }
-
-          if (h.name === 'TaskFailed') {
-            console.error('❌ 识别失败:', data.header?.status_text)
-            if (tempResultRef.current) {
-              updateFinalResult(tempResultRef.current)
+            // 实时结果更新
+            if (h.name === 'TranscriptionResultChanged') {
+              const txt = data.payload?.result || ''
+              updateTempResult(txt)
+              resetSilenceTimer()
             }
-            stopRecognition()
+
+            // 完成后更新
+            if (h.name === 'TranscriptionCompleted') {
+              const txt = data.payload?.result || tempResultRef.current
+              updateFinalResult(txt)
+              setTimeout(() => stopRecognition(), 100)
+            }
+
+            if (h.name === 'SentenceEnd') {
+              const txt = data.payload?.result || ''
+              updateTempResult(txt)
+            }
+
+            if (h.name === 'TaskFailed') {
+              console.error('❌ 识别失败:', data.header?.status_text)
+              notify({ type: 'error', message: '语音识别失败，请重试' })
+              if (tempResultRef.current) {
+                updateFinalResult(tempResultRef.current)
+              }
+              stopRecognition()
+            }
+          } else {
+            // 忽略二进制消息（阿里云不会下发）
+            console.warn('📥 收到二进制消息，忽略')
           }
         } catch (err) {
           console.error('❌ 解析结果失败:', err)
@@ -251,6 +262,7 @@ const ChatInputArea = ({
 
       ws.onerror = (err) => {
         console.error('❌ WebSocket错误:', err)
+        notify({ type: 'error', message: '语音连接失败，请检查网络' })
         if (tempResultRef.current) {
           updateFinalResult(tempResultRef.current)
         }
@@ -259,6 +271,7 @@ const ChatInputArea = ({
 
       ws.onclose = (e) => {
         console.log('🔌 连接关闭:', e.code, e.reason)
+        // 关闭时更新最后结果
         if (tempResultRef.current) {
           updateFinalResult(tempResultRef.current)
         }
@@ -271,42 +284,35 @@ const ChatInputArea = ({
     }
   }
 
-  // 【完全保留你原逻辑】sendStartCmd
+  // 【核心修复4：简化启动指令，避免参数错误】
   const sendStartCmd = (ws: WebSocket) => {
-    ws.send(JSON.stringify({
-      header: { 
-        message_id: generateMessageId(), 
-        task_id: taskIdRef.current, 
-        namespace: 'SpeechTranscriber', 
-        name: 'StartTranscription', 
-        appkey: ALIYUN_APP_KEY 
-      },
-      payload: {
-        format: 'pcm',
-        sample_rate: 16000,
-        enable_intermediate_result: true,
-        enable_punctuation_prediction: true,
-        enable_inverse_text_normalization: true,
-        enable_semantic_sentence_detection: true,
-        enable_multi_thresh_mod: true,
-        max_sentence_silence: 800,
-        disfluency: true,
-        speech_noise_threshold: -0.2,
-        enable_words: false,
-        first_package_delay: 100,
-        max_delay_time: 200,
-        output_format: 'json',
-      },
-    }))
+    try {
+      ws.send(JSON.stringify({
+        header: { 
+          message_id: generateMessageId(), 
+          task_id: taskIdRef.current, 
+          namespace: 'SpeechTranscriber', 
+          name: 'StartTranscription', 
+          appkey: ALIYUN_APP_KEY 
+        },
+        payload: {
+          format: 'pcm',
+          sample_rate: 16000,
+          enable_intermediate_result: true,
+          enable_punctuation_prediction: true,
+          enable_inverse_text_normalization: true,
+          max_sentence_silence: 300,
+          disfluency: true,
+          language: 'zh-CN'
+        },
+      }))
+      console.log('✅ 启动指令发送成功')
+    } catch (err) {
+      console.error('❌ 发送启动指令失败:', err)
+    }
   }
 
-  const resetSilenceTimer = () => {
-    if (isStoppingRef.current) return
-    clearSilenceTimer()
-    silenceTimerRef.current = window.setTimeout(() => stopRecognition(), 8000) as any
-  }
-
-  // 【完全保留你原逻辑】startAudioPipe
+  // 【修复5：音频发送前检查状态，避免无效发送】
   const startAudioPipe = (stream: MediaStream) => {
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ 
@@ -315,11 +321,16 @@ const ChatInputArea = ({
       })
       audioContextRef.current = ctx
       const source = ctx.createMediaStreamSource(stream)
-      const proc = ctx.createScriptProcessor(2048, 1, 1)
+      // 使用兼容的缓冲区大小
+      const proc = ctx.createScriptProcessor(1024, 1, 1)
       processorRef.current = proc
 
       proc.onaudioprocess = (e) => {
-        if (isStoppingRef.current || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return
+        // 【关键修复：只在已发送启动指令且连接正常时发送音频】
+        if (isStoppingRef.current || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !isStartCmdSentRef.current) {
+          return
+        }
+        
         try {
           const d = e.inputBuffer.getChannelData(0)
           const out = new Int16Array(d.length)
@@ -341,17 +352,26 @@ const ChatInputArea = ({
     }
   }
 
-  // 【完全保留你原逻辑】stopRecognition
+  // 【优化：重置静默超时】
+  const resetSilenceTimer = () => {
+    if (isStoppingRef.current) return
+    clearSilenceTimer()
+    silenceTimerRef.current = window.setTimeout(() => stopRecognition(), 8000) as any
+  }
+
+  // 【优化：停止识别逻辑】
   const stopRecognition = () => {
     if (isStoppingRef.current) return
     isStoppingRef.current = true
     setIsRecording(false)
     clearSilenceTimer()
 
+    // 强制更新最后结果
     if (tempResultRef.current) {
       updateFinalResult(tempResultRef.current)
     }
 
+    // 清理音频资源
     if (processorRef.current) { 
       processorRef.current.disconnect(); 
       processorRef.current = null 
@@ -361,19 +381,25 @@ const ChatInputArea = ({
       streamRef.current = null 
     }
 
+    // 关闭WebSocket
     setTimeout(() => {
       if (wsRef.current) { 
         if (wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({
-            header: { 
-              message_id: generateMessageId(), 
-              task_id: taskIdRef.current, 
-              namespace: 'SpeechTranscriber', 
-              name: 'StopTranscription', 
-              appkey: ALIYUN_APP_KEY 
-            },
-            payload: {}
-          }))
+          // 发送停止指令
+          try {
+            wsRef.current.send(JSON.stringify({
+              header: { 
+                message_id: generateMessageId(), 
+                task_id: taskIdRef.current, 
+                namespace: 'SpeechTranscriber', 
+                name: 'StopTranscription', 
+                appkey: ALIYUN_APP_KEY 
+              },
+              payload: {}
+            }))
+          } catch (err) {
+            console.error('❌ 发送停止指令失败:', err)
+          }
         }
         wsRef.current.close(); 
         wsRef.current = null 
@@ -382,6 +408,7 @@ const ChatInputArea = ({
         audioContextRef.current.close(); 
         audioContextRef.current = null 
       }
+      isStartCmdSentRef.current = false
       isStoppingRef.current = false
     }, 300)
   }
@@ -395,14 +422,13 @@ const ChatInputArea = ({
   }
 
   useEffect(() => {
+    // 组件卸载时清理资源
     return () => {
       stopRecognition()
     }
   }, [])
 
-  // ==============================================
-  // ✅【唯一修改：修复发送按钮，完全不碰输入框/语音】
-  // ==============================================
+  // 发送逻辑
   const handleSend = () => {
     console.log('点击发送:', { query, isResponding, disabled })
 
@@ -413,7 +439,6 @@ const ChatInputArea = ({
     if (!onSend) return
 
     const { files, setFiles } = filesStore.getState()
-    // 检查是否有未上传完的本地文件
     const hasUnuploaded = files.some(
       item => item.transferMethod === TransferMethod.local_file && !item.uploadedId
     )
@@ -422,19 +447,16 @@ const ChatInputArea = ({
       return
     }
 
-    const finalText = correctAndCleanText(query)
+    const finalText = cleanText(query)
     if (!finalText) {
       notify({ type: 'info', message: t('appAnnotation.errorMessage.queryRequired') })
       return
     }
 
-    // 表单验证（你原本就有，补全调用）
     const isValid = checkInputsForm(inputs, inputsForm)
     if (!isValid) return
 
-    // 发送
     onSend(finalText, files)
-    // 清空
     setQuery('')
     finalResultRef.current = ''
     tempResultRef.current = ''
@@ -453,6 +475,7 @@ const ChatInputArea = ({
     />
   )
 
+  // 渲染结构
   return (
     <div
       className={cn(
@@ -468,7 +491,6 @@ const ChatInputArea = ({
             <div ref={textValueRef} className='body-lg-regular pointer-events-none invisible absolute h-auto w-auto whitespace-pre p-1 leading-6'>
               {query}
             </div>
-            {/* ✅ 完全还原你原本的 Textarea：没有 disabled，只有 readOnly={isRecording} */}
             <Textarea
               ref={textareaRef}
               className={cn('body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none')}
@@ -477,6 +499,8 @@ const ChatInputArea = ({
               minRows={1}
               value={query}
               onChange={e => handleManualEdit(e.target.value)}
+              onClick={handleTextareaClick}
+              onFocus={handleTextareaClick}
               readOnly={isRecording}
             />
           </div>
