@@ -1,9 +1,6 @@
 import type { FC, Ref } from 'react'
 import { memo } from 'react'
-import {
-  RiMicLine,
-  RiSendPlane2Fill,
-} from '@remixicon/react'
+import { RiMicLine, RiSendPlane2Fill } from '@remixicon/react'
 import type { EnableType } from '../../types'
 import type { Theme } from '../../embedded-chatbot/theme/theme-context'
 import Button from '@/app/components/base/button'
@@ -47,10 +44,9 @@ const Operation: FC<OperationProps> = ({
               size='l'
               onClick={onToggleVoiceInput}
               className={cn(
-                // 统一样式：只有录音中/默认两种状态
-                isRecording 
-                  ? 'text-[#10B981] bg-green-100 hover:bg-green-200' 
-                  : 'text-gray-500 hover:bg-gray-100'
+                isRecording
+                  ? 'text-[#10B981] bg-[#D1FAE5]'
+                  : 'text-gray-500 bg-transparent'
               )}
             >
               <RiMicLine className='h-5 w-5' />
