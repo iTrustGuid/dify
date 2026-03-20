@@ -56,9 +56,12 @@ const Operation = forwardRef(({
               // 🔥 改用onMouseDown
               onMouseDown={(e) => handleMouseDown(e, onToggleVoiceInput)}
               className={cn(
+                // 🔥 核心修改：彻底清除所有交互状态的样式
                 'hover:bg-transparent hover:text-inherit focus:bg-transparent focus:text-inherit active:bg-transparent active:text-inherit',
-                isRecording ? 'text-[#10B981]' : 'text-gray-500 bg-transparent',
-                isRecording && '!bg-[#D1FAE5]'
+                'hover:shadow-none focus:shadow-none active:shadow-none', // 新增：清除阴影
+                'hover:border-transparent focus:border-transparent active:border-transparent', // 新增：清除边框
+                isRecording ? 'text-[#10B981]' : 'text-gray-500', // 简化：移除多余的bg-transparent
+                isRecording && 'bg-[#D1FAE5]' // 简化：移除!强制前缀，用常规样式
               )}
               style={{
                 backgroundColor: isRecording ? '#D1FAE5' : 'transparent',
@@ -67,17 +70,21 @@ const Operation = forwardRef(({
                 outline: 'none',
                 pointerEvents: 'auto',
                 userSelect: 'none',
+                boxShadow: 'none', // 新增：强制清除阴影
+                transition: 'none', // 新增：移除过渡动画避免样式闪烁
               }}
               // 🔥 禁止按钮获得焦点，避免干扰输入框
               tabIndex={-1}
               // 禁用原生焦点样式
-              style={{
-                ...(theme?.primaryColor ? { '--primary-color': theme.primaryColor } : {}),
-                outline: 'none',
-                boxShadow: 'none',
-              }}
+              // 🔥 核心修改：合并style属性，避免重复定义导致样式覆盖
+              // 移除重复的style定义，合并到上面的style中
             >
-              <RiMicLine className='h-5 w-5' style={{ color: 'inherit' }} />
+              <RiMicLine className='h-5 w-5' style={{ 
+                color: 'inherit',
+                // 新增：确保图标本身没有额外样式
+                backgroundColor: 'transparent',
+                outline: 'none'
+              }} />
             </ActionButton>
           )}
         </div>
