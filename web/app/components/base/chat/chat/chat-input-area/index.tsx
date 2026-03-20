@@ -27,18 +27,15 @@ import { useToastContext } from '@/app/components/base/toast'
 import type { FileUpload } from '@/app/components/base/features/types'
 import { TransferMethod } from '@/types/app'
 
-
 // 阿里云配置
 const ALIYUN_TOKEN = '6f3f5c2058024e07870f18920c2940fa'
 const ALIYUN_APP_KEY = 'PtcXfBxLzBd8HU4N'
 const ALIYUN_URL = 'wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1'
 
-
 const cleanText = (text: string): string => {
   if (!text) return ''
   return text.trim()
 }
-
 
 type ChatInputAreaProps = {
   botName?: string
@@ -55,7 +52,6 @@ type ChatInputAreaProps = {
   isResponding?: boolean
   disabled?: boolean
 }
-
 
 const ChatInputArea = ({
   botName,
@@ -83,6 +79,9 @@ const ChatInputArea = ({
     isMultipleLine,
   } = useTextAreaHeight()
 
+  // 新增：麦克风权限状态管理
+  const [micPermissionGranted, setMicPermissionGranted] = useState(false)
+  const permissionCheckedRef = useRef(false)
 
   // 核心状态
   const [confirmedText, setConfirmedText] = useState('')
@@ -105,16 +104,13 @@ const ChatInputArea = ({
   // 修改：每次连接生成新的taskId，不再复用
   const taskIdRef = useRef<string>('')
 
-
   // 其他依赖
   const { isDragActive } = visionConfig ? useFile(visionConfig) : { isDragActive: false }
   const filesStore = useFileStore()
   const { checkInputsForm } = useCheckInputsForms()
 
-
   // 最终显示文本
   const displayText = `${confirmedText} ${currentRecognizingText}`.trim()
-
 
   // 工具方法：清除计时器
   const clearSilenceTimer = () => {
@@ -178,6 +174,55 @@ const ChatInputArea = ({
     isConnectingRef.current = false
   }
 
+  // 新增：检查并请求麦克风权限（只请求一次）
+  const checkMicPermission = useCallback(async () => {
+    if (permissionCheckedRef.current) return micPermissionGranted
+    
+    try {
+      // 检查权限状态API
+      if (navigator.permissions && typeof navigator.permissions.query === 'function') {
+        try {
+          const permissionStatus = await navigator.permissions.query({ 
+            name: 'microphone' as PermissionName 
+          })
+          
+          // 监听权限状态变化
+          permissionStatus.onchange = () => {
+            setMicPermissionGranted(permissionStatus.state === 'granted')
+          }
+          
+          if (permissionStatus.state === 'granted') {
+            setMicPermissionGranted(true)
+            permissionCheckedRef.current = true
+            return true
+          } else if (permissionStatus.state === 'denied') {
+            permissionCheckedRef.current = true
+            return false
+          }
+        } catch (e) {
+          console.warn('Permissions API不支持，降级处理:', e)
+        }
+      }
+      
+      // 兼容方案：提前请求一次权限
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach(track => track.stop())
+      setMicPermissionGranted(true)
+      permissionCheckedRef.current = true
+      return true
+    } catch (err) {
+      console.error('麦克风权限检查失败:', err)
+      permissionCheckedRef.current = true
+      return false
+    }
+  }, [micPermissionGranted])
+
+  // 组件挂载时预检查权限
+  useEffect(() => {
+    if (speechToTextConfig?.enabled) {
+      checkMicPermission().catch(err => console.error('预检查麦克风权限失败:', err))
+    }
+  }, [speechToTextConfig?.enabled, checkMicPermission])
 
   // 静音自动停止录音（6秒）
   const resetSilenceTimer = () => {
@@ -185,7 +230,6 @@ const ChatInputArea = ({
     clearSilenceTimer()
     silenceTimerRef.current = window.setTimeout(() => stopRecognition(), 6000) as any
   }
-
 
   // 句子结束合并文本
   const resetSentenceEndTimer = () => {
@@ -198,7 +242,6 @@ const ChatInputArea = ({
       }
     }, 1000) as any
   }
-
 
   // 光标位置管理
   const saveCursorPosition = () => {
@@ -215,7 +258,6 @@ const ChatInputArea = ({
     cursorPositionRef.current = endPos
   }
 
-
   // 生成消息ID
   const generateMessageId = () =>
     Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
@@ -224,7 +266,6 @@ const ChatInputArea = ({
   const generateTaskId = () => {
     return Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
   }
-
 
   // 更新识别结果
   const updateRecognitionResult = useCallback((text: string) => {
@@ -240,7 +281,6 @@ const ChatInputArea = ({
     setTimeout(restoreCursorPosition, 0)
   }, [handleTextareaResize])
 
-
   // 安全聚焦输入框（仅未聚焦时执行，避免闪烁）
   const safeFocusTextarea = () => {
     if (textareaRef.current && !isTextareaFocused.current) {
@@ -250,7 +290,6 @@ const ChatInputArea = ({
     }
   }
 
-
   // 安全失焦输入框（仅聚焦时执行，避免闪烁）
   const safeBlurTextarea = () => {
     if (textareaRef.current && isTextareaFocused.current) {
@@ -259,12 +298,10 @@ const ChatInputArea = ({
     }
   }
 
-
   // 监听输入框焦点状态（核心：100%精准跟踪）
   useEffect(() => {
     const textarea = textareaRef.current
     if (!textarea) return
-
 
     const handleFocus = () => {
       isTextareaFocused.current = true
@@ -273,17 +310,14 @@ const ChatInputArea = ({
       isTextareaFocused.current = false
     }
 
-
     textarea.addEventListener('focus', handleFocus)
     textarea.addEventListener('blur', handleBlur)
-
 
     return () => {
       textarea.removeEventListener('focus', handleFocus)
       textarea.removeEventListener('blur', handleBlur)
     }
   }, [])
-
 
   // 手动编辑文本
   const handleManualEdit = (value: string) => {
@@ -295,7 +329,6 @@ const ChatInputArea = ({
     setTimeout(handleTextareaResize, 0)
   }
 
-
   // 启动录音（聚焦输入框 + 打开键盘，光标闪烁）
   const startRecognition = async () => {
     // 防止重复点击
@@ -304,6 +337,14 @@ const ChatInputArea = ({
     isConnectingRef.current = true
     
     try {
+      // 新增：先检查权限
+      const hasPermission = await checkMicPermission()
+      if (!hasPermission) {
+        notify({ type: 'error', message: '请授予麦克风权限后重试' })
+        isConnectingRef.current = false
+        return
+      }
+      
       // 🔥 关键修改：启动前先强制清理旧资源
       forceCleanupResources()
       
@@ -327,7 +368,7 @@ const ChatInputArea = ({
       // 聚焦输入框（打开键盘，光标闪烁）- 仅首次启动时执行
       safeFocusTextarea()
 
-      // 获取麦克风权限
+      // 获取麦克风权限（此时应该已有权限，不会再弹窗）
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
       })
@@ -419,7 +460,6 @@ const ChatInputArea = ({
     }
   }
 
-
   // 发送启动指令
   const sendStartCmd = (ws: WebSocket) => {
     try {
@@ -446,7 +486,6 @@ const ChatInputArea = ({
       console.error('发送启动指令失败:', err)
     }
   }
-
 
   // 启动音频管道
   const startAudioPipe = (stream: MediaStream) => {
@@ -481,7 +520,6 @@ const ChatInputArea = ({
     }
   }
 
-
   /**
    * 停止录音（仅关闭语音功能，完全不碰焦点/键盘）
    */
@@ -512,7 +550,6 @@ const ChatInputArea = ({
     }, 300)
   }
 
-
   // 切换麦克风状态（仅开关语音，不影响焦点）
   const toggleVoice = () => {
     if (isRecording) {
@@ -521,7 +558,6 @@ const ChatInputArea = ({
       startRecognition() // 开启语音：首次聚焦输入框，键盘弹出
     }
   }
-
 
   // 发送消息（仅这里执行失焦，关闭键盘）
   const handleSend = () => {
@@ -568,7 +604,6 @@ const ChatInputArea = ({
     setFiles([])
   }
 
-
   // 点击上传文件（核心：仅关闭语音，不影响焦点/键盘状态）
   const handleFileUploadClick = () => {
     // 1. 如果正在录音，先关闭实时语音（麦克风恢复默认）
@@ -579,14 +614,12 @@ const ChatInputArea = ({
     // 3. 弹窗逻辑由FileUploaderInChatInput内部处理
   }
 
-
   // 组件卸载清理
   useEffect(() => {
     return () => {
       forceCleanupResources()
     }
   }, [])
-
 
   // 渲染操作栏
   const operation = (
@@ -601,7 +634,6 @@ const ChatInputArea = ({
       theme={theme}
     />
   )
-
 
   return (
     <div className={cn(
@@ -636,11 +668,9 @@ const ChatInputArea = ({
   )
 }
 
-
 // 包装组件
 const ChatInputAreaWrapper = (props: ChatInputAreaProps) => (
   <FileContextProvider><ChatInputArea {...props} /></FileContextProvider>
 )
-
 
 export default ChatInputAreaWrapper

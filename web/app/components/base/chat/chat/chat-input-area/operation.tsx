@@ -9,7 +9,6 @@ import { FileUploaderInChatInput } from '@/app/components/base/file-uploader'
 import type { FileUpload } from '@/app/components/base/features/types'
 import cn from '@/utils/classnames'
 
-
 type OperationProps = {
   fileConfig?: FileUpload
   speechToTextConfig?: EnableType
@@ -19,7 +18,6 @@ type OperationProps = {
   onFileUploadClick?: () => void
   theme?: Theme | null
 }
-
 
 // 使用forwardRef处理ref传递
 const Operation = forwardRef(({
@@ -39,7 +37,6 @@ const Operation = forwardRef(({
     e.stopPropagation()
     callback?.()
   }
-
 
   return (
     <div className='flex shrink-0 items-center justify-end'>
@@ -112,7 +109,6 @@ const Operation = forwardRef(({
     </div>
   )
 })
-
 
 Operation.displayName = 'Operation'
 export default memo(Operation)
