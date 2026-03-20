@@ -27,15 +27,18 @@ import { useToastContext } from '@/app/components/base/toast'
 import type { FileUpload } from '@/app/components/base/features/types'
 import { TransferMethod } from '@/types/app'
 
+
 // 阿里云配置
 const ALIYUN_TOKEN = '6f3f5c2058024e07870f18920c2940fa'
 const ALIYUN_APP_KEY = 'PtcXfBxLzBd8HU4N'
 const ALIYUN_URL = 'wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1'
 
+
 const cleanText = (text: string): string => {
   if (!text) return ''
   return text.trim()
 }
+
 
 type ChatInputAreaProps = {
   botName?: string
@@ -52,6 +55,7 @@ type ChatInputAreaProps = {
   isResponding?: boolean
   disabled?: boolean
 }
+
 
 const ChatInputArea = ({
   botName,
@@ -79,6 +83,7 @@ const ChatInputArea = ({
     isMultipleLine,
   } = useTextAreaHeight()
 
+
   // 核心状态
   const [confirmedText, setConfirmedText] = useState('')
   const [currentRecognizingText, setCurrentRecognizingText] = useState('')
@@ -90,30 +95,89 @@ const ChatInputArea = ({
   const sentenceEndTimerRef = useRef<number | null>(null)
   const cursorPositionRef = useRef<number>(0)
   const isStoppingRef = useRef(false)
+  // 新增：添加连接状态锁，防止并发创建连接
+  const isConnectingRef = useRef(false)
   const wsRef = useRef<WebSocket | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const processorRef = useRef<ScriptProcessorNode | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const silenceTimerRef = useRef<number | null>(null)
-  const taskIdRef = useRef<string>(
-    Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
-  )
+  // 修改：每次连接生成新的taskId，不再复用
+  const taskIdRef = useRef<string>('')
+
 
   // 其他依赖
   const { isDragActive } = visionConfig ? useFile(visionConfig) : { isDragActive: false }
   const filesStore = useFileStore()
   const { checkInputsForm } = useCheckInputsForms()
 
+
   // 最终显示文本
   const displayText = `${confirmedText} ${currentRecognizingText}`.trim()
+
 
   // 工具方法：清除计时器
   const clearSilenceTimer = () => {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+    silenceTimerRef.current = null
   }
+  
   const clearSentenceEndTimer = () => {
     if (sentenceEndTimerRef.current) clearTimeout(sentenceEndTimerRef.current)
+    sentenceEndTimerRef.current = null
   }
+
+  // 新增：强制清理所有资源的方法
+  const forceCleanupResources = () => {
+    // 清除所有计时器
+    clearSilenceTimer()
+    clearSentenceEndTimer()
+    
+    // 停止音频处理
+    if (processorRef.current) {
+      try {
+        processorRef.current.disconnect()
+      } catch (e) {}
+      processorRef.current = null
+    }
+    
+    // 停止媒体流
+    if (streamRef.current) {
+      try {
+        streamRef.current.getTracks().forEach(t => t.stop())
+      } catch (e) {}
+      streamRef.current = null
+    }
+    
+    // 关闭WebSocket
+    if (wsRef.current) {
+      try {
+        // 先移除事件监听，避免关闭时触发错误
+        wsRef.current.onopen = null
+        wsRef.current.onmessage = null
+        wsRef.current.onerror = null
+        wsRef.current.onclose = null
+        
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.close()
+        }
+      } catch (e) {}
+      wsRef.current = null
+    }
+    
+    // 关闭AudioContext
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      try {
+        audioContextRef.current.close()
+      } catch (e) {}
+      audioContextRef.current = null
+    }
+    
+    // 重置状态锁
+    isStoppingRef.current = false
+    isConnectingRef.current = false
+  }
+
 
   // 静音自动停止录音（6秒）
   const resetSilenceTimer = () => {
@@ -121,6 +185,7 @@ const ChatInputArea = ({
     clearSilenceTimer()
     silenceTimerRef.current = window.setTimeout(() => stopRecognition(), 6000) as any
   }
+
 
   // 句子结束合并文本
   const resetSentenceEndTimer = () => {
@@ -134,12 +199,14 @@ const ChatInputArea = ({
     }, 1000) as any
   }
 
+
   // 光标位置管理
   const saveCursorPosition = () => {
     if (textareaRef.current) {
       cursorPositionRef.current = textareaRef.current.selectionStart
     }
   }
+  
   const restoreCursorPosition = () => {
     if (!textareaRef.current) return
     const endPos = displayText.length
@@ -148,9 +215,16 @@ const ChatInputArea = ({
     cursorPositionRef.current = endPos
   }
 
+
   // 生成消息ID
   const generateMessageId = () =>
     Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
+
+  // 新增：生成唯一的taskId
+  const generateTaskId = () => {
+    return Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
+  }
+
 
   // 更新识别结果
   const updateRecognitionResult = useCallback((text: string) => {
@@ -166,6 +240,7 @@ const ChatInputArea = ({
     setTimeout(restoreCursorPosition, 0)
   }, [handleTextareaResize])
 
+
   // 安全聚焦输入框（仅未聚焦时执行，避免闪烁）
   const safeFocusTextarea = () => {
     if (textareaRef.current && !isTextareaFocused.current) {
@@ -175,6 +250,7 @@ const ChatInputArea = ({
     }
   }
 
+
   // 安全失焦输入框（仅聚焦时执行，避免闪烁）
   const safeBlurTextarea = () => {
     if (textareaRef.current && isTextareaFocused.current) {
@@ -183,10 +259,12 @@ const ChatInputArea = ({
     }
   }
 
+
   // 监听输入框焦点状态（核心：100%精准跟踪）
   useEffect(() => {
     const textarea = textareaRef.current
     if (!textarea) return
+
 
     const handleFocus = () => {
       isTextareaFocused.current = true
@@ -195,14 +273,17 @@ const ChatInputArea = ({
       isTextareaFocused.current = false
     }
 
+
     textarea.addEventListener('focus', handleFocus)
     textarea.addEventListener('blur', handleBlur)
+
 
     return () => {
       textarea.removeEventListener('focus', handleFocus)
       textarea.removeEventListener('blur', handleBlur)
     }
   }, [])
+
 
   // 手动编辑文本
   const handleManualEdit = (value: string) => {
@@ -214,19 +295,32 @@ const ChatInputArea = ({
     setTimeout(handleTextareaResize, 0)
   }
 
+
   // 启动录音（聚焦输入框 + 打开键盘，光标闪烁）
   const startRecognition = async () => {
+    // 防止重复点击
+    if (isConnectingRef.current || isRecording) return
+    
+    isConnectingRef.current = true
+    
     try {
+      // 🔥 关键修改：启动前先强制清理旧资源
+      forceCleanupResources()
+      
       // 重置状态
       setConfirmedText('')
       setCurrentRecognizingText('')
       lastRecognizedRef.current = ''
       isStoppingRef.current = false
       clearSentenceEndTimer()
+      
+      // 生成新的taskId
+      taskIdRef.current = generateTaskId()
 
       // 检查浏览器支持
       if (!navigator.mediaDevices?.getUserMedia) {
         notify({ type: 'error', message: '浏览器不支持录音' })
+        isConnectingRef.current = false
         return
       }
 
@@ -246,12 +340,19 @@ const ChatInputArea = ({
 
       // WebSocket打开
       ws.onopen = () => {
+        if (isStoppingRef.current) {
+          ws.close()
+          isConnectingRef.current = false
+          return
+        }
+        
         sendStartCmd(ws)
         setTimeout(() => {
           if (isStoppingRef.current) return
           startAudioPipe(stream)
           setIsRecording(true)
           resetSilenceTimer()
+          isConnectingRef.current = false
         }, 100)
       }
 
@@ -273,7 +374,10 @@ const ChatInputArea = ({
               lastRecognizedRef.current = ''
             }
           } else if (h.name === 'TaskFailed') {
-            notify({ type: 'error', message: '语音识别失败，请重试' })
+            // 只在非停止状态下显示错误
+            if (!isStoppingRef.current) {
+              notify({ type: 'error', message: '语音识别失败，请重试' })
+            }
             stopRecognition()
           }
         } catch (err) {
@@ -284,21 +388,37 @@ const ChatInputArea = ({
       // WebSocket错误
       ws.onerror = (err) => {
         console.error('WebSocket错误:', err)
-        notify({ type: 'error', message: '语音连接失败，请检查网络' })
-        stopRecognition()
+        // 🔥 关键修改：只在非停止/非连接状态下显示网络错误
+        if (!isStoppingRef.current && !isConnectingRef.current) {
+          notify({ type: 'error', message: '语音连接失败，请检查网络' })
+        }
+        // 错误时清理资源但不设置isRecording为false，避免状态混乱
+        forceCleanupResources()
+        isConnectingRef.current = false
       }
 
       // WebSocket关闭
-      ws.onclose = () => {
-        stopRecognition()
+      ws.onclose = (event) => {
+        // 正常关闭（1000）或手动关闭（1001）不报错
+        if (![1000, 1001].includes(event.code) && !isStoppingRef.current && !isConnectingRef.current) {
+          console.warn('WebSocket意外关闭:', event)
+        }
+        // 只有在录音状态下才更新UI
+        if (isRecording) {
+          setIsRecording(false)
+        }
+        forceCleanupResources()
+        isConnectingRef.current = false
       }
 
     } catch (err) {
       console.error('启动录音失败:', err)
       notify({ type: 'error', message: '录音启动失败，请检查麦克风权限' })
-      stopRecognition()
+      forceCleanupResources()
+      isConnectingRef.current = false
     }
   }
+
 
   // 发送启动指令
   const sendStartCmd = (ws: WebSocket) => {
@@ -326,6 +446,7 @@ const ChatInputArea = ({
       console.error('发送启动指令失败:', err)
     }
   }
+
 
   // 启动音频管道
   const startAudioPipe = (stream: MediaStream) => {
@@ -360,6 +481,7 @@ const ChatInputArea = ({
     }
   }
 
+
   /**
    * 停止录音（仅关闭语音功能，完全不碰焦点/键盘）
    */
@@ -382,36 +504,14 @@ const ChatInputArea = ({
     setIsRecording(false)
 
     // 清理音频资源（安全关闭，避免重复操作）
-    if (processorRef.current) {
-      processorRef.current.disconnect()
-      processorRef.current = null
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop())
-      streamRef.current = null
-    }
-
-    // 清理WebSocket和AudioContext
+    forceCleanupResources()
+    
+    // 重置停止状态
     setTimeout(() => {
-      // 关闭WebSocket
-      if (wsRef.current) {
-        wsRef.current.close()
-        wsRef.current = null
-      }
-
-      // 安全关闭AudioContext（避免重复关闭错误）
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close().then(() => {
-          audioContextRef.current = null
-        }).catch(err => console.error('关闭AudioContext失败:', err))
-      } else {
-        audioContextRef.current = null
-      }
-
       isStoppingRef.current = false
-      // 🔥 核心修改：移除所有焦点恢复逻辑，完全不碰输入框焦点
     }, 300)
   }
+
 
   // 切换麦克风状态（仅开关语音，不影响焦点）
   const toggleVoice = () => {
@@ -421,6 +521,7 @@ const ChatInputArea = ({
       startRecognition() // 开启语音：首次聚焦输入框，键盘弹出
     }
   }
+
 
   // 发送消息（仅这里执行失焦，关闭键盘）
   const handleSend = () => {
@@ -467,6 +568,7 @@ const ChatInputArea = ({
     setFiles([])
   }
 
+
   // 点击上传文件（核心：仅关闭语音，不影响焦点/键盘状态）
   const handleFileUploadClick = () => {
     // 1. 如果正在录音，先关闭实时语音（麦克风恢复默认）
@@ -477,13 +579,14 @@ const ChatInputArea = ({
     // 3. 弹窗逻辑由FileUploaderInChatInput内部处理
   }
 
+
   // 组件卸载清理
   useEffect(() => {
     return () => {
-      stopRecognition()
-      clearSentenceEndTimer()
+      forceCleanupResources()
     }
   }, [])
+
 
   // 渲染操作栏
   const operation = (
@@ -498,6 +601,7 @@ const ChatInputArea = ({
       theme={theme}
     />
   )
+
 
   return (
     <div className={cn(
@@ -532,9 +636,11 @@ const ChatInputArea = ({
   )
 }
 
+
 // 包装组件
 const ChatInputAreaWrapper = (props: ChatInputAreaProps) => (
   <FileContextProvider><ChatInputArea {...props} /></FileContextProvider>
 )
+
 
 export default ChatInputAreaWrapper
