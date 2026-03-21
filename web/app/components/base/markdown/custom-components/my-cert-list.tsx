@@ -112,7 +112,7 @@ export function AppMyCertList() {
         throw new Error(data.result_msg || '获取预览链接失败');
       }
 
-      const previewUrl = data.result_msg+'?certType=fczm';
+      const previewUrl = data.result_msg+'?certType=zzlb';
 
       // 调用H5向小程序通信通用方法
       await openPreview(previewUrl);
