@@ -235,7 +235,7 @@ export function PropertyCertificate() {
       try {
         setPreviewLoading(true);
 
-        setPreviewUrl(`https://www.wnxbdcdjzx.com/estate/${fileUrl}`);
+        setPreviewUrl(`https://www.wnxbdcdjzx.com/estate/${fileUrl}/?certType=fczm'`);
         setShowPreview(true);
       } catch (err) {
         const errorMessage =
