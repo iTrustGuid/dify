@@ -8,6 +8,8 @@ import { useCallback } from 'react';
  * @param miniProgramPreviewPath 小程序预览页路径（如 /pagesB/my/preview/preview）
  */
 export const useWxMiniProgramPreview = (miniProgramPreviewPath: string) => {
+  const ua = navigator.userAgent.toLowerCase();
+
   // 等待 wx 对象加载完成（最多等3秒）
   const waitForWxReady = useCallback(async (): Promise<any> => {
     return new Promise((resolve) => {
@@ -38,7 +40,7 @@ export const useWxMiniProgramPreview = (miniProgramPreviewPath: string) => {
 
   // 检测是否在微信小程序webview中
   const isInWechatMiniProgram = useCallback((): boolean => {
-    return typeof (window as any).wx !== 'undefined' && (window as any).wx.miniProgram;
+    return typeof (window as any).wx !== 'undefined' && (window as any).wx.miniProgram && ua.includes('miniprogram');
   }, []);
 
   // 检测是否在微信浏览器中

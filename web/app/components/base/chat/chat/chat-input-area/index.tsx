@@ -110,7 +110,6 @@ const ChatInputArea = ({
   const configChangeHandler = (event: MessageEvent) => {
     const windowAny = window as any;
     if (event.data && event.data.type === 'dify-chatbot-config-change') {
-      console.log('configChangeHandler', event)
       const newConfig = event.data.difyChatbotConfig;
       windowAny.difyChatbotConfig = newConfig;
     }

@@ -4,7 +4,7 @@ import { flow } from 'lodash-es'
 import cn from '@/utils/classnames'
 import { preprocessLaTeX, preprocessThinkTag } from './markdown-utils'
 import type { ReactMarkdownWrapperProps, SimplePluginInfo } from './react-markdown-wrapper'
-import { AppMyCertList, PropertyCertificate } from './custom-components'
+import { AppMyCertList, PropertyCertificate, PropertyApplicationFlow, PropertySelector, MaterialUploadPreview } from './custom-components'
 
 const ReactMarkdown = dynamic(() => import('./react-markdown-wrapper').then(mod => mod.ReactMarkdownWrapper), { ssr: false })
 
@@ -25,6 +25,9 @@ export const Markdown = (props: MarkdownProps) => {
   const { customComponents = {}, pluginInfo } = props
   customComponents.appcertlist = AppMyCertList
   customComponents.appyfwfzm = PropertyCertificate
+  customComponents.appprocessinfo = PropertyApplicationFlow
+  customComponents.appprocessupload = MaterialUploadPreview
+  customComponents.apphouseselect = PropertySelector
   const latexContent = flow([
     preprocessThinkTag,
     preprocessLaTeX,
