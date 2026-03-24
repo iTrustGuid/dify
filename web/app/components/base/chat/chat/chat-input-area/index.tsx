@@ -88,6 +88,7 @@ const ChatInputArea = ({
   const [confirmedText, setConfirmedText] = useState('')
   const [currentRecognizingText, setCurrentRecognizingText] = useState('')
   const [isRecording, setIsRecording] = useState(false)
+  // 👇 已废弃：不再使用弹窗蒙版
   const [showVoiceInput, setShowVoiceInput] = useState(false)
   
   const isTextareaFocused = useRef(false)
@@ -334,13 +335,10 @@ const ChatInputArea = ({
     }
   }
 
+  // 👇 已废弃：不再打开弹窗
   const handleShowVoiceInput = useCallback(() => {
-    (Recorder as any).getPermission().then(() => {
-      setShowVoiceInput(true)
-    }, () => {
-      notify({ type: 'error', message: t('common.voiceInput.notAllow') })
-    })
-  }, [t, notify])
+    toggleVoice()
+  }, [])
 
   // ====================== 阿里云语音识别核心 ======================
   const startRecognition = async () => {
@@ -348,13 +346,11 @@ const ChatInputArea = ({
     isConnectingRef.current = true
 
     try {
-      // const config = await fetchAliyunNlsToken()
       const config = 
       {
               token: 'bc5bd1ef06df4fdeb826bca2e919d864',
               appKey: 'PtcXfBxLzBd8HU4N',
             }
-
 
       aliyunConfigRef.current = config
       
@@ -530,6 +526,7 @@ const ChatInputArea = ({
     }, 300)
   }
 
+  // 👇 核心修改：直接开关录音，无弹窗、无蒙版
   const toggleVoice = () => {
     if (isRecording) {
       stopRecognition()
@@ -638,12 +635,13 @@ const ChatInputArea = ({
             {!isMultipleLine && operation}
           </div>
 
-          {showVoiceInput && (
+          {/* 👇 已彻底移除语音蒙版弹窗 */}
+          {/* {showVoiceInput && (
             <VoiceInput
               onCancel={() => setShowVoiceInput(false)}
               onConverted={text => handleQueryChange(text)}
             />
-          )}
+          )} */}
         </div>
         {isMultipleLine && <div className='px-[9px]'>{operation}</div>}
       </div>
