@@ -79,33 +79,40 @@ const materialRequirements: ProcessTypeConfig = {
     },
   ],
   // 补证换证
-  'reissue_replacement': [
+  '补证换证': [
     {
-      id: 'application_form',
+      id: '48467ceb366e48309bc3aac592c08ea8',
       name: '申请表',
       required: true,
       maxFiles: 1,
       acceptedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
     },
     {
-      id: 'id_card',
+      id: '23ad749a40d240efa23ffa654b9f86bb',
       name: '身份证',
       required: true,
       maxFiles: 2,
       acceptedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
     },
     {
-      id: 'original_certificate',
-      name: '原证件',
+      id: '72b8b0d940234509bffd6ce693e4b5cc',
+      name: '不动产权证书',
       required: false,
       maxFiles: 1,
       acceptedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
     },
     {
-      id: 'loss_certificate',
-      name: '遗失声明',
+      id: 'b37c04a8c4534cb5917be02ab8635303',
+      name: '具结书',
       required: false,
       maxFiles: 1,
+      acceptedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
+    },
+    {
+      id: '509f1820203e491e95448c76fae00838',
+      name: '其他相关材料',
+      required: false,
+      maxFiles: 10,
       acceptedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
     },
   ],

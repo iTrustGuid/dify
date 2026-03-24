@@ -6,7 +6,6 @@ import styles from './MaterialUploadPreview.module.css';
 import { useWxMiniProgramPreview } from './WxMiniProgramPreview';
 import { getMaterialRequirements, getMaterialName, type MaterialRequirement } from './materialRequirements.config';
 import { INTELNET_BDCDJPT_URL } from '@/config';
-import { debug } from 'console';
 
 interface FileInfo {
   id: string;

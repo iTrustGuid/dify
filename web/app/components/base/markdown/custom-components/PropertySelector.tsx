@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './PropertySelector.module.css';
+import { INTELNET_BDCDJPT_URL } from '@/config';
 
 interface PropertyItem {
   zl: string;           // 房产坐落
@@ -22,7 +23,8 @@ interface Props {
   onCancel?: () => void;
 }
 
-const API_URL = 'https://www.wnxbdcdjzx.com/bdcpt/a/json/getBdcList';
+const baseUrl = location.href.startsWith('https') && INTELNET_BDCDJPT_URL || 'http://localhost:9000/';
+const API_URL = `${baseUrl}bdcpt/a/json/zssel/getCqzhList`;
 
 export function PropertySelector({ onConfirm, onCancel }: Props) {
   const searchParams = useSearchParams();
@@ -40,37 +42,37 @@ export function PropertySelector({ onConfirm, onCancel }: Props) {
       setLoading(true);
       setError(null);
 
-      // const response = await fetch(API_URL, {
-      //   method: 'GET',
-      //   headers: {
-      //     'Authorization': userToken,
-      //     'Content-Type': 'application/json',
-      //   },
-      // });
+      const response = await fetch(API_URL, {
+        method: 'GET',
+        headers: {
+          'Authorization': userToken,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      // if (!response.ok) {
-      //   throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      // }
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
-      // const data: ApiResponse<PropertyItem[]> = await response.json();
+      const data: ApiResponse<PropertyItem[]> = await response.json();
 
-      // if (data.result_code !== '200') {
-      //   throw new Error(data.result_msg || '获取房产列表失败');
-      // }
+      if (data.result_code !== '200') {
+        throw new Error(data.result_msg || '获取房产列表失败');
+      }
 
-      // setProperties(data.result || []);
-      setProperties([{
-        zl: '示例房产坐落地址',
-        bdcqzh: '赣2025万年县不动产权第0001566号',
-        dy: '否',
-        cf: '否',
-      },
-      {
-        zl: '示例房产坐落地址1',
-        bdcqzh: '赣2025万年县不动产权第0001567号',
-        dy: '否',
-        cf: '否',
-      }]);
+      setProperties(data.result.infos || []);
+      // setProperties([{
+      //   zl: '示例房产坐落地址',
+      //   bdcqzh: '赣2025万年县不动产权第0001566号',
+      //   dy: '否',
+      //   cf: '否',
+      // },
+      // {
+      //   zl: '示例房产坐落地址1',
+      //   bdcqzh: '赣2025万年县不动产权第0001567号',
+      //   dy: '否',
+      //   cf: '否',
+      // }]);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : '获取房产列表失败，请稍后重试';
@@ -184,23 +186,23 @@ export function PropertySelector({ onConfirm, onCancel }: Props) {
                     )}
                   </div>
                   <div className={styles.itemContent}>
-                    <p className={styles.bdcqzh}>{property.bdcqzh}</p>
+                    <p className={styles.bdcqzh}>{property.cqzh}</p>
                     <p className={styles.zl}>{property.zl}</p>
                   </div>
                 </div>
 
                 <div className={styles.itemFooter}>
                   <span
-                    className={`${styles.badge} ${property.dy === '是' ? styles.badgeDanger : styles.badgeSuccess
+                    className={`${styles.badge} ${property.sfdy === '1' ? styles.badgeDanger : styles.badgeSuccess
                       }`}
                   >
-                    抵押: {property.dy}
+                    抵押: {property.sfdy === '1' ? '是' : '否'}
                   </span>
                   <span
-                    className={`${styles.badge} ${property.cf === '是' ? styles.badgeDanger : styles.badgeSuccess
+                    className={`${styles.badge} ${property.sfcf === '1' ? styles.badgeDanger : styles.badgeSuccess
                       }`}
                   >
-                    查封: {property.cf}
+                    查封: {property.sfcf === '1' ? '是' : '否'}
                   </span>
                 </div>
               </div>
