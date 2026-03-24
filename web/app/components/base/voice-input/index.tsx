@@ -3,17 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { RiCloseLine, RiLoader2Line } from '@remixicon/react'
 import cn from '@/utils/classnames'
 import s from './index.module.css'
+import { fetchAliyunNlsToken } from '@/utils/aliyun-nls'
 
 type VoiceInputTypes = {
   onConverted: (text: string) => void
   onCancel: () => void
 }
 
-// ================= 阿里云配置 =================
-const ALIYUN_TOKEN = '732b6a23fbc6467fb8eb6c13d2522af4' // ⚠️ 仅测试用！
-const ALIYUN_APP_KEY = 'PtcXfBxLzBd8HU4N'
 const ALIYUN_URL = 'wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1'
-// =============================================
 
 const VoiceInput = ({
   onCancel,
@@ -33,12 +30,12 @@ const VoiceInput = ({
   const timerRef = useRef<number | null>(null)
   const silenceTimerRef = useRef<number | null>(null)
   
+  const aliyunConfigRef = useRef<{ token: string; appKey: string } | null>(null)
   const taskIdRef = useRef<string>(
     Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
   )
   const finalSentencesRef = useRef<string[]>([])
 
-  // ✅ 生成 32 位小写十六进制 ID（匹配阿里云示例）
   const generateMessageId = useCallback(() => {
     return Array(32)
       .fill(0)
@@ -46,7 +43,6 @@ const VoiceInput = ({
       .join('')
   }, [])
 
-  // 恢复 AudioContext（防挂起）
   const resumeAudioContext = useCallback(() => {
     const ctx = audioContextRef.current
     if (ctx && ctx.state === 'suspended') {
@@ -55,11 +51,20 @@ const VoiceInput = ({
   }, [])
 
   useEffect(() => {
-    initRecognition()
+    const init = async () => {
+      try {
+        const config = await fetchAliyunNlsToken()
+        aliyunConfigRef.current = config
+        initRecognition()
+      } catch (err) {
+        console.error('获取阿里云Token失败', err)
+        onCancel()
+      }
+    }
+    init()
     return () => cleanup()
-  }, [])
+  }, [onCancel])
 
-  // 用户交互时恢复音频上下文（解决页面切后台后挂起问题）
   useEffect(() => {
     document.addEventListener('click', resumeAudioContext, { once: true })
     document.addEventListener('touchstart', resumeAudioContext, { once: true })
@@ -84,6 +89,12 @@ const VoiceInput = ({
 
   const initRecognition = async () => {
     try {
+      const config = aliyunConfigRef.current
+      if (!config) {
+        onCancel()
+        return
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: { 
           sampleRate: 16000, 
@@ -94,7 +105,7 @@ const VoiceInput = ({
       })
       streamRef.current = stream
 
-      const wsUrl = `${ALIYUN_URL}?token=${ALIYUN_TOKEN}&appkey=${ALIYUN_APP_KEY}`
+      const wsUrl = `${ALIYUN_URL}?token=${config.token}&appkey=${config.appKey}`
       const ws = new WebSocket(wsUrl)
       wsRef.current = ws
 
@@ -127,8 +138,7 @@ const VoiceInput = ({
             cleanup()
           }
           else if (header.name === 'TaskFailed') {
-            const errorMsg = data.header?.status_text || 'Unknown error'
-            console.error('❌ NLS Task Failed:', errorMsg)
+            console.error('❌ NLS Task Failed:', data.header?.status_text || 'Unknown error')
             onCancel()
             cleanup()
           }
@@ -157,13 +167,16 @@ const VoiceInput = ({
   }
 
   const sendStartCommand = (ws: WebSocket) => {
+    const config = aliyunConfigRef.current
+    if (!config) return
+
     ws.send(JSON.stringify({
       header: {
         message_id: generateMessageId(),
         task_id: taskIdRef.current,
         namespace: 'SpeechTranscriber',
         name: 'StartTranscription',
-        appkey: ALIYUN_APP_KEY,
+        appkey: config.appKey,
       },
       payload: {
         format: 'pcm',
@@ -176,19 +189,20 @@ const VoiceInput = ({
   }
 
   const sendStopCommand = () => {
+    const config = aliyunConfigRef.current
     const ws = wsRef.current
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        header: {
-          message_id: generateMessageId(),
-          task_id: taskIdRef.current,
-          namespace: 'SpeechTranscriber',
-          name: 'StopTranscription',
-          appkey: ALIYUN_APP_KEY,
-        },
-        payload: {},
-      }))
-    }
+    if (!ws || !config || ws.readyState !== WebSocket.OPEN) return
+
+    ws.send(JSON.stringify({
+      header: {
+        message_id: generateMessageId(),
+        task_id: taskIdRef.current,
+        namespace: 'SpeechTranscriber',
+        name: 'StopTranscription',
+        appkey: config.appKey,
+      },
+      payload: {},
+    }))
   }
 
   const startAudioProcessing = (stream: MediaStream) => {
@@ -196,7 +210,6 @@ const VoiceInput = ({
     const audioContext = new AudioContextClass({ sampleRate: 16000 })
     audioContextRef.current = audioContext
 
-    // 如果被挂起，尝试恢复（配合用户交互）
     if (audioContext.state === 'suspended') {
       resumeAudioContext()
     }
@@ -205,8 +218,6 @@ const VoiceInput = ({
     const processor = audioContext.createScriptProcessor(4096, 1, 1)
     processorRef.current = processor
 
-    let lastSendTime = Date.now()
-
     processor.onaudioprocess = (e) => {
       const ws = wsRef.current
       if (!ws || ws.readyState !== WebSocket.OPEN) return
@@ -214,17 +225,11 @@ const VoiceInput = ({
       const inputData = e.inputBuffer.getChannelData(0)
       const output = new Int16Array(inputData.length)
 
-      // 转换为 16-bit PCM
       for (let i = 0; i < inputData.length; i++) {
         const s = Math.max(-1, Math.min(1, inputData[i]))
         output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
       }
-
-      // ✅ 关键：始终发送数据（即使静音），防止 IDLE_TIMEOUT
       ws.send(output.buffer)
-
-      // 可选：记录发送时间用于调试
-      lastSendTime = Date.now()
     }
 
     source.connect(processor)
