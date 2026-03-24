@@ -348,7 +348,13 @@ const ChatInputArea = ({
     isConnectingRef.current = true
 
     try {
-      const config = await fetchAliyunNlsToken()
+      // const config = await fetchAliyunNlsToken()
+      const config = 
+      {
+              token: 'bc5bd1ef06df4fdeb826bca2e919d864',
+              appKey: 'PtcXfBxLzBd8HU4N',
+            }
+
 
       aliyunConfigRef.current = config
       
