@@ -16,7 +16,7 @@ const materialRequirements: ProcessTypeConfig = {
   '一手房转移': [
     {
       id: '1ccf126bda4d491fbad77f94be98f12d',
-      name: '不动产权证书（首次登记）',
+      name: '不动产权证书',
       required: true,
       maxFiles: 1,
       acceptedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
