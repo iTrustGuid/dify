@@ -11,33 +11,56 @@ const VIDEO_COVER_URL = "https://ai.wnxbdcdjzx.com:31546/bg1.png";
 const Layout: FC<PropsWithChildren> = ({ children }) => {
   const [showVideo, setShowVideo] = useState(true);
   const [enableDigitalHuman, setEnableDigitalHuman] = useState(false);
+  const [isPC, setIsPC] = useState(false); // 🔥 是否PC端
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 🔥 判断是否为 PC 浏览器
+  useEffect(() => {
+    const checkIsPC = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobile = /iphone|ipad|android|ipod/.test(userAgent);
+      return !isMobile;
+    };
+
+    const pc = checkIsPC();
+    setIsPC(pc);
+
+    // 如果是 PC → 直接关闭启动页，显示聊天
+    if (pc) {
+      setShowVideo(false);
+    }
+  }, []);
+
   // 10秒未操作自动进入聊天
   useEffect(() => {
+    // PC端不执行倒计时
+    if (isPC) return;
+
     timerRef.current = setTimeout(() => {
       if (!enableDigitalHuman) setShowVideo(false);
     }, 10000);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [enableDigitalHuman]);
+  }, [enableDigitalHuman, isPC]);
 
   // 预加载视频
   useEffect(() => {
+    if (isPC) return;
     if (videoRef.current) {
       videoRef.current.load();
     }
-  }, []);
+  }, [isPC]);
 
   // 点击开启 → 播放视频
   useEffect(() => {
+    if (isPC) return;
     if (enableDigitalHuman && videoRef.current) {
       videoRef.current.muted = false;
       videoRef.current.play().catch(err => console.log("视频播放失败", err));
     }
-  }, [enableDigitalHuman]);
+  }, [enableDigitalHuman, isPC]);
 
   // 视频播放完进入聊天
   const handleVideoEnd = () => setShowVideo(false);
@@ -48,6 +71,18 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
   // 不开启
   const handleSkip = () => setShowVideo(false);
 
+  // ============== PC 直接显示聊天 ==============
+  if (isPC) {
+    return (
+      <div className="h-full w-full">
+        <WebAppStoreProvider>
+          <Splash>{children}</Splash>
+        </WebAppStoreProvider>
+      </div>
+    );
+  }
+
+  // ============== 移动端正常显示逻辑 ==============
   return (
     <div className="w-screen h-screen overflow-hidden !p-0 !m-0">
       <WebAppStoreProvider>
@@ -84,7 +119,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                 poster={VIDEO_COVER_URL}
               />
 
-              {/* 🔥 按钮：未开启才显示，开启后自动隐藏 */}
+              {/* 按钮：未开启才显示 */}
               {!enableDigitalHuman && (
                 <div
                   className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] flex flex-col sm:flex-row gap-4"
