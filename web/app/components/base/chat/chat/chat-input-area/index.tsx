@@ -29,7 +29,7 @@ import { TransferMethod } from '@/types/app'
 
 
 // 阿里云配置
-const ALIYUN_TOKEN = '9635695aa6d6433aadf4e7c2a533a6f3'
+const ALIYUN_TOKEN = '732b6a23fbc6467fb8eb6c13d2522af4'
 const ALIYUN_APP_KEY = 'PtcXfBxLzBd8HU4N'
 const ALIYUN_URL = 'wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1'
 
