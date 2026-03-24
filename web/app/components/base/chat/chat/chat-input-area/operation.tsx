@@ -1,14 +1,18 @@
 import type { FC, Ref } from 'react'
 import { memo, forwardRef } from 'react'
-import { RiMicLine, RiSendPlane2Fill } from '@remixicon/react'
-import type { EnableType } from '../../types'
+import {
+  RiMicLine,
+  RiSendPlane2Fill,
+} from '@remixicon/react'
+import type {
+  EnableType,
+} from '../../types'
 import type { Theme } from '../../embedded-chatbot/theme/theme-context'
 import Button from '@/app/components/base/button'
 import ActionButton from '@/app/components/base/action-button'
 import { FileUploaderInChatInput } from '@/app/components/base/file-uploader'
 import type { FileUpload } from '@/app/components/base/features/types'
 import cn from '@/utils/classnames'
-
 
 type OperationProps = {
   fileConfig?: FileUpload
@@ -19,7 +23,6 @@ type OperationProps = {
   onFileUploadClick?: () => void
   theme?: Theme | null
 }
-
 
 // 使用forwardRef处理ref传递
 const Operation = forwardRef(({
@@ -40,10 +43,16 @@ const Operation = forwardRef(({
     callback?.()
   }
 
-
   return (
-    <div className='flex shrink-0 items-center justify-end'>
-      <div className='flex items-center pl-1' ref={ref}>
+    <div
+      className={cn(
+        'flex shrink-0 items-center justify-end',
+      )}
+    >
+      <div
+        className='flex items-center pl-1'
+        ref={ref}
+      >
         <div className='flex items-center space-x-1'>
           {/* 文件上传按钮：仅执行回调，关闭语音但不干扰焦点 */}
           {fileConfig?.enabled && (
@@ -78,9 +87,6 @@ const Operation = forwardRef(({
               }}
               // 🔥 禁止按钮获得焦点，避免干扰输入框
               tabIndex={-1}
-              // 禁用原生焦点样式
-              // 🔥 核心修改：合并style属性，避免重复定义导致样式覆盖
-              // 移除重复的style定义，合并到上面的style中
             >
               <RiMicLine className='h-5 w-5' style={{ 
                 color: 'inherit',
@@ -113,6 +119,6 @@ const Operation = forwardRef(({
   )
 })
 
-
 Operation.displayName = 'Operation'
+
 export default memo(Operation)

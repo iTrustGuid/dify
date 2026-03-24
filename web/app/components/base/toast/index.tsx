@@ -35,6 +35,7 @@ export type ToastHandle = {
 
 export const ToastContext = createContext<IToastContext>({} as IToastContext)
 export const useToastContext = () => useContext(ToastContext)
+
 const Toast = ({
   type = 'info',
   size = 'md',
@@ -50,12 +51,11 @@ const Toast = ({
 
   return <div className={cn(
     className,
-    'fixed z-[9999] mx-8 my-4 w-[360px] grow overflow-hidden rounded-xl',
+    // 核心修改：仅横向居中，纵向保持顶部
+    'fixed z-[9999] mx-auto w-[360px] max-w-[90vw] overflow-hidden rounded-xl',
     'border border-components-panel-border-subtle bg-components-panel-bg-blur shadow-sm',
-    'top-0',
-    'right-0',
-    size === 'md' ? 'p-3' : 'p-2',
-    className,
+    'top-0 right-0 left-0', // 水平居中 + 垂直置顶
+    size === 'md' ? 'mt-4 p-3' : 'mt-2 p-2', // 保留原有顶部间距
   )}>
     <div className={cn(
       'absolute inset-0 -z-10 opacity-40',
