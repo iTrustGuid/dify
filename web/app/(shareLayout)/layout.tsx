@@ -5,8 +5,8 @@ import { useState, useRef, useEffect } from 'react';
 import WebAppStoreProvider from '@/context/web-app-context';
 import Splash from './components/splash';
 
-const DIGITAL_HUMAN_VIDEO_URL = "https://ai.wnxbdcdjzx.com:31546/wannian.mp4";
-const VIDEO_COVER_URL = "https://ai.wnxbdcdjzx.com:31546/bg1.png";
+const DIGITAL_HUMAN_VIDEO_URL = "https://ai.wnxbdcdjzx.com:31546/shuziren.mp4";
+const VIDEO_COVER_URL = "https://ai.wnxbdcdjzx.com:31546/bg1.jpeg";
 
 const Layout: FC<PropsWithChildren> = ({ children }) => {
   const [showVideo, setShowVideo] = useState(true);

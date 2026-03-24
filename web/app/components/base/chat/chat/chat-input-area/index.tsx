@@ -6,6 +6,7 @@ import {
 } from 'react'
 import Textarea from 'react-textarea-autosize'
 import { useTranslation } from 'react-i18next'
+import Recorder from 'js-audio-recorder'
 import { decode } from 'html-entities'
 import type {
   EnableType,
@@ -23,7 +24,9 @@ import {
   FileContextProvider,
   useFileStore,
 } from '@/app/components/base/file-uploader/store'
+import VoiceInput from '@/app/components/base/voice-input'
 import { useToastContext } from '@/app/components/base/toast'
+import FeatureBar from '@/app/components/base/features/new-feature-panel/feature-bar'
 import type { FileUpload } from '@/app/components/base/features/types'
 import { TransferMethod } from '@/types/app'
 import { fetchAliyunNlsToken } from '@/utils/aliyun-nls'
@@ -77,9 +80,15 @@ const ChatInputArea = ({
     isMultipleLine,
   } = useTextAreaHeight()
 
+  const historyRef = useRef([''])
+  const [currentIndex, setCurrentIndex] = useState(-1)
+  const isComposingRef = useRef(false)
+
+  // ====================== 语音识别状态 ======================
   const [confirmedText, setConfirmedText] = useState('')
   const [currentRecognizingText, setCurrentRecognizingText] = useState('')
   const [isRecording, setIsRecording] = useState(false)
+  const [showVoiceInput, setShowVoiceInput] = useState(false)
   
   const isTextareaFocused = useRef(false)
   const lastRecognizedRef = useRef('')
@@ -95,12 +104,56 @@ const ChatInputArea = ({
   const taskIdRef = useRef<string>('')
   const aliyunConfigRef = useRef<{ token: string; appKey: string } | null>(null)
 
-  const { isDragActive } = visionConfig ? useFile(visionConfig) : { isDragActive: false }
+  const {
+    handleDragFileEnter,
+    handleDragFileLeave,
+    handleDragFileOver,
+    handleDropFile,
+    handleClipboardPasteFile,
+    isDragActive,
+  } = useFile(visionConfig!)
   const filesStore = useFileStore()
   const { checkInputsForm } = useCheckInputsForms()
 
-  const displayText = `${confirmedText} ${currentRecognizingText}`.trim()
+  // 删除多余空格，确保文本能正确渲染到输入框
+  const displayText = `${confirmedText}${currentRecognizingText}`.trim()
 
+  // ====================== 外部消息监听 ======================
+  const handleOnMessage = (event: any) => {
+    if (event.data.type === 'dify-chatbot-append-message') {
+      const message = event.data.message as string
+      setConfirmedText(message)
+      setCurrentRecognizingText('')
+      historyRef.current.push(message)
+      setCurrentIndex(historyRef.current.length)
+      if (onSend) {
+        onSend(message)
+        setConfirmedText('')
+        setCurrentRecognizingText('')
+      }
+    }
+  }
+
+  const configChangeHandler = (event: MessageEvent) => {
+    const windowAny = window as any;
+    if (event.data && event.data.type === 'dify-chatbot-config-change') {
+      const newConfig = event.data.difyChatbotConfig;
+      windowAny.difyChatbotConfig = newConfig;
+    }
+  }
+
+  useEffect(() => {
+    const windowAny = window as any;
+    windowAny.addEventListener('message', handleOnMessage)
+    windowAny.addEventListener('message', configChangeHandler);
+
+    return () => {
+      windowAny.removeEventListener('message', handleOnMessage)
+      windowAny.removeEventListener('message', configChangeHandler);
+    }
+  }, [onSend])
+
+  // ====================== 工具方法 ======================
   const clearSilenceTimer = () => {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
     silenceTimerRef.current = null
@@ -168,12 +221,13 @@ const ChatInputArea = ({
     }
   }
   
+  // 确保光标永远在最后，输入框实时显示
   const restoreCursorPosition = () => {
     if (!textareaRef.current) return
-    const endPos = displayText.length
-    textareaRef.current.selectionStart = endPos
-    textareaRef.current.selectionEnd = endPos
-    cursorPositionRef.current = endPos
+    setTimeout(() => {
+      textareaRef.current!.selectionStart = displayText.length
+      textareaRef.current!.selectionEnd = displayText.length
+    }, 0)
   }
 
   const generateMessageId = () =>
@@ -183,6 +237,7 @@ const ChatInputArea = ({
     return Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
   }
 
+  // 确保识别结果实时同步到输入框
   const updateRecognitionResult = useCallback((text: string) => {
     if (isStoppingRef.current) return
     const clean = cleanText(text)
@@ -193,7 +248,7 @@ const ChatInputArea = ({
     handleTextareaResize()
     resetSilenceTimer()
     resetSentenceEndTimer()
-    setTimeout(restoreCursorPosition, 0)
+    restoreCursorPosition()
   }, [handleTextareaResize])
 
   const safeFocusTextarea = () => {
@@ -214,18 +269,24 @@ const ChatInputArea = ({
   useEffect(() => {
     const textarea = textareaRef.current
     if (!textarea) return
-
     const handleFocus = () => { isTextareaFocused.current = true }
     const handleBlur = () => { isTextareaFocused.current = false }
-
     textarea.addEventListener('focus', handleFocus)
     textarea.addEventListener('blur', handleBlur)
-
     return () => {
       textarea.removeEventListener('focus', handleFocus)
       textarea.removeEventListener('blur', handleBlur)
     }
   }, [])
+
+  const handleQueryChange = useCallback(
+    (value: string) => {
+      setConfirmedText(value)
+      setCurrentRecognizingText('')
+      setTimeout(handleTextareaResize, 0)
+    },
+    [handleTextareaResize],
+  )
 
   const handleManualEdit = (value: string) => {
     if (isRecording) stopRecognition()
@@ -236,22 +297,66 @@ const ChatInputArea = ({
     setTimeout(handleTextareaResize, 0)
   }
 
+  const handleCompositionStart = () => {
+    isComposingRef.current = true
+  }
+  
+  const handleCompositionEnd = () => {
+    setTimeout(() => {
+      isComposingRef.current = false
+    }, 50)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      if (isComposingRef.current) return
+      e.preventDefault()
+      const finalText = displayText.replace(/\n$/, '').trim()
+      historyRef.current.push(finalText)
+      setCurrentIndex(historyRef.current.length)
+      handleSend()
+    }
+    else if (e.key === 'ArrowUp' && !e.shiftKey && !e.nativeEvent.isComposing && e.metaKey) {
+      if (currentIndex > 0) {
+        setCurrentIndex(currentIndex - 1)
+        handleQueryChange(historyRef.current[currentIndex - 1])
+      }
+    }
+    else if (e.key === 'ArrowDown' && !e.shiftKey && !e.nativeEvent.isComposing && e.metaKey) {
+      if (currentIndex < historyRef.current.length - 1) {
+        setCurrentIndex(currentIndex + 1)
+        handleQueryChange(historyRef.current[currentIndex + 1])
+      }
+      else if (currentIndex === historyRef.current.length - 1) {
+        setCurrentIndex(historyRef.current.length)
+        handleQueryChange('')
+      }
+    }
+  }
+
+  const handleShowVoiceInput = useCallback(() => {
+    (Recorder as any).getPermission().then(() => {
+      setShowVoiceInput(true)
+    }, () => {
+      notify({ type: 'error', message: t('common.voiceInput.notAllow') })
+    })
+  }, [t, notify])
+
+  // ====================== 阿里云语音识别核心 ======================
   const startRecognition = async () => {
     if (isConnectingRef.current || isRecording) return
     isConnectingRef.current = true
 
     try {
       const config = await fetchAliyunNlsToken()
+
       aliyunConfigRef.current = config
       
       forceCleanupResources()
-      
       setConfirmedText('')
       setCurrentRecognizingText('')
       lastRecognizedRef.current = ''
       isStoppingRef.current = false
-      clearSentenceEndTimer()
-      
       taskIdRef.current = generateTaskId()
 
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -261,7 +366,6 @@ const ChatInputArea = ({
       }
 
       safeFocusTextarea()
-
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
       })
@@ -271,6 +375,7 @@ const ChatInputArea = ({
       if (!configData) throw new Error('获取配置失败')
       
       const ws = new WebSocket(`${ALIYUN_URL}?appkey=${configData.appKey}&token=${configData.token}`)
+
       ws.binaryType = 'arraybuffer'
       wsRef.current = ws
 
@@ -308,9 +413,7 @@ const ChatInputArea = ({
               lastRecognizedRef.current = ''
             }
           } else if (h.name === 'TaskFailed') {
-            if (!isStoppingRef.current) {
-              notify({ type: 'error', message: '语音识别失败，请重试' })
-            }
+            notify({ type: 'error', message: '语音识别失败，请重试' })
             stopRecognition()
           }
         } catch (err) {
@@ -320,20 +423,13 @@ const ChatInputArea = ({
 
       ws.onerror = (err) => {
         console.error('WebSocket错误:', err)
-        if (!isStoppingRef.current && !isConnectingRef.current) {
-          notify({ type: 'error', message: '语音连接失败，请检查网络' })
-        }
+        notify({ type: 'error', message: '语音连接失败，请检查网络' })
         forceCleanupResources()
         isConnectingRef.current = false
       }
 
-      ws.onclose = (event) => {
-        if (![1000, 1001].includes(event.code) && !isStoppingRef.current && !isConnectingRef.current) {
-          console.warn('WebSocket意外关闭:', event)
-        }
-        if (isRecording) {
-          setIsRecording(false)
-        }
+      ws.onclose = () => {
+        setIsRecording(false)
         forceCleanupResources()
         isConnectingRef.current = false
       }
@@ -465,7 +561,6 @@ const ChatInputArea = ({
     if (!isValid) return
 
     safeBlurTextarea()
-
     onSend(finalText, files)
     
     setConfirmedText('')
@@ -493,6 +588,7 @@ const ChatInputArea = ({
       speechToTextConfig={speechToTextConfig}
       isRecording={isRecording}
       onToggleVoiceInput={toggleVoice}
+      onShowVoiceInput={handleShowVoiceInput}
       onSend={handleSend}
       onFileUploadClick={handleFileUploadClick}
       theme={theme}
@@ -500,34 +596,53 @@ const ChatInputArea = ({
   )
 
   return (
-    <div className={cn(
-      'relative z-10 overflow-hidden rounded-xl border border-components-chat-input-border bg-components-panel-bg-blur pb-[9px] shadow-md',
-      isDragActive && 'border border-dashed border-components-option-card-option-selected-border',
-      disabled && 'pointer-events-none border-components-panel-border opacity-50 shadow-none',
-    )}>
-      <div className='relative max-h-[158px] overflow-y-auto overflow-x-hidden px-[9px] pt-[9px]'>
-        <FileListInChatInput fileConfig={visionConfig!} />
-        <div ref={wrapperRef} className='flex items-center justify-between'>
-          <div className='relative flex w-full grow items-center'>
-            <div ref={textValueRef} className='body-lg-regular pointer-events-none invisible absolute h-auto w-auto whitespace-pre p-1 leading-6'>
-              {displayText}
+    <>
+      <div className={cn(
+        'relative z-10 overflow-hidden rounded-xl border border-components-chat-input-border bg-components-panel-bg-blur pb-[9px] shadow-md',
+        isDragActive && 'border border-dashed border-components-option-card-option-selected-border',
+        disabled && 'pointer-events-none border-components-panel-border opacity-50 shadow-none',
+      )}>
+        <div className='relative max-h-[158px] overflow-y-auto overflow-x-hidden px-[9px] pt-[9px]'>
+          <FileListInChatInput fileConfig={visionConfig!} />
+          <div ref={wrapperRef} className='flex items-center justify-between'>
+            <div className='relative flex w-full grow items-center'>
+              <div ref={textValueRef} className='body-lg-regular pointer-events-none invisible absolute h-auto w-auto whitespace-pre p-1 leading-6'>
+                {displayText}
+              </div>
+              <Textarea
+                ref={textareaRef}
+                className='body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none'
+                placeholder={decode(t('common.chat.inputPlaceholder', { botName }) || '请输入消息')}
+                autoFocus
+                minRows={1}
+                value={displayText}
+                onChange={e => handleManualEdit(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onCompositionStart={handleCompositionStart}
+                onCompositionEnd={handleCompositionEnd}
+                onSelect={saveCursorPosition}
+                onPaste={handleClipboardPasteFile}
+                onDragEnter={handleDragFileEnter}
+                onDragLeave={handleDragFileLeave}
+                onDragOver={handleDragFileOver}
+                onDrop={handleDropFile}
+                onClick={(e) => e.stopPropagation()}
+              />
             </div>
-            <Textarea
-              ref={textareaRef}
-              className='body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none'
-              placeholder={decode(t('common.chat.inputPlaceholder', { botName }) || '请输入消息')}
-              minRows={1}
-              value={displayText}
-              onChange={e => handleManualEdit(e.target.value)}
-              onSelect={saveCursorPosition}
-              onClick={(e) => e.stopPropagation()}
-            />
+            {!isMultipleLine && operation}
           </div>
-          {!isMultipleLine && operation}
+
+          {showVoiceInput && (
+            <VoiceInput
+              onCancel={() => setShowVoiceInput(false)}
+              onConverted={text => handleQueryChange(text)}
+            />
+          )}
         </div>
+        {isMultipleLine && <div className='px-[9px]'>{operation}</div>}
       </div>
-      {isMultipleLine && <div className='px-[9px]'>{operation}</div>}
-    </div>
+      {showFeatureBar && <FeatureBar showFileUpload={showFileUpload} disabled={featureBarDisabled} onFeatureBarClick={onFeatureBarClick} />}
+    </>
   )
 }
 
