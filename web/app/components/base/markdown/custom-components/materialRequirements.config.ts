@@ -30,23 +30,23 @@ const materialRequirements: ProcessTypeConfig = {
     },
     {
       id: '187e6c6db76b4e9e8af40f868207c7ee',
-      name: '申请人身份证明材料',
+      name: '身份证',
       required: false,
       maxFiles: 2,
       acceptedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
     },
     {
       id: '1536c4b546174db1a958de2390ef2b30',
-      name: '家庭成员户口簿',
+      name: '户口本',
       required: true,
       maxFiles: 5,
       acceptedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
     },
     {
       id: '120f43025672496a9b1236f15b0f54cf',
-      name: '商品房销售备案合同及备案证明书',
+      name: '备案合同及备案证明书',
       required: true,
-      maxFiles: 1,
+      maxFiles: 2,
       acceptedFormats: ['pdf'],
     },
     {
