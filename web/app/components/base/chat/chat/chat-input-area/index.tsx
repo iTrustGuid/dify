@@ -348,7 +348,7 @@ const ChatInputArea = ({
     try {
       const config = 
       {
-              token: 'bc5bd1ef06df4fdeb826bca2e919d864',
+              token: '9441069ff96f4f5eb83be69c609dc2be',
               appKey: 'PtcXfBxLzBd8HU4N',
             }
 
