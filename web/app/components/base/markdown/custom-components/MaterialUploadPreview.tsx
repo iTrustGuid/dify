@@ -50,6 +50,7 @@ interface ContractInfo {
   qysj: number;
   fwlx: string;
   mj: number;
+  bdcqzh?: string;
 }
 
 interface ContractFileResponse {
@@ -75,9 +76,11 @@ const UPLOAD_API = `${baseUrl}bdcpt/a/json/fj/save`;
 const PARSE_API = `${location.href.startsWith('https') && 'https://wnxai.esconsoft.com/' || 'http://localhost:9000/'}v1/workflows/run`;
 const CONTRACT_INFO_API = `${baseUrl}bdcpt/a/json/ywbaseother/selfgqlrmsgbybdcdyhorhtbh`;
 const CONTRACT_FILE_API = `${baseUrl}bdcpt/a/json/fj/getElecFjNotUrl`;
+const ELECTRONIC_CERT_API = `${baseUrl}bdcpt/a/json/fj/getElecFjNotUrl`;
 const SUBMIT_API = `${baseUrl}bdcpt/a/json/hlwywbase/info`;
 const FJID = '615fc82e0a294e95a841cd886006749b';
 const CONTRACT_FILE_FJID = '120f43025672496a9b1236f15b0f54cf';
+const PROPERTY_CERT_FJID = '1ccf126bda4d491fbad77f94be98f12d';
 const ETICKET_URL = 'https://www.wnxbdcdjzx.com/eticket';
 const CLOUD_SIGN_URL = 'https://www.wnxbdcdjzx.com/cloudsign';
 const MINI_PROGRAM_PATH = '/pagesB/my/process/detail';
@@ -203,6 +206,52 @@ export function MaterialUploadPreview({ data, type }: Props) {
     }
   }, [userToken]);
 
+  // 获取电子不动产权证书
+  const fetchElectronicCertificate = useCallback(async (bdcqzh: string) => {
+    try {
+      const response = await fetch(ELECTRONIC_CERT_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: userToken,
+        },
+        body: JSON.stringify({
+          fjid: PROPERTY_CERT_FJID,
+          cqzhzmh: bdcqzh,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result: ContractFileResponse = await response.json();
+
+      if (result.result_code === '200' && result.result?.filePath) {
+        const files: FileInfo[] = result.result.filePath.map((path, index) => ({
+          id: result.result.ids?.[index] || `cert-${index}`,
+          materialId: PROPERTY_CERT_FJID,
+          fileName: result.result.fileName || '不动产权证书',
+          filePath: `${INTELNET_BDCDJPT_URL}bdcpt${path}`,
+          fileType: 'pdf',
+          uploadTime: new Date().toLocaleString('zh-CN'),
+          size: 0,
+        }));
+
+        // 自动将证书文件添加到材料列表
+        setMaterials((prevMaterials) =>
+          prevMaterials.map((material) =>
+            material.materialId === PROPERTY_CERT_FJID
+              ? { ...material, files }
+              : material
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Error fetching electronic certificate:', err);
+    }
+  }, [userToken]);
+
   useEffect(() => {
     const requirements = getMaterialRequirements(type);
     setMaterialRequirements(requirements);
@@ -216,6 +265,13 @@ export function MaterialUploadPreview({ data, type }: Props) {
 
     setLoading(false);
   }, [type, parseInputData, fetchContractInfo]);
+
+  // 当合同信息更新时，获取电子证书
+  useEffect(() => {
+    if (contractInfo?.bdcqzh) {
+      fetchElectronicCertificate(contractInfo.bdcqzh);
+    }
+  }, [contractInfo?.bdcqzh, fetchElectronicCertificate]);
 
   useEffect(() => {
     const initialMaterials: UploadedFile[] = materialRequirements.map((req) => ({
