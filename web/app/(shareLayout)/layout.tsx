@@ -5,8 +5,8 @@ import { useState, useRef, useEffect } from 'react';
 import WebAppStoreProvider from '@/context/web-app-context';
 import Splash from './components/splash';
 
-const DIGITAL_HUMAN_VIDEO_URL = "https://ai.wnxbdcdjzx.com:31546/shuziren1.mp4";
-const VIDEO_COVER_URL = "https://ai.wnxbdcdjzx.com:31546/bg1.jpeg";
+const DIGITAL_HUMAN_VIDEO_URL = "https://ai.wnxbdcdjzx.com:31546/shuziren2.mp4";
+const VIDEO_COVER_URL = "https://ai.wnxbdcdjzx.com:31546/bg.png";
 
 const Layout: FC<PropsWithChildren> = ({ children }) => {
   const [showVideo, setShowVideo] = useState(true);
@@ -19,7 +19,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
     const checkIsPC = () => {
       const userAgent = navigator.userAgent.toLowerCase();
       const isMobile = /iphone|ipad|android|ipod/.test(userAgent);
-      return !isMobile;
+      return false;
     };
     const pc = checkIsPC();
     setIsPC(pc);
@@ -67,29 +67,20 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
         <Splash>
           {showVideo ? (
             <div className="fixed inset-0 w-screen h-screen m-0 p-0 z-50 bg-black">
-              
-              {/* 9:16 完美全屏背景图 */}
+
+              {/* 👇 核心修复：真正全屏、不裁剪、不变形 */}
               <img
                 src={VIDEO_COVER_URL}
-                className="fixed inset-0 w-full h-full"
-                style={{
-                  objectFit: "cover",
-                  objectPosition: "center",
-                  marginTop: '-env(safe-area-inset-top)',
-                }}
+                className="fixed inset-0 w-full h-full object-contain"
+                style={{ objectPosition: "center" }}
                 alt="bg"
               />
 
-              {/* 9:16 完美全屏视频 */}
               <video
                 ref={videoRef}
                 src={DIGITAL_HUMAN_VIDEO_URL}
-                className="fixed inset-0 w-full h-full z-20"
-                style={{
-                  objectFit: "cover",
-                  objectPosition: "center",
-                  marginTop: '-env(safe-area-inset-top)',
-                }}
+                className="fixed inset-0 w-full h-full object-contain z-20"
+                style={{ objectPosition: "center" }}
                 preload="auto"
                 playsInline
                 loop={false}
@@ -98,10 +89,9 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                 poster={VIDEO_COVER_URL}
               />
 
-              {/* 按钮区域：一个居上，一个居下，水平居中 */}
+              {/* 按钮区域不变 */}
               {!enableDigitalHuman && (
                 <div className="fixed inset-0 z-[9999] flex flex-col justify-between items-center px-6 py-12">
-                  {/* 上方按钮：不开启 */}
                   <button
                     onClick={handleSkip}
                     className="px-6 py-3 bg-gray-500/80 text-white rounded-xl text-lg font-semibold backdrop-blur-sm 
@@ -110,7 +100,6 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                     不开启
                   </button>
 
-                  {/* 下方按钮：开启数字人 */}
                   <button
                     onClick={handleEnable}
                     className="px-7 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl text-lg font-semibold shadow-xl 
