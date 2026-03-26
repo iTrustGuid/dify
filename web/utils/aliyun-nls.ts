@@ -16,8 +16,8 @@ const getUserTokenFromUrl = (): string | null => {
 
 const requestTokenWithCorsFix = async (userToken: string): Promise<{ token: string; appKey: string }> => {
   // 🔥 这里改成代理地址 /bdcpt-api（和 next.config.js 对应）
-  // const url = '/bdcpt-api'
-  const url = 'https://www.wnxbdcdjzx.com/bdcpt/a/json/wechat/Rzdb/getNlsToken'
+  const url = '/bdcpt-api'
+  // const url = 'https://www.wnxbdcdjzx.com/bdcpt/a/json/wechat/Rzdb/getNlsToken'
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('GET', url, true)
@@ -34,13 +34,23 @@ const requestTokenWithCorsFix = async (userToken: string): Promise<{ token: stri
               appKey: 'PtcXfBxLzBd8HU4N',
             })
           } else {
+            // reject(new Error(data.result_msg || '获取Token失败'))
+            const errMsg = `接口返回失败：url=${url}，code=${data.result_code}，msg=${data.result_msg || '获取Token失败'}`
+            console.error(errMsg)
             reject(new Error(data.result_msg || '获取Token失败'))
           }
         } catch (e) {
+          // reject(new Error('解析数据失败'))
+          const errMsg = `解析数据失败：url=${url}，response=${xhr.responseText}`
+          console.error(errMsg)
           reject(new Error('解析数据失败'))
         }
       } else {
-        reject(new Error(`请求失败：${xhr.status}`))
+        // reject(new Error(`请求失败：${xhr.status}`))
+         // ====================== 关键修改在这里 ======================
+        const errMsg = `请求失败：url=${url}，status=${xhr.status}，response=${xhr.responseText || '空'}`
+        console.error(errMsg) // 控制台输出完整信息
+        reject(new Error(`请求失败：${xhr.status}，接口地址：${url}`)) // 抛出完整信息
       }
     }
 
