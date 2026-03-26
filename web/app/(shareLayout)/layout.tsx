@@ -21,7 +21,8 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
     const checkIsPC = () => {
       const userAgent = navigator.userAgent.toLowerCase();
       const isMobile = /iphone|ipad|android|ipod/.test(userAgent);
-      return !isMobile;
+      // return !isMobile;
+      return false;
     };
     const pc = checkIsPC();
     setIsPC(pc);
@@ -102,7 +103,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
 
               <img
                 src={VIDEO_COVER_URL}
-                className="fixed inset-0 w-full h-full object-contain"
+                className="fixed inset-0 w-full h-full object-cover"
                 style={{ objectPosition: "center" }}
                 alt="bg"
               />
@@ -110,7 +111,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
               <video
                 ref={videoRef}
                 src={DIGITAL_HUMAN_VIDEO_URL}
-                className="fixed inset-0 w-full h-full object-contain z-20"
+                className="fixed inset-0 w-full h-full object-cover z-20"
                 style={{ objectPosition: "center" }}
                 preload="auto"
                 playsInline
