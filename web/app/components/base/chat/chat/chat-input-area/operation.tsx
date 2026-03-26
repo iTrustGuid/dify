@@ -55,11 +55,11 @@ const Operation = forwardRef(({
       >
         <div className='flex items-center space-x-1'>
           {/* 文件上传按钮：仅执行回调，关闭语音但不干扰焦点 */}
-          {fileConfig?.enabled && (
+          {/* {fileConfig?.enabled && (
             <div onMouseDown={(e) => handleMouseDown(e, onFileUploadClick)}>
               <FileUploaderInChatInput fileConfig={fileConfig} />
             </div>
-          )}
+          )} */}
           
           {/* 麦克风按钮：根据isRecording状态显示不同样式 */}
           {speechToTextConfig?.enabled && (

@@ -8,6 +8,7 @@ import type { AppIconType } from '@/types/app'
 import classNames from '@/utils/classnames'
 import { useHover } from 'ahooks'
 import { RiEditLine } from '@remixicon/react'
+import { isBrowser } from '@/utils/env.utils';
 
 init({ data })
 
@@ -105,6 +106,7 @@ const AppIcon: FC<AppIconProps> = ({
   const isHovering = useHover(wrapperRef)
 
   return (
+    isBrowser() && (
     <span
       ref={wrapperRef}
       className={classNames(appIconVariants({ size, rounded }), className)}
@@ -128,7 +130,7 @@ const AppIcon: FC<AppIconProps> = ({
         )
       }
       {coverElement}
-    </span>
+    </span>)
   )
 }
 

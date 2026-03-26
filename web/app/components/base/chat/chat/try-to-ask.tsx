@@ -16,10 +16,10 @@ const TryToAsk: FC<TryToAskProps> = ({
   const { t } = useTranslation()
 
   return (
-    <div className='mb-2 py-2'>
+    <div className='mb-1 py-2 bg-white rounded-[8px]'>
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <Divider bgStyle='gradient' className='h-px !w-auto grow rotate-180' />
-        <div className='system-xs-medium-uppercase shrink-0 text-text-tertiary'>{t('appDebug.feature.suggestedQuestionsAfterAnswer.tryToAsk')}</div>
+        <div className='system-xs-medium-uppercase shrink-0 text-text-tertiary text-[14px] font-semibold'>{t('appDebug.feature.suggestedQuestionsAfterAnswer.tryToAsk')}</div>
         <Divider bgStyle='gradient' className='h-px !w-auto grow' />
       </div>
       <div className="flex flex-wrap justify-center">
@@ -29,7 +29,7 @@ const TryToAsk: FC<TryToAskProps> = ({
               size='small'
               key={index}
               variant='secondary-accent'
-              className='mb-1 mr-1 last:mr-0'
+              className='mb-1 mr-1 last:mr-0 text-[14px]'
               onClick={() => onSend(suggestQuestion)}
             >
               {suggestQuestion}

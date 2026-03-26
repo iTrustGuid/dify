@@ -30,6 +30,7 @@ import cn from '@/utils/classnames'
 import type { Emoji } from '@/app/components/tools/types'
 import Button from '@/app/components/base/button'
 import { StopCircle } from '@/app/components/base/icons/src/vender/solid/mediaAndDevices'
+import { ChevronDown } from '@/app/components/base/icons/src/vender/solid/arrows'
 import AgentLogModal from '@/app/components/base/agent-log-modal'
 import PromptLogModal from '@/app/components/base/prompt-log-modal'
 import { useStore as useAppStore } from '@/app/components/app/store'
@@ -118,7 +119,7 @@ const Chat: FC<ChatProps> = ({
     showPromptLogModal: state.showPromptLogModal,
     setShowPromptLogModal: state.setShowPromptLogModal,
     showAgentLogModal: state.showAgentLogModal,
-    setShowAgentLogModal: state.setShowAgentLogModal,
+        setShowAgentLogModal: state.setShowAgentLogModal,
   })))
   const [width, setWidth] = useState(0)
   const chatContainerRef = useRef<HTMLDivElement>(null)
@@ -127,6 +128,8 @@ const Chat: FC<ChatProps> = ({
   const chatFooterInnerRef = useRef<HTMLDivElement>(null)
   const userScrolledRef = useRef(false)
   const isAutoScrollingRef = useRef(false)
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false)
+
 
   const handleScrollToBottom = useCallback(() => {
     if (chatList.length > 1 && chatContainerRef.current && !userScrolledRef.current) {
@@ -138,6 +141,17 @@ const Chat: FC<ChatProps> = ({
       })
     }
   }, [chatList.length])
+
+  // 手动点击回到底部（新增功能）
+  const handleManualScrollToBottom = useCallback(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
+      userScrolledRef.current = false
+    }
+  }, [])
 
   const handleWindowResize = useCallback(() => {
     if (chatContainerRef.current)
@@ -202,24 +216,27 @@ const Chat: FC<ChatProps> = ({
     }
   }, [handleScrollToBottom])
 
+  // 监听滚动，判断是否显示按钮
   useEffect(() => {
-    const setUserScrolled = () => {
-      const container = chatContainerRef.current
-      if (!container) return
-
-      if (isAutoScrollingRef.current) return
-
-      const distanceToBottom = container.scrollHeight - container.clientHeight - container.scrollTop
-      const SCROLL_UP_THRESHOLD = 100
-
-      userScrolledRef.current = distanceToBottom > SCROLL_UP_THRESHOLD
-    }
-
     const container = chatContainerRef.current
     if (!container) return
 
-    container.addEventListener('scroll', setUserScrolled)
-    return () => container.removeEventListener('scroll', setUserScrolled)
+    const updateScrollState = () => {
+      if (isAutoScrollingRef.current) return
+
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
+      setShowScrollToBottom(!isAtBottom)
+
+      // 原版逻辑：标记用户是否手动滚动
+      const distanceToBottom = scrollHeight - clientHeight - scrollTop
+      const SCROLL_UP_THRESHOLD = 100
+      userScrolledRef.current = distanceToBottom > SCROLL_UP_THRESHOLD
+    }
+
+    container.addEventListener('scroll', updateScrollState)
+    updateScrollState()
+    return () => container.removeEventListener('scroll', updateScrollState)
   }, [])
 
   // Reset user scroll state when a new chat starts (length <= 1)
@@ -297,6 +314,7 @@ const Chat: FC<ChatProps> = ({
             }
           </div>
         </div>
+
         <div
           className={`absolute bottom-0 z-10 flex justify-center bg-chat-input-mask ${(hasTryToAsk || !noChatInput || !noStopResponding) && chatFooterClassName}`}
           ref={chatFooterRef}
@@ -305,45 +323,54 @@ const Chat: FC<ChatProps> = ({
             ref={chatFooterInnerRef}
             className={cn('relative', chatFooterInnerClassName)}
           >
-            {
-              !noStopResponding && isResponding && (
-                <div className='mb-2 flex justify-center'>
-                  <Button className='border-components-panel-border bg-components-panel-bg text-components-button-secondary-text' onClick={onStopResponding}>
-                    <StopCircle className='mr-[5px] h-3.5 w-3.5' />
-                    <span className='text-xs font-normal'>{t('appDebug.operation.stopResponding')}</span>
-                  </Button>
+            {/* 圆角圆形箭头 */}
+            {showScrollToBottom  && (
+              <div className='mb-2 flex justify-center'>
+                <div
+                  onClick={handleManualScrollToBottom}
+                  className='flex items-center justify-center w-8 h-8 bg-white border border-gray-200 rounded-full shadow-sm cursor-pointer hover:bg-gray-50'
+                >
+                  <ChevronDown className='h-4 w-4 text-gray-500' />
                 </div>
-              )
-            }
-            {
-              hasTryToAsk && (
-                <TryToAsk
-                  suggestedQuestions={suggestedQuestions}
-                  onSend={onSend}
-                />
-              )
-            }
-            {
-              !noChatInput && (
-                <ChatInputArea
-                  botName={appData?.site.title || 'Bot'}
-                  disabled={inputDisabled}
-                  showFeatureBar={showFeatureBar}
-                  showFileUpload={showFileUpload}
-                  featureBarDisabled={isResponding}
-                  onFeatureBarClick={onFeatureBarClick}
-                  visionConfig={config?.file_upload}
-                  speechToTextConfig={config?.speech_to_text}
-                  onSend={onSend}
-                  inputs={inputs}
-                  inputsForm={inputsForm}
-                  theme={themeBuilder?.theme}
-                  isResponding={isResponding}
-                />
-              )
-            }
+              </div>
+            )}
+
+            {/* 停止回答 */}
+            {!noStopResponding && isResponding && (
+              <div className='mb-2 flex justify-center'>
+                <Button className='border-components-panel-border bg-components-panel-bg text-components-button-secondary-text' onClick={onStopResponding}>
+                  <StopCircle className='mr-[5px] h-3.5 w-3.5' />
+                  <span className='text-xs font-normal'>{t('appDebug.operation.stopResponding')}</span>
+                </Button>
+              </div>
+            )}
+
+            {hasTryToAsk && (
+              <TryToAsk
+                suggestedQuestions={suggestedQuestions}
+                onSend={onSend}
+              />
+            )}
+            {!noChatInput && (
+              <ChatInputArea
+                botName={appData?.site.title || 'Bot'}
+                disabled={inputDisabled}
+                showFeatureBar={showFeatureBar}
+                showFileUpload={showFileUpload}
+                featureBarDisabled={isResponding}
+                onFeatureBarClick={onFeatureBarClick}
+                visionConfig={config?.file_upload}
+                speechToTextConfig={config?.speech_to_text}
+                onSend={onSend}
+                inputs={inputs}
+                inputsForm={inputsForm}
+                theme={themeBuilder?.theme}
+                isResponding={isResponding}
+              />
+            )}
           </div>
         </div>
+
         {showPromptLogModal && !hideLogModal && (
           <PromptLogModal
             width={width}
