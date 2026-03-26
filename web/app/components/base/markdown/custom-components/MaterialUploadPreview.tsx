@@ -6,6 +6,7 @@ import styles from './MaterialUploadPreview.module.css';
 import { useWxMiniProgramPreview } from './WxMiniProgramPreview';
 import { getMaterialRequirements, getMaterialName, type MaterialRequirement } from './materialRequirements.config';
 import { INTELNET_BDCDJPT_URL } from '@/config';
+import Toast from '@/app/components/base/toast'
 
 interface FileInfo {
   id: string;
@@ -71,6 +72,16 @@ interface InputData {
   [key: string]: any;
 }
 
+interface UserInfo {
+  no: string;
+  name: string;
+  mobile: string;
+  usertype: string;
+  isauth: string;
+  token: string;
+  [key: string]: any;
+}
+
 const baseUrl = location.href.startsWith('https') && INTELNET_BDCDJPT_URL || 'http://localhost:9000/';
 const UPLOAD_API = `${baseUrl}bdcpt/a/json/fj/save`;
 const PARSE_API = `${location.href.startsWith('https') && 'https://wnxai.esconsoft.com/' || 'http://localhost:9000/'}v1/workflows/run`;
@@ -78,6 +89,7 @@ const CONTRACT_INFO_API = `${baseUrl}bdcpt/a/json/ywbaseother/selfgqlrmsgbybdcdy
 const CONTRACT_FILE_API = `${baseUrl}bdcpt/a/json/fj/getElecFjNotUrl`;
 const ELECTRONIC_CERT_API = `${baseUrl}bdcpt/a/json/fj/getElecFjNotUrl`;
 const SUBMIT_API = `${baseUrl}bdcpt/a/json/hlwywbase/info`;
+const USER_INFO_API = `${baseUrl}bdcpt/a/json/user/getUserInfo`;
 const FJID = '615fc82e0a294e95a841cd886006749b';
 const CONTRACT_FILE_FJID = '120f43025672496a9b1236f15b0f54cf';
 const PROPERTY_CERT_FJID = '1ccf126bda4d491fbad77f94be98f12d';
@@ -106,10 +118,12 @@ export function MaterialUploadPreview({ data, type }: Props) {
   const [previewFile, setPreviewFile] = useState<FileInfo | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const [inputData, setInputData] = useState<InputData | null>(null);
   const [contractInfo, setContractInfo] = useState<ContractInfo | null>(null);
   const [contractFiles, setContractFiles] = useState<FileInfo[]>([]);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { openPreview } = useWxMiniProgramPreview(MINI_PROGRAM_PATH);
@@ -409,7 +423,10 @@ export function MaterialUploadPreview({ data, type }: Props) {
         const errorMessage =
           err instanceof Error ? err.message : '文件解析失败，请稍后重试';
         setError(errorMessage);
-        console.error('Error parsing files:', err);
+        Toast.notify({
+          type: 'error',
+          message: errorMessage,
+        })
       } finally {
         setParsing(false);
       }
@@ -439,6 +456,10 @@ export function MaterialUploadPreview({ data, type }: Props) {
       const errorMessage =
         err instanceof Error ? err.message : '文件上传失败，请稍后重试';
       setError(errorMessage);
+      Toast.notify({
+        type: 'error',
+        message: errorMessage,
+      })
       console.error('Error uploading files:', err);
     } finally {
       setUploading(false);
@@ -473,9 +494,8 @@ export function MaterialUploadPreview({ data, type }: Props) {
   }, []);
 
   const handlePreviewFile = useCallback((file: FileInfo) => {
-    setPreviewFile(file);
-    setShowPreview(true);
-  }, []);
+    openPreview(file.filePath)
+  }, [openPreview]);
 
   const handleGetETicket = useCallback(() => {
     window.open(ETICKET_URL, '_blank');
@@ -563,6 +583,15 @@ export function MaterialUploadPreview({ data, type }: Props) {
       setSubmitting(true);
       setError(null);
 
+      // 前置检查：根据业务类型进行不同的验证
+      if (type === '一手房转移') {
+        const isValid = await validateFirstHandTransfer();
+        if (!isValid) {
+          setSubmitting(false);
+          return;
+        }
+      }
+
       // 构建文件路径列表
       const fjPath = materials
         .flatMap((material) =>
@@ -630,6 +659,7 @@ export function MaterialUploadPreview({ data, type }: Props) {
       }
 
       setSuccessMessage('业务提交成功！');
+      setSubmitSuccess(true);
       setShowSubmitConfirm(true);
     } catch (err) {
       const errorMessage =
@@ -640,6 +670,88 @@ export function MaterialUploadPreview({ data, type }: Props) {
       setSubmitting(false);
     }
   }, [materials, inputData, contractInfo, userToken, buildPersonList]);
+
+  // 获取用户信息
+  const fetchUserInfo = useCallback(async (): Promise<UserInfo | null> => {
+    try {
+      const response = await fetch(USER_INFO_API, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': userToken,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result: { result_code: string; result: UserInfo } = await response.json();
+
+      if (result.result_code === '200' && result.result) {
+        setUserInfo(result.result);
+        return result.result;
+      }
+      throw new Error('获取用户信息失败');
+    } catch (err) {
+      console.error('Error fetching user info:', err);
+      throw err;
+    }
+  }, [userToken]);
+
+  // 验证一手房转移：检查当前用户是否是权利人
+  const validateFirstHandTransfer = useCallback(async (): Promise<boolean> => {
+    try {
+      const user = userInfo || await fetchUserInfo();
+
+      if (!user) {
+        setError('无法获取用户信息，请重新登录');
+        Toast.notify({
+          type: 'error',
+          message: '无法获取用户信息，请重新登录',
+        })
+        return false;
+      }
+
+      if (!contractInfo?.qlrmc) {
+        setError('权利人信息不存在');
+        Toast.notify({
+          type: 'error',
+          message: '权利人信息不存在',
+        })
+        return false;
+      }
+
+      // 权利人可能有多个，用顿号分割
+      const qlrNames = contractInfo.qlrmc.split('、').map((n) => n.trim());
+      const qlrIds = contractInfo.qlrzjh?.split('、').map((id) => id.trim()) || [];
+
+      // 检查当前用户是否在权利人列表中
+      const isQlr = qlrNames.some(
+        (name, index) => name === user.name && qlrIds[index] === user.no
+      );
+
+      if (!isQlr) {
+        setError('只能申请自己的业务。当前登录用户与权利人信息不一致');
+        Toast.notify({
+          type: 'error',
+          message: '只能申请自己的业务。当前登录用户与权利人信息不一致',
+        })
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : '验证失败，请重试';
+      setError(errorMessage);
+      Toast.notify({
+        type: 'error',
+        message: errorMessage,
+      })
+      return false;
+    }
+  }, [userInfo, contractInfo, fetchUserInfo]);
 
   const handleNavigateToDetail = useCallback(async () => {
     await openPreview('');
@@ -659,10 +771,10 @@ export function MaterialUploadPreview({ data, type }: Props) {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
+      {/* <div className={styles.header}>
         <h1>材料上传</h1>
         <p className={styles.subheader}>请上传所需的申请材料</p>
-      </div>
+      </div> */}
 
       {successMessage && (
         <div className={styles.successBanner}>
@@ -695,7 +807,7 @@ export function MaterialUploadPreview({ data, type }: Props) {
           >
             <span className={styles.uploadIcon}>📁</span>
             <p className={styles.uploadText}>
-              {uploading || parsing ? '上传中...' : '点击或拖拽上传文件'}
+              {uploading || parsing ? '上传中...' : '点击上传文件（批量上传自动分类）'}
             </p>
             <p className={styles.uploadTip}>支持图片和PDF格式，单个文件不超过10MB</p>
           </div>
@@ -756,14 +868,16 @@ export function MaterialUploadPreview({ data, type }: Props) {
                     <div className={styles.filesList}>
                       {material.files.map((file) => (
                         <div key={file.id} className={styles.fileItem}>
-                          <div className={styles.fileIcon}>
-                            {file.fileType === 'image' ? '🖼️' : '📄'}
-                          </div>
-                          <div className={styles.fileInfo}>
-                            <p className={styles.fileName}>{file.fileName}</p>
-                            <p className={styles.fileDetails}>
-                              {(file.size / 1024).toFixed(2)} KB · {file.uploadTime}
-                            </p>
+                          <div className={styles.fileItemContent}>
+                            <div className={styles.fileIcon}>
+                              {file.fileType === 'image' ? '🖼️' : '📄'}
+                            </div>
+                            <div className={styles.fileInfo}>
+                              <p className={styles.fileName}>{file.fileName}</p>
+                              <p className={styles.fileDetails}>
+                                {(file.size / 1024).toFixed(2)} KB · {file.uploadTime}
+                              </p>
+                            </div>
                           </div>
                           <div className={styles.fileActions}>
                             <button
@@ -796,69 +910,21 @@ export function MaterialUploadPreview({ data, type }: Props) {
         <button
           className={styles.submitButton}
           onClick={handleSubmitBusiness}
-          disabled={submitting || uploading || parsing}
+          disabled={submitting || uploading || parsing || submitSuccess}
+          title={submitSuccess ? '业务已提交，不可重复提交' : ''}
         >
           {submitting ? (
             <>
               <span className={styles.spinner2}></span>
               提交中...
             </>
+          ) : submitSuccess ? (
+            '✓ 已提交'
           ) : (
             '提交业务'
           )}
         </button>
       </div>
-
-      {showPreview && previewFile && (
-        <div className={styles.modal}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h2>文件预览</h2>
-              <button
-                className={styles.closeButton}
-                onClick={() => setShowPreview(false)}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              {previewFile.fileType === 'image' ? (
-                <img
-                  src={previewFile.filePath}
-                  alt={previewFile.fileName}
-                  className={styles.previewImage}
-                />
-              ) : previewFile.fileType === 'pdf' ? (
-                <div className={styles.pdfPreview}>
-                  <p>PDF 文件预览</p>
-                  <a
-                    href={previewFile.filePath}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.pdfLink}
-                  >
-                    点击下载查看
-                  </a>
-                </div>
-              ) : (
-                <div className={styles.unsupportedPreview}>
-                  <p>暂不支持预览此文件类型</p>
-                </div>
-              )}
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button
-                className={styles.closeModalButton}
-                onClick={() => setShowPreview(false)}
-              >
-                关闭
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showSubmitConfirm && (
         <div className={styles.modal}>

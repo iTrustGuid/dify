@@ -8,6 +8,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .header {
@@ -93,8 +95,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes slideIn {
@@ -102,6 +109,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -217,7 +225,7 @@
 .materialGroup {
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 12px;
+  padding: 7px;
   background: #fafafa;
 }
 
@@ -226,6 +234,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  min-width: 0;
+  gap: 12px;
 }
 
 .materialName {
@@ -236,6 +246,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .requiredTag {
@@ -272,13 +285,22 @@
 }
 
 .fileItem {
-  display: flex;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 6px;
+}
+
+.fileItemContent {
+  background: #fff;
+  border-radius: 6px;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #eee;
+  min-width: 0;
+  padding: 6px;
+  display: flex;
+  overflow: hidden;
+  margin-bottom: 5px;
 }
 
 .fileIcon {
@@ -291,6 +313,7 @@
 .fileInfo {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .fileName {
@@ -298,7 +321,12 @@
   font-size: 14px;
   color: #333;
   font-weight: 500;
-  word-break: break-all;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  line-height: 1.4;
 }
 
 .fileDetails {
@@ -309,8 +337,10 @@
 
 .fileActions {
   display: flex;
+  justify-content: flex-end;
   gap: 8px;
   flex-shrink: 0;
+  padding: 5px;
 }
 
 .actionButton {
@@ -383,6 +413,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -409,6 +440,7 @@
   flex-direction: column;
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+  box-sizing: border-box;
 }
 
 .modalHeader {

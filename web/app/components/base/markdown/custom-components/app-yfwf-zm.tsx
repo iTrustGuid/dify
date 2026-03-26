@@ -77,6 +77,7 @@ export function PropertyCertificate() {
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [generateSuccess, setGenerateSuccess] = useState(false);
 
   // 🔥 2. 使用通用Hook，传入小程序预览页路径（注意路径和原逻辑一致）
   const { openPreview } = useWxMiniProgramPreview('/pagesB/my/preview/preview');
@@ -219,6 +220,7 @@ export function PropertyCertificate() {
       // 获取最终访问地址
       await fetchPreviewUrl(data.result);
       setSuccessMessage('证明生成成功！');
+      setGenerateSuccess(true);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : '生成证明失败，请稍后重试';
@@ -269,6 +271,7 @@ export function PropertyCertificate() {
     setSuccessMessage(null);
     setPreviewUrl(null);
     setShowPreview(false);
+    setGenerateSuccess(false);
   };
 
   // 初始化加载
@@ -422,13 +425,16 @@ export function PropertyCertificate() {
           <button
             className={styles.generateButton}
             onClick={handleGenerate}
-            disabled={generating || dictLoading || !selectedPurpose}
+            disabled={generating || dictLoading || !selectedPurpose || generateSuccess}
+            title={generateSuccess ? '证明已生成，请重置后重新生成' : ''}
           >
             {generating ? (
               <>
                 <span className={styles.spinner2}></span>
                 生成中...
               </>
+            ) : generateSuccess ? (
+              '✓ 已生成'
             ) : (
               '生成证明'
             )}
