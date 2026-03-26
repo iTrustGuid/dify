@@ -4,9 +4,7 @@ import {
   RiMicLine,
   RiSendPlane2Fill,
 } from '@remixicon/react'
-import type {
-  EnableType,
-} from '../../types'
+import type { EnableType } from '../../types'
 import type { Theme } from '../../embedded-chatbot/theme/theme-context'
 import Button from '@/app/components/base/button'
 import ActionButton from '@/app/components/base/action-button'
@@ -24,7 +22,6 @@ type OperationProps = {
   theme?: Theme | null
 }
 
-// 使用forwardRef处理ref传递
 const Operation = forwardRef(({
   fileConfig,
   speechToTextConfig,
@@ -34,83 +31,34 @@ const Operation = forwardRef(({
   onFileUploadClick,
   theme,
 }: OperationProps, ref: Ref<HTMLDivElement>) => {
-  // 🔥 核心修改：用mousedown代替click，阻止默认行为避免抢焦点
-  const handleMouseDown = (e: React.MouseEvent, callback?: () => void) => {
-    // 阻止默认行为（关键：避免按钮抢走输入框焦点）
-    e.preventDefault()
-    // 阻止事件冒泡
-    e.stopPropagation()
-    callback?.()
-  }
-
   return (
-    <div
-      className={cn(
-        'flex shrink-0 items-center justify-end',
-      )}
-    >
-      <div
-        className='flex items-center pl-1'
-        ref={ref}
-      >
+    <div className='flex shrink-0 items-center justify-end'>
+      <div className='flex items-center pl-1' ref={ref}>
         <div className='flex items-center space-x-1'>
-          {/* 文件上传按钮：仅执行回调，关闭语音但不干扰焦点 */}
           {fileConfig?.enabled && (
-            <div onMouseDown={(e) => handleMouseDown(e, onFileUploadClick)}>
+            <div onClick={onFileUploadClick}>
               <FileUploaderInChatInput fileConfig={fileConfig} />
             </div>
           )}
-          
-          {/* 麦克风按钮：根据isRecording状态显示不同样式 */}
+
           {speechToTextConfig?.enabled && (
             <ActionButton
               size='l'
-              // 🔥 改用onMouseDown
-              onMouseDown={(e) => handleMouseDown(e, onToggleVoiceInput)}
+              onClick={onToggleVoiceInput}
               className={cn(
-                // 🔥 核心修改：彻底清除所有交互状态的样式
-                'hover:bg-transparent hover:text-inherit focus:bg-transparent focus:text-inherit active:bg-transparent active:text-inherit',
-                'hover:shadow-none focus:shadow-none active:shadow-none', // 新增：清除阴影
-                'hover:border-transparent focus:border-transparent active:border-transparent', // 新增：清除边框
-                isRecording ? 'text-[#10B981]' : 'text-gray-500', // 简化：移除多余的bg-transparent
-                isRecording && 'bg-[#D1FAE5]' // 简化：移除!强制前缀，用常规样式
+                isRecording ? 'text-[#10B981] bg-[#D1FAE5]' : 'text-gray-500'
               )}
-              style={{
-                backgroundColor: isRecording ? '#D1FAE5' : 'transparent',
-                color: isRecording ? '#10B981' : '#6b7280',
-                border: 'none',
-                outline: 'none',
-                pointerEvents: 'auto',
-                userSelect: 'none',
-                boxShadow: 'none', // 新增：强制清除阴影
-                transition: 'none', // 新增：移除过渡动画避免样式闪烁
-              }}
-              // 🔥 禁止按钮获得焦点，避免干扰输入框
-              tabIndex={-1}
             >
-              <RiMicLine className='h-5 w-5' style={{ 
-                color: 'inherit',
-                // 新增：确保图标本身没有额外样式
-                backgroundColor: 'transparent',
-                outline: 'none'
-              }} />
+              <RiMicLine className='h-5 w-5' />
             </ActionButton>
           )}
         </div>
-        
-        {/* 发送按钮：仅执行回调（内部处理失焦） */}
+
         <Button
           className='ml-3 w-8 px-0'
           variant='primary'
-          // 🔥 改用onMouseDown
-          onMouseDown={(e) => handleMouseDown(e, onSend)}
-          style={theme ? { 
-            backgroundColor: theme.primaryColor,
-            outline: 'none',
-            boxShadow: 'none'
-          } : {}}
-          // 🔥 禁止按钮获得焦点
-          tabIndex={-1}
+          onClick={onSend}
+          style={theme ? { backgroundColor: theme.primaryColor } : {}}
         >
           <RiSendPlane2Fill className='h-4 w-4' />
         </Button>
@@ -120,5 +68,4 @@ const Operation = forwardRef(({
 })
 
 Operation.displayName = 'Operation'
-
 export default memo(Operation)

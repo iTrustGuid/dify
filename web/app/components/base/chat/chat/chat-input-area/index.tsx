@@ -532,6 +532,7 @@ const ChatInputArea = ({
     if (isRecording) {
       stopRecognition()
     } else {
+      safeFocusTextarea()
       startRecognition()
     }
   }
@@ -617,7 +618,7 @@ const ChatInputArea = ({
                 ref={textareaRef}
                 className='body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none'
                 placeholder={decode(t('common.chat.inputPlaceholder', { botName }) || '请输入消息')}
-                autoFocus
+                autoFocus={false} 
                 minRows={1}
                 value={displayText}
                 onChange={e => handleManualEdit(e.target.value)}
