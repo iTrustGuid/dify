@@ -104,14 +104,14 @@ const nextConfig = {
   // Configure pageExtensions to include md and mdx
   pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
   // https://nextjs.org/docs/messages/next-image-unconfigured-host
-  // async rewrites() {
-  //   return [
-  //     {
-  //       source: '/bdcpt-api',
-  //       destination: 'https://www.wnxbdcdjzx.com/bdcpt/a/json/wechat/Rzdb/getNlsToken',
-  //     },
-  //   ]
-  // },
+  async rewrites() {
+    return [
+      {
+        source: '/bdcpt-api',
+        destination: 'https://www.wnxbdcdjzx.com/bdcpt/a/json/wechat/Rzdb/getNlsToken',
+      },
+    ]
+  },
   images: {
     remotePatterns: remoteImageURLs.map(remoteImageURL => ({
       protocol: remoteImageURL.protocol.replace(':', ''),
