@@ -17,6 +17,7 @@ import type { InputForm } from '../type'
 import { useCheckInputsForms } from '../check-input-forms-hooks'
 import { useTextAreaHeight } from './hooks'
 import Operation from './operation'
+import OperationLeft from './operationLeft'
 import cn from '@/utils/classnames'
 import { FileListInChatInput } from '@/app/components/base/file-uploader'
 import { useFile } from '@/app/components/base/file-uploader/hooks'
@@ -76,6 +77,7 @@ const ChatInputArea = ({
     textareaRef,
     textValueRef,
     holdSpaceRef,
+    holdSpaceLeftRef,
     handleTextareaResize,
     isMultipleLine,
   } = useTextAreaHeight()
@@ -599,6 +601,20 @@ const ChatInputArea = ({
     />
   )
 
+    const operationLeft = (
+    <OperationLeft
+      ref={holdSpaceLeftRef}
+      fileConfig={visionConfig}
+      speechToTextConfig={speechToTextConfig}
+      isRecording={isRecording}
+      onToggleVoiceInput={toggleVoice}
+      onShowVoiceInput={handleShowVoiceInput}
+      onSend={handleSend}
+      onFileUploadClick={handleFileUploadClick}
+      theme={theme}
+    />
+  )
+
   return (
     <>
       <div className={cn(
@@ -613,6 +629,7 @@ const ChatInputArea = ({
               <div ref={textValueRef} className='body-lg-regular pointer-events-none invisible absolute h-auto w-auto whitespace-pre p-1 leading-6'>
                 {displayText}
               </div>
+              {!isMultipleLine && operationLeft}
               <Textarea
                 ref={textareaRef}
                 className='body-lg-regular w-full resize-none bg-transparent p-1 leading-6 text-text-primary outline-none'
