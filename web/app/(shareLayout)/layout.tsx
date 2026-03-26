@@ -21,8 +21,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
     const checkIsPC = () => {
       const userAgent = navigator.userAgent.toLowerCase();
       const isMobile = /iphone|ipad|android|ipod/.test(userAgent);
-      // return !isMobile;
-      return false;
+      return !isMobile;
     };
     const pc = checkIsPC();
     setIsPC(pc);
