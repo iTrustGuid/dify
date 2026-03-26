@@ -22,6 +22,7 @@ import AnswerIcon from '@/app/components/base/answer-icon'
 import cn from '@/utils/classnames'
 import { FileList } from '@/app/components/base/file-uploader'
 import ContentSwitch from '../content-switch'
+import { isBrowser } from '@/utils/env.utils';
 
 type AnswerProps = {
   item: ChatItem
@@ -139,9 +140,10 @@ const Answer: FC<AnswerProps> = ({
   const shouldShowWorkflowProcess = showWorkflow && workflowProcess
 
   return (
+
     <div className='mb-2 flex last:mb-0'>
       <div className='relative h-10 w-10 shrink-0'>
-        {answerIcon || <AnswerIcon />}
+        {isBrowser() && (answerIcon || <AnswerIcon />)}
         {responding && (
           <div className='absolute left-[-3px] top-[-3px] flex h-4 w-4 items-center rounded-full border-[0.5px] border-divider-subtle bg-background-section-burn pl-[6px] shadow-xs'>
             <LoadingAnim type='avatar' />
@@ -242,6 +244,7 @@ const Answer: FC<AnswerProps> = ({
         <More more={more} />
       </div>
     </div>
+
   )
 }
 

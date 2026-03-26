@@ -25,6 +25,7 @@ import cn from '@/utils/classnames'
 import Textarea from 'react-textarea-autosize'
 import Button from '../../button'
 import { useChatContext } from './context'
+import { isBrowser } from '@/utils/env.utils';
 
 type QuestionProps = {
   item: ChatItem
@@ -166,6 +167,7 @@ const Question: FC<QuestionProps> = ({
         </div>
         <div className='mt-1 h-[18px]' />
       </div>
+      {isBrowser() && (
       <div className='h-10 w-10 shrink-0'>
         {
           questionIcon || (
@@ -175,6 +177,7 @@ const Question: FC<QuestionProps> = ({
           )
         }
       </div>
+      )}
     </div>
   )
 }
