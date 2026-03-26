@@ -16,8 +16,8 @@ const getUserTokenFromUrl = (): string | null => {
 
 const requestTokenWithCorsFix = async (userToken: string): Promise<{ token: string; appKey: string }> => {
   // 🔥 这里改成代理地址 /bdcpt-api（和 next.config.js 对应）
-  const url = '/bdcpt-api'
-  // const url = 'https://www.wnxbdcdjzx.com/bdcpt/a/json/wechat/Rzdb/getNlsToken'
+  // const url = '/bdcpt-api'
+  const url = 'https://www.wnxbdcdjzx.com/bdcpt/a/json/wechat/Rzdb/getNlsToken'
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('GET', url, true)

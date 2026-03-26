@@ -346,12 +346,12 @@ const ChatInputArea = ({
     isConnectingRef.current = true
 
     try {
-      // const config = 
-      // {
-      //         token: 'cdd952fae90047ff98e1a55f95879406',
-      //         appKey: 'PtcXfBxLzBd8HU4N',
-      //       }
-      const config = await fetchAliyunNlsToken()
+      const config = 
+      {
+              token: 'cdd952fae90047ff98e1a55f95879406',
+              appKey: 'PtcXfBxLzBd8HU4N',
+            }
+      // const config = await fetchAliyunNlsToken()
 
       aliyunConfigRef.current = config
       
