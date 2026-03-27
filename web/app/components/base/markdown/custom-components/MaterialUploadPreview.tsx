@@ -98,7 +98,8 @@ const PROPERTY_CERT_FJID: { [key: string]: string } = {
 };
 const ETICKET_URL = 'https://www.wnxbdcdjzx.com/eticket';
 const CLOUD_SIGN_URL = 'https://www.wnxbdcdjzx.com/cloudsign';
-const MINI_PROGRAM_PATH = '/pagesB/my/process/detail';
+// const MINI_PROGRAM_PATH = '/pagesB/my/process/detail';
+const MINI_PROGRAM_PATH = '/pagesB/my/preview/preview';
 
 interface Props {
   data: string | Record<string, any>;

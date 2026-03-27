@@ -111,52 +111,6 @@ export const useWxMiniProgramPreview = (miniProgramPreviewPath: string) => {
     [miniProgramPreviewPath, waitForWxReady]
   );
 
-  // 新增：直接跳小程序任意页面路由（无url参数）
-  const navigateToMiniProgramPage = useCallback(
-    async (pagePath: string) => {
-      const wx = await waitForWxReady();
-
-      if (!wx) {
-        alert('微信环境初始化失败，请刷新页面重试');
-        return;
-      }
-
-      if (!wx.miniProgram) {
-        alert('当前未在微信小程序环境中');
-        return;
-      }
-
-      // 直接使用传入的路由
-      if (wx.miniProgram.navigateTo) {
-        wx.miniProgram.navigateTo({
-          url: pagePath,
-          success: () => {
-            console.log('✅ 直接跳转小程序页面成功');
-          },
-          fail: (err: any) => {
-            console.error('❌ navigateTo 跳转失败：', err);
-            if (wx.miniProgram.redirectTo) {
-              wx.miniProgram.redirectTo({
-                url: pagePath,
-              });
-            } else {
-              alert('跳转失败，请手动返回小程序重试');
-            }
-          },
-        });
-      } else if (wx.miniProgram.postMessage) {
-        wx.miniProgram.postMessage({
-          data: {
-            action: 'navigateTo',
-            pagePath,
-          },
-        });
-        alert('已发送跳转请求，请返回小程序页面查看');
-      }
-    },
-    [waitForWxReady]
-  );
-
   // 统一入口：根据环境打开预览链接
   const openPreview = useCallback(
     async (url: string) => {
@@ -178,8 +132,7 @@ export const useWxMiniProgramPreview = (miniProgramPreviewPath: string) => {
   );
 
   return {
-    openPreview, // 原有：跳预览页（带url）
-    navigateToMiniProgramPage, // 新增：直接跳任意小程序路由
+    openPreview, // 对外暴露的核心方法
     isInWechatMiniProgram,
     isInWechatBrowser,
   };

@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import styles from './CertificateList.module.css';
 import { INTELNET_BDCDJPT_URL } from '@/config';
 // 导入通用Hook
-import { useWxMiniProgramPreview } from './WxMiniProgramPreview';
+import { useWxMiniProgramPreview } from './WxMiniProgramPreview2';
 
 interface Certificate {
   id?: string;
