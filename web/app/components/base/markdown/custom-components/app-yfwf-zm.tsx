@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './app-yfwf-zm.module.css';
 import { INTELNET_BDCDJPT_URL } from '@/config';
-// ✅ 导入新版封装好的 Hook
 import { useWxMiniProgramPreview } from './WxMiniProgramPreview';
 
 interface PropertyInfo {
@@ -54,13 +53,12 @@ interface PreviewResponse {
 
 type CertificateType = 'owned' | 'unowned' | null;
 
-const baseUrl = location.href.startsWith('https') && INTELNET_BDCDJPT_URL || 'http://localhost:9000/';
+const baseUrl = typeof window !== 'undefined' && location.href.startsWith('https') && INTELNET_BDCDJPT_URL || 'http://localhost:9000/';
 
 export function PropertyCertificate() {
   const searchParams = useSearchParams();
   const userToken = searchParams.get('userToken') || '';
 
-  // 状态管理
   const [certificateType, setCertificateType] = useState<CertificateType>(null);
   const [propertyList, setPropertyList] = useState<PropertyInfo[]>([]);
   const [dictList, setDictList] = useState<DictItem[]>([]);
@@ -79,12 +77,9 @@ export function PropertyCertificate() {
   const [showPreview, setShowPreview] = useState(false);
   const [generateSuccess, setGenerateSuccess] = useState(false);
 
-  // ==============================================
-  // ✅ 关键 1：使用新版 Hook（无需传路径，内部已固定）
-  // ==============================================
+  // ✅ 使用修复后的 Hook
   const { openFilePreview } = useWxMiniProgramPreview();
 
-  // 获取房产信息
   const fetchPropertyInfo = useCallback(async () => {
     try {
       setLoading(true);
@@ -101,169 +96,93 @@ export function PropertyCertificate() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data: ApiResponse<PropertyResult> = await response.json();
-
-      if (data.result_code !== '200') {
-        throw new Error(data.result_msg || '获取房产信息失败');
-      }
+      if (data.result_code !== '200') throw new Error(data.result_msg);
 
       const result = data.result;
       setPropertyList(result.infos || []);
-
-      // 判断证明类型
-      if (result.infos && result.infos.length > 0) {
-        setCertificateType('owned');
-      } else {
-        setCertificateType('unowned');
-      }
+      setCertificateType(result.infos?.length ? 'owned' : 'unowned');
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '获取房产信息失败，请稍后重试';
-      setError(errorMessage);
-      console.error('Error fetching property info:', err);
+      setError(err instanceof Error ? err.message : '获取失败');
     } finally {
       setLoading(false);
     }
   }, [userToken]);
 
-  // 获取查档用途列表
   const fetchDictList = useCallback(async () => {
     try {
       setDictLoading(true);
-
       const response = await fetch(
         `${baseUrl}bdcpt/a/json/dict/getDictList?type=bdc_cdyt`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': userToken,
-            'Content-Type': 'application/json',
-          },
-        }
+        { headers: { Authorization: userToken } }
       );
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
       const data: ApiResponse<DictItem[]> = await response.json();
-
-      if (data.result_code !== '200') {
-        throw new Error(data.result_msg || '获取查档用途失败');
-      }
-
       setDictList(data.result || []);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '获取查档用途失败，请稍后重试';
-      setError(errorMessage);
-      console.error('Error fetching dict list:', err);
+      setError('获取用途失败');
     } finally {
       setDictLoading(false);
     }
   }, [userToken]);
 
-  // 生成证明
   const handleGenerate = useCallback(async () => {
     if (certificateType === 'owned' && !selectedProperty) {
-      setError('请选择一套房屋');
+      setError('请选择房屋');
       return;
     }
-
     if (!selectedPurpose) {
-      setError('请选择查档用途');
+      setError('请选择用途');
       return;
     }
 
     try {
       setGenerating(true);
       setError(null);
-      setSuccessMessage(null);
-
-      let url = `${baseUrl}bdcpt/a/json/archives/getdzarchive?`;
       const params = new URLSearchParams();
-
       params.append('sfyf', certificateType === 'owned' ? '1' : '0');
       params.append('cdyt', selectedPurpose);
       params.append('isedition', '1');
 
       if (certificateType === 'owned') {
-        const property = propertyList.find((p) => p.id === selectedProperty);
-        if (!property) {
-          throw new Error('房产信息不存在');
-        }
-        params.append('bdcqzh', property.cqzh);
+        const prop = propertyList.find(p => p.id === selectedProperty);
+        if (prop) params.append('bdcqzh', prop.cqzh);
       }
 
-      url += params.toString();
+      const url = `${baseUrl}bdcpt/a/json/archives/getdzarchive?${params}`;
+      const res = await fetch(url, { headers: { Authorization: userToken } });
+      const data = await res.json();
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': userToken,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data: GenerateResponse = await response.json();
-
-      if (data.result_code !== '200') {
-        throw new Error(data.result_msg || '生成证明失败');
-      }
-
-      // 获取最终访问地址
+      if (data.result_code !== '200') throw new Error(data.result_msg);
       await fetchPreviewUrl(data.result);
-      setSuccessMessage('证明生成成功！');
+      setSuccessMessage('生成成功！');
       setGenerateSuccess(true);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '生成证明失败，请稍后重试';
-      setError(errorMessage);
-      console.error('Error generating certificate:', err);
+      setError(err instanceof Error ? err.message : '生成失败');
     } finally {
       setGenerating(false);
     }
   }, [certificateType, selectedProperty, selectedPurpose, propertyList, userToken]);
 
-  // 获取预览URL
-  const fetchPreviewUrl = useCallback(
-    async (fileUrl: string) => {
-      try {
-        setPreviewLoading(true);
-        // ✅ 拼接完整预览地址
-        const fullUrl = `https://www.wnxbdcdjzx.com/estate/${fileUrl}`;
-        setPreviewUrl(fullUrl);
-        setShowPreview(true);
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : '获取预览链接失败';
-        setError(errorMessage);
-        console.error('Error fetching preview url:', err);
-      } finally {
-        setPreviewLoading(false);
-      }
-    },
-    []
-  );
+  const fetchPreviewUrl = useCallback(async (fileUrl: string) => {
+    try {
+      setPreviewLoading(true);
+      const fullUrl = `https://www.wnxbdcdjzx.com/estate/${fileUrl}`;
+      setPreviewUrl(fullUrl);
+      setShowPreview(true);
+    } catch {
+      setError('预览链接失败');
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, []);
 
-  // ==============================================
-  // ✅ 关键 2：调用新版 Hook 预览文件（极简）
-  // ==============================================
+  // ✅ 打开预览（无报错版）
   const handleOpenPreview = useCallback(async () => {
     if (!previewUrl) return;
-    // 直接调用：跳转固定预览页 + 自动传参
     await openFilePreview(previewUrl);
   }, [previewUrl, openFilePreview]);
 
-  // 重置表单
   const handleReset = () => {
     setSelectedProperty('');
     setSelectedPurpose('');
@@ -274,226 +193,93 @@ export function PropertyCertificate() {
     setGenerateSuccess(false);
   };
 
-  // 初始化加载
   useEffect(() => {
     if (userToken) {
       fetchPropertyInfo();
       fetchDictList();
     } else {
-      setError('未找到用户令牌，请检查URL参数');
+      setError('缺少用户令牌');
       setLoading(false);
     }
   }, [userToken, fetchPropertyInfo, fetchDictList]);
 
   if (loading) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>加载中...</p>
-        </div>
-      </div>
-    );
+    return <div className={styles.container}><div className={styles.loading}><div className={styles.spinner}></div><p>加载中...</p></div></div>;
   }
 
   if (error && !successMessage) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.error}>
-          <p className={styles.errorIcon}>⚠️</p>
-          <p className={styles.errorMessage}>{error}</p>
-          <button
-            className={styles.retryButton}
-            onClick={() => {
-              setError(null);
-              fetchPropertyInfo();
-            }}
-          >
-            重试
-          </button>
-        </div>
-      </div>
-    );
+    return <div className={styles.container}><div className={styles.error}><p className={styles.errorIcon}>⚠️</p><p className={styles.errorMessage}>{error}</p><button className={styles.retryButton} onClick={() => { setError(null); fetchPropertyInfo(); }}>重试</button></div></div>;
   }
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>房产证明</h1>
-        <p className={styles.subheader}>
-          {certificateType === 'owned' ? '有房证明' : '无房证明'}
-        </p>
+        <p className={styles.subheader}>{certificateType === 'owned' ? '有房证明' : '无房证明'}</p>
       </div>
 
-      {successMessage && (
-        <div className={styles.successBanner}>
-          <span className={styles.successIcon}>✓</span>
-          <span>{successMessage}</span>
-        </div>
-      )}
-
-      {error && (
-        <div className={styles.errorBanner}>
-          <span className={styles.errorBannerIcon}>✕</span>
-          <span>{error}</span>
-        </div>
-      )}
+      {successMessage && <div className={styles.successBanner}><span className={styles.successIcon}>✓</span><span>{successMessage}</span></div>}
+      {error && <div className={styles.errorBanner}><span className={styles.errorBannerIcon}>✕</span><span>{error}</span></div>}
 
       <div className={styles.formContainer}>
-        {/* 有房证明表单 */}
         {certificateType === 'owned' && (
           <>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>
-                选择房屋 <span className={styles.required}>*</span>
-              </label>
-              <select
-                className={styles.select}
-                value={selectedProperty}
-                onChange={(e) => setSelectedProperty(e.value)}
-                disabled={generating}
-              >
+              <label className={styles.formLabel}>选择房屋 <span className={styles.required}>*</span></label>
+              <select className={styles.select} value={selectedProperty} onChange={(e) => setSelectedProperty(e.target.value)} disabled={generating}>
                 <option value="">请选择房屋</option>
-                {propertyList.map((property) => (
-                  <option key={property.id} value={property.id}>
-                    {property.cqzh} - {property.zl}
-                  </option>
-                ))}
+                {propertyList.map(p => <option key={p.id} value={p.id}>{p.cqzh} - {p.zl}</option>)}
               </select>
             </div>
 
             {selectedProperty && (
               <div className={styles.propertyInfo}>
-                {(() => {
-                  const prop = propertyList.find((p) => p.id === selectedProperty);
-                  return prop ? (
-                    <>
-                      <div className={styles.infoRow}>
-                        <span className={styles.infoLabel}>权利人：</span>
-                        <span className={styles.infoValue}>{prop.name}</span>
-                      </div>
-                      <div className={styles.infoRow}>
-                        <span className={styles.infoLabel}>坐落：</span>
-                        <span className={styles.infoValue}>{prop.zl}</span>
-                      </div>
-                      <div className={styles.infoRow}>
-                        <span className={styles.infoLabel}>登记时间：</span>
-                        <span className={styles.infoValue}>{prop.createDate}</span>
-                      </div>
-                    </>
-                  ) : null;
-                })()}
+                {propertyList.find(p => p.id === selectedProperty) && (
+                  <>
+                    <div className={styles.infoRow}><span className={styles.infoLabel}>权利人：</span><span className={styles.infoValue}>{propertyList.find(p => p.id === selectedProperty)!.name}</span></div>
+                    <div className={styles.infoRow}><span className={styles.infoLabel}>坐落：</span><span className={styles.infoValue}>{propertyList.find(p => p.id === selectedProperty)!.zl}</span></div>
+                    <div className={styles.infoRow}><span className={styles.infoLabel}>登记时间：</span><span className={styles.infoValue}>{propertyList.find(p => p.id === selectedProperty)!.createDate}</span></div>
+                  </>
+                )}
               </div>
             )}
           </>
         )}
 
-        {/* 无房证明表单 */}
         {certificateType === 'unowned' && (
-          <div className={styles.unownedTip}>
-            <p className={styles.unownedIcon}>📋</p>
-            <p className={styles.unownedText}>
-              根据查询，您名下暂无房产记录，可以生成无房证明。
-            </p>
-          </div>
+          <div className={styles.unownedTip}><p className={styles.unownedIcon}>📋</p><p className={styles.unownedText}>暂无房产记录，可生成无房证明</p></div>
         )}
 
-        {/* 查档用途选择（通用） */}
         <div className={styles.formGroup}>
-          <label className={styles.formLabel}>
-            查档用途 <span className={styles.required}>*</span>
-          </label>
-          <select
-            className={styles.select}
-            value={selectedPurpose}
-            onChange={(e) => setSelectedPurpose(e.value)}
-            disabled={generating || dictLoading}
-          >
-            <option value="">
-              {dictLoading ? '加载中...' : '请选择查档用途'}
-            </option>
-            {dictList.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
+          <label className={styles.formLabel}>查档用途 <span className={styles.required}>*</span></label>
+          <select className={styles.select} value={selectedPurpose} onChange={(e) => setSelectedPurpose(e.target.value)} disabled={generating || dictLoading}>
+            <option value="">{dictLoading ? '加载中...' : '请选择用途'}</option>
+            {dictList.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
         </div>
 
-        {/* 操作按钮 */}
         <div className={styles.buttonGroup}>
-          <button
-            className={styles.generateButton}
-            onClick={handleGenerate}
-            disabled={generating || dictLoading || !selectedPurpose || generateSuccess}
-            title={generateSuccess ? '证明已生成，请重置后重新生成' : ''}
-          >
-            {generating ? (
-              <>
-                <span className={styles.spinner2}></span>
-                生成中...
-              </>
-            ) : generateSuccess ? (
-              '✓ 已生成'
-            ) : (
-              '生成证明'
-            )}
+          <button className={styles.generateButton} onClick={handleGenerate} disabled={generating || dictLoading || !selectedPurpose || generateSuccess}>
+            {generating ? <><span className={styles.spinner2}></span>生成中...</> : generateSuccess ? '✓ 已生成' : '生成证明'}
           </button>
-          <button
-            className={styles.resetButton}
-            onClick={handleReset}
-            disabled={generating}
-          >
-            重置
-          </button>
+          <button className={styles.resetButton} onClick={handleReset} disabled={generating}>重置</button>
         </div>
       </div>
 
-      {/* 预览模态框 */}
       {showPreview && previewUrl && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h2>证明预览</h2>
-              <button
-                className={styles.closeButton}
-                onClick={() => setShowPreview(false)}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              <div className={styles.previewInfo}>
-                <p>证明已生成，点击下方按钮在小程序内预览。</p>
-              </div>
-            </div>
-
+            <div className={styles.modalHeader}><h2>证明预览</h2><button className={styles.closeButton} onClick={() => setShowPreview(false)}>✕</button></div>
+            <div className={styles.modalBody}><div className={styles.previewInfo}><p>点击按钮在小程序内预览</p></div></div>
             <div className={styles.modalFooter}>
-              <button
-                className={styles.previewButton}
-                onClick={handleOpenPreview}
-                disabled={previewLoading}
-              >
-                {previewLoading ? '加载中...' : '打开预览'}
-              </button>
-              <button
-                className={styles.closeModalButton}
-                onClick={() => setShowPreview(false)}
-              >
-                关闭
-              </button>
+              <button className={styles.previewButton} onClick={handleOpenPreview} disabled={previewLoading}>{previewLoading ? '加载中...' : '打开预览'}</button>
+              <button className={styles.closeModalButton} onClick={() => setShowPreview(false)}>关闭</button>
             </div>
           </div>
         </div>
       )}
 
-      {showPreview && (
-        <div
-          className={styles.modalBackdrop}
-          onClick={() => setShowPreview(false)}
-        ></div>
-      )}
+      {showPreview && <div className={styles.modalBackdrop} onClick={() => setShowPreview(false)}></div>}
     </div>
   );
 }
