@@ -98,7 +98,7 @@ const PROPERTY_CERT_FJID: { [key: string]: string } = {
 };
 const ETICKET_URL = 'https://www.wnxbdcdjzx.com/eticket';
 const CLOUD_SIGN_URL = 'https://www.wnxbdcdjzx.com/cloudsign';
-// const MINI_PROGRAM_PATH = '/pagesB/my/process/detail';
+const MINI_PROGRAM_PATH2 = '/pagesB/my/process/detail';
 const MINI_PROGRAM_PATH = '/pagesB/my/preview/preview';
 
 interface Props {
@@ -121,6 +121,7 @@ export function MaterialUploadPreview({ data, type }: Props) {
 
   const [previewFile, setPreviewFile] = useState<FileInfo | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  // ✅ 恢复：提交确认弹框状态
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
@@ -130,7 +131,8 @@ export function MaterialUploadPreview({ data, type }: Props) {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { openPreview } = useWxMiniProgramPreview(MINI_PROGRAM_PATH);
+  // ✅ 获取两个跳转方法
+  const { openPreview, navigateToMiniProgramPage } = useWxMiniProgramPreview(MINI_PROGRAM_PATH);
 
   // 解析输入数据
   const parseInputData = useCallback(() => {
@@ -169,7 +171,6 @@ export function MaterialUploadPreview({ data, type }: Props) {
 
       if (result.result_code === '200' && result.result?.length > 0) {
         setContractInfo(result.result[0]);
-        // 获取合同文件
         await fetchContractFiles(htbh);
       }
     } catch (err) {
@@ -210,7 +211,6 @@ export function MaterialUploadPreview({ data, type }: Props) {
         }));
         setContractFiles(files);
 
-        // 自动将合同文件添加到材料列表
         setMaterials((prevMaterials) =>
           prevMaterials.map((material) =>
             material.materialId === '120f43025672496a9b1236f15b0f54cf'
@@ -256,7 +256,6 @@ export function MaterialUploadPreview({ data, type }: Props) {
           size: 0,
         }));
 
-        // 自动将证书文件添加到材料列表
         setMaterials((prevMaterials) =>
           prevMaterials.map((material) =>
             material.materialId === PROPERTY_CERT_FJID[type]
@@ -273,7 +272,6 @@ export function MaterialUploadPreview({ data, type }: Props) {
   useEffect(() => {
     const requirements = getMaterialRequirements(type);
     setMaterialRequirements(requirements);
-
     const parsed = parseInputData();
     setInputData(parsed);
 
@@ -281,17 +279,13 @@ export function MaterialUploadPreview({ data, type }: Props) {
       fetchContractInfo(parsed.htbh);
     }
 
-    if (type === '补证换证') {
-      // 直接获取证书材料
-      if (parsed?.bdcqzh) {
-        fetchElectronicCertificate(parsed?.bdcqzh);
-      }
+    if (type === '补证换证' && parsed?.bdcqzh) {
+      fetchElectronicCertificate(parsed?.bdcqzh);
     }
 
     setLoading(false);
   }, [type, parseInputData, fetchContractInfo]);
 
-  // 当合同信息更新时，获取电子证书
   useEffect(() => {
     if (contractInfo?.bdcqzh) {
       fetchElectronicCertificate(contractInfo.bdcqzh);
@@ -308,12 +302,8 @@ export function MaterialUploadPreview({ data, type }: Props) {
 
   const getFileType = useCallback((fileName: string): string => {
     const ext = fileName.split('.').pop()?.toLowerCase() || '';
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-      return 'image';
-    }
-    if (ext === 'pdf') {
-      return 'pdf';
-    }
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+    if (ext === 'pdf') return 'pdf';
     return 'unknown';
   }, []);
 
@@ -347,14 +337,11 @@ export function MaterialUploadPreview({ data, type }: Props) {
 
         const parseData: any = await parseResponse.json();
         const fileCategory = parseData?.data?.outputs?.class_name || '其他';
-
         let targetMaterialId = 'other';
         const matchedRequirement = materialRequirements.find(
           (req) => req.name.toLowerCase() === fileCategory.toLowerCase()
         );
-        if (matchedRequirement) {
-          targetMaterialId = matchedRequirement.id;
-        }
+        if (matchedRequirement) targetMaterialId = matchedRequirement.id;
 
         const newFile: FileInfo = {
           id: response.result.ids[0],
@@ -390,9 +377,7 @@ export function MaterialUploadPreview({ data, type }: Props) {
         const response = await fetch(UPLOAD_API, {
           method: 'POST',
           body: formData,
-          headers: {
-            Authorization: userToken,
-          },
+          headers: { Authorization: userToken },
         });
 
         if (!response.ok) {
@@ -400,13 +385,11 @@ export function MaterialUploadPreview({ data, type }: Props) {
         }
 
         const data: UploadResponse = await response.json();
-
         if (data.result_code !== '200') {
           throw new Error(data.result_msg || '文件上传失败');
         }
 
-        data.result.filePath = `${INTELNET_BDCDJPT_URL}bdcpt${data.result.filePath}`
-
+        data.result.filePath = `${INTELNET_BDCDJPT_URL}bdcpt${data.result.filePath}`;
         return { file, response: data };
       } catch (err) {
         console.error('Error uploading single file:', err);
@@ -417,27 +400,17 @@ export function MaterialUploadPreview({ data, type }: Props) {
   );
 
   const parseUploadedFiles = useCallback(
-    async (
-      uploads: Array<{ file: File; response: UploadResponse }>
-    ) => {
+    async (uploads: Array<{ file: File; response: UploadResponse }>) => {
       try {
         setParsing(true);
-
-        const parsePromises = uploads.map(({ file, response }) =>
-          parseSingleFile(file, response)
-        );
+        const parsePromises = uploads.map(({ file, response }) => parseSingleFile(file, response));
         await Promise.all(parsePromises);
-
         setSuccessMessage(`成功上传 ${uploads.length} 个文件`);
         setTimeout(() => setSuccessMessage(null), 3000);
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : '文件解析失败，请稍后重试';
-        setError(errorMessage);
-        Toast.notify({
-          type: 'error',
-          message: errorMessage,
-        })
+        const msg = err instanceof Error ? err.message : '解析失败';
+        setError(msg);
+        Toast.notify({ type: 'error', message: msg });
       } finally {
         setParsing(false);
       }
@@ -449,63 +422,47 @@ export function MaterialUploadPreview({ data, type }: Props) {
     try {
       setUploading(true);
       setError(null);
-
-      const uploadPromises = filesToUpload.map((file) => uploadSingleFile(file));
+      const uploadPromises = filesToUpload.map(file => uploadSingleFile(file));
       const uploadResults = await Promise.all(uploadPromises);
+      const successful = uploadResults.filter(r => r !== null) as any[];
 
-      const successfulUploads = uploadResults.filter(
-        (result) => result !== null
-      ) as Array<{ file: File; response: UploadResponse }>;
-
-      if (successfulUploads.length === 0) {
-        setError('文件上传失败，请重试');
+      if (successful.length === 0) {
+        setError('上传失败，请重试');
         return;
       }
-
-      await parseUploadedFiles(successfulUploads);
+      await parseUploadedFiles(successful);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '文件上传失败，请稍后重试';
-      setError(errorMessage);
-      Toast.notify({
-        type: 'error',
-        message: errorMessage,
-      })
-      console.error('Error uploading files:', err);
+      const msg = err instanceof Error ? err.message : '上传失败';
+      setError(msg);
+      Toast.notify({ type: 'error', message: msg });
     } finally {
       setUploading(false);
     }
   }, [uploadSingleFile, parseUploadedFiles]);
 
   const handleFileSelect = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = event.currentTarget.files;
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.currentTarget.files;
       if (!files) return;
-
       await uploadFiles(Array.from(files));
-      if (event.currentTarget) {
-        event.currentTarget.value = '';
-      }
+      e.currentTarget.value = '';
     },
     [uploadFiles]
   );
 
   const handleDeleteFile = useCallback((materialId: string, fileId: string) => {
-    setMaterials((prevMaterials) =>
-      prevMaterials.map((material) =>
-        material.materialId === materialId
-          ? {
-            ...material,
-            files: material.files.filter((f) => f.id !== fileId),
-          }
-          : material
+    setMaterials(prev =>
+      prev.map(m =>
+        m.materialId === materialId
+          ? { ...m, files: m.files.filter(f => f.id !== fileId) }
+          : m
       )
     );
     setError(null);
   }, []);
 
   const handlePreviewFile = useCallback((file: FileInfo) => {
-    openPreview(file.filePath)
+    openPreview(file.filePath);
   }, [openPreview]);
 
   const handleGetETicket = useCallback(() => {
@@ -516,50 +473,29 @@ export function MaterialUploadPreview({ data, type }: Props) {
     window.open(CLOUD_SIGN_URL, '_blank');
   }, []);
 
-  // 判断证件号类型：个人身份证或企业社会信用代码
+  // 判断证件类型
   const getIdCardType = useCallback((idCardNo: string): string => {
     if (!idCardNo) return '0';
-
-    // 个人身份证：15位或18位，全部或主要是数字
-    // 企业社会信用代码：18位，通常包含字母
-    // 判断方式：如果是18位且包含字母，则为企业代码；否则为个人身份证
-
     if (idCardNo.length === 18) {
-      // 如果全是数字或数字+X，则为个人身份证
-      if (/^\d{17}[0-9X]$/.test(idCardNo.toUpperCase())) {
-        return '0'; // 个人
-      }
-      // 检查是否包含字母（企业社会信用代码通常有字母）
-      if (/[A-Za-z]/.test(idCardNo)) {
-        return '8'; // 企业
-      }
-      // 18位且无明显特征，默认为企业
+      if (/^\d{17}[0-9X]$/.test(idCardNo.toUpperCase())) return '0';
+      if (/[A-Za-z]/.test(idCardNo)) return '8';
       return '8';
     }
-
-    // 15位身份证
-    if (idCardNo.length === 15) {
-      return '0';
-    }
-
-    // 其他长度的，18位以上通常是企业
+    if (idCardNo.length === 15) return '0';
     return idCardNo.length >= 18 ? '8' : '0';
   }, []);
 
   // 构建人员列表
   const buildPersonList = useCallback(() => {
     const ryxxVoList: any[] = [];
-
     if (contractInfo?.qlrmc) {
       const qlrNames = contractInfo.qlrmc.split('、');
       const qlrIds = contractInfo.qlrzjh?.split('、') || [];
-      qlrNames.forEach((name, index) => {
-        const idCardNo = qlrIds[index] || '';
-        const lxValue = getIdCardType(idCardNo);
-
+      qlrNames.forEach((name, i) => {
+        const id = qlrIds[i] || '';
         ryxxVoList.push({
-          lx: lxValue,
-          sfzh: idCardNo,
+          lx: getIdCardType(id),
+          sfzh: id,
           lxfs: inputData?.tzr?.phone || '',
           gyfe: '',
           userName: name.trim(),
@@ -567,17 +503,14 @@ export function MaterialUploadPreview({ data, type }: Props) {
         });
       });
     }
-
     if (contractInfo?.ywrmc) {
       const ywrNames = contractInfo.ywrmc.split('、');
       const ywrIds = contractInfo.ywrzjh?.split('、') || [];
-      ywrNames.forEach((name, index) => {
-        const idCardNo = ywrIds[index] || '';
-        const lxValue = getIdCardType(idCardNo);
-
+      ywrNames.forEach((name, i) => {
+        const id = ywrIds[i] || '';
         ryxxVoList.push({
-          lx: lxValue,
-          sfzh: idCardNo,
+          lx: getIdCardType(id),
+          sfzh: id,
           lxfs: '',
           gyfe: '',
           userName: name.trim(),
@@ -585,24 +518,19 @@ export function MaterialUploadPreview({ data, type }: Props) {
         });
       });
     }
-
     return ryxxVoList;
   }, [contractInfo, inputData, getIdCardType]);
 
-  // 构建人员列表(补证换证)
   const buildPersonListByData = useCallback(() => {
     const ryxxVoList: any[] = [];
-
     if (inputData?.qlrmc) {
-      const qlrNames = inputData?.qlrmc.split('、');
-      const qlrIds = inputData?.sfzh?.split('、') || [];
-      qlrNames.forEach((name, index) => {
-        const idCardNo = qlrIds[index] || '';
-        const lxValue = getIdCardType(idCardNo);
-
+      const names = inputData.qlrmc.split('、');
+      const ids = inputData.sfzh?.split('、') || [];
+      names.forEach((name, i) => {
+        const id = ids[i] || '';
         ryxxVoList.push({
-          lx: 'lxValue',
-          sfzh: idCardNo,
+          lx: getIdCardType(id),
+          sfzh: id,
           lxfs: inputData?.mobile || '',
           gyfe: '',
           userName: name.trim(),
@@ -610,35 +538,20 @@ export function MaterialUploadPreview({ data, type }: Props) {
         });
       });
     }
-
     return ryxxVoList;
   }, [inputData, getIdCardType]);
 
+  // ✅ 真正提交业务（用户确认后才执行）
   const handleSubmitBusiness = useCallback(async () => {
     try {
       setSubmitting(true);
       setError(null);
+      setShowSubmitConfirm(false); // 关闭确认弹框
 
-      // 前置检查：根据业务类型进行不同的验证
-      if (type === '一手房转移') {
-        const isValid = await validateFirstHandTransfer();
-        if (!isValid) {
-          setSubmitting(false);
-          return;
-        }
-      }
+      const fjPath = materials.flatMap(m =>
+        m.files.map(f => ({ path: f.filePath, id: m.materialId }))
+      );
 
-      // 构建文件路径列表
-      const fjPath = materials
-        .flatMap((material) =>
-          material.files.map((file) => ({
-            path: file.filePath,
-            id: material.materialId,
-            // id: file.id
-          }))
-        );
-
-      // 构建提交数据
       let submitData;
       if (type === '一手房转移') {
         submitData = {
@@ -678,40 +591,36 @@ export function MaterialUploadPreview({ data, type }: Props) {
         };
       } else if (type === '补证换证') {
         submitData = {
-          "id": "",
-          "usercolum": "9",
-          "ddmc": "22",
-          "xlmc": "0bd8e2ebff6e4e9c8a022a44d98d00f8",
-          "yhtype": "1",
-          "qlrsfdl": 0,
-          "ywrsfdl": 0,
-          "sffjwz": 1,
-          "cqType": "107",
+          id: '',
+          usercolum: '9',
+          ddmc: '22',
+          xlmc: '0bd8e2ebff6e4e9c8a022a44d98d00f8',
+          yhtype: '1',
+          qlrsfdl: 0,
+          ywrsfdl: 0,
+          sffjwz: 1,
+          cqType: '107',
           fjPath,
-          "flag": "",
-          "sfwq": "1",
-          "wqhtbh": "",
-          "cqzhzmh": inputData?.bdcqzh,
-          "czorzmhend": "",
-          "czorzmhstr": "",
-          "data": {
-          },
-          "sendEms": [
-          ],
-          "slry": "",
-          "estatetag": "BZHZDJ",
-          "tdzh": "",
-          "bdcdyh": inputData?.bdcdyh,
-          "gyrList": [
-          ],
-          "item": "0bd8e2ebff6e4e9c8a022a44d98d00f8",
-          "ryxxVoList": buildPersonListByData(),
-          "dlrxxVoList": [
-          ],
-        }
+          flag: '',
+          sfwq: '1',
+          wqhtbh: '',
+          cqzhzmh: inputData?.bdcqzh,
+          czorzmhend: '',
+          czorzmhstr: '',
+          data: {},
+          sendEms: [],
+          slry: '',
+          estatetag: 'BZHZDJ',
+          tdzh: '',
+          bdcdyh: inputData?.bdcdyh,
+          gyrList: [],
+          item: '0bd8e2ebff6e4e9c8a022a44d98d00f8',
+          ryxxVoList: buildPersonListByData(),
+          dlrxxVoList: [],
+        };
       }
 
-      const response = await fetch(SUBMIT_API, {
+      const res = await fetch(SUBMIT_API, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -720,115 +629,90 @@ export function MaterialUploadPreview({ data, type }: Props) {
         body: JSON.stringify(submitData),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result: SubmitResponse = await res.json();
+      if (result.result_code !== '200') throw new Error(result.result_msg || '提交失败');
 
-      const result: SubmitResponse = await response.json();
-
-      if (result.result_code !== '200') {
-        throw new Error(result.result_msg || '提交失败');
-      }
-
+      // ✅ 提交成功 → 自动跳转小程序详情页
       setSuccessMessage('业务提交成功！');
       setSubmitSuccess(true);
-      setShowSubmitConfirm(true);
+      await navigateToMiniProgramPage(MINI_PROGRAM_PATH2);
+
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '提交失败，请稍后重试';
-      setError(errorMessage);
-      console.error('Error submitting business:', err);
+      const msg = err instanceof Error ? err.message : '提交失败，请重试';
+      setError(msg);
+      Toast.notify({ type: 'error', message: msg });
+      console.error('提交失败', err);
     } finally {
       setSubmitting(false);
     }
-  }, [materials, inputData, contractInfo, userToken, buildPersonList]);
+  }, [
+    materials,
+    inputData,
+    contractInfo,
+    userToken,
+    type,
+    buildPersonList,
+    buildPersonListByData,
+    navigateToMiniProgramPage
+  ]);
+
+  // ✅ 点击“业务提交” → 只弹确认框，不直接提交
+  const handleShowSubmitConfirm = useCallback(() => {
+    setShowSubmitConfirm(true);
+  }, []);
 
   // 获取用户信息
   const fetchUserInfo = useCallback(async (): Promise<UserInfo | null> => {
     try {
-      const response = await fetch(USER_INFO_API, {
+      const res = await fetch(USER_INFO_API, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': userToken,
+          Authorization: userToken,
         },
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const result: { result_code: string; result: UserInfo } = await response.json();
-
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
       if (result.result_code === '200' && result.result) {
         setUserInfo(result.result);
         return result.result;
       }
       throw new Error('获取用户信息失败');
     } catch (err) {
-      console.error('Error fetching user info:', err);
+      console.error('fetchUserInfo', err);
       throw err;
     }
   }, [userToken]);
 
-  // 验证一手房转移：检查当前用户是否是权利人
+  // 验证一手房权利人
   const validateFirstHandTransfer = useCallback(async (): Promise<boolean> => {
     try {
       const user = userInfo || await fetchUserInfo();
-
       if (!user) {
-        setError('无法获取用户信息，请重新登录');
-        Toast.notify({
-          type: 'error',
-          message: '无法获取用户信息，请重新登录',
-        })
+        Toast.notify({ type: 'error', message: '无法获取用户信息' });
         return false;
       }
-
       if (!contractInfo?.qlrmc) {
-        setError('权利人信息不存在');
-        Toast.notify({
-          type: 'error',
-          message: '权利人信息不存在',
-        })
+        Toast.notify({ type: 'error', message: '权利人信息不存在' });
         return false;
       }
-
-      // 权利人可能有多个，用顿号分割
-      const qlrNames = contractInfo.qlrmc.split('、').map((n) => n.trim());
-      const qlrIds = contractInfo.qlrzjh?.split('、').map((id) => id.trim()) || [];
-
-      // 检查当前用户是否在权利人列表中
-      const isQlr = qlrNames.some(
-        (name, index) => name === user.name && qlrIds[index] === user.no
-      );
-
-      if (!isQlr) {
-        setError('只能申请自己的业务。当前登录用户与权利人信息不一致');
-        Toast.notify({
-          type: 'error',
-          message: '只能申请自己的业务。当前登录用户与权利人信息不一致',
-        })
-        return false;
+      const qlrs = contractInfo.qlrmc.split('、').map(n => n.trim());
+      const qlrIds = contractInfo.qlrzjh?.split('、').map(id => id.trim()) || [];
+      const isMe = qlrs.some((n, i) => n === user.name && qlrIds[i] === user.no);
+      if (!isMe) {
+        const msg = '只能申请自己的业务，当前用户与权利人不一致';
+        setError(msg);
+        Toast.notify({ type: 'error', message: msg });
       }
-
-      return true;
+      return isMe;
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '验证失败，请重试';
-      setError(errorMessage);
-      Toast.notify({
-        type: 'error',
-        message: errorMessage,
-      })
+      const msg = err instanceof Error ? err.message : '验证失败';
+      setError(msg);
+      Toast.notify({ type: 'error', message: msg });
       return false;
     }
   }, [userInfo, contractInfo, fetchUserInfo]);
-
-  const handleNavigateToDetail = useCallback(async () => {
-    await openPreview('');
-    setShowSubmitConfirm(false);
-  }, [openPreview]);
 
   if (loading) {
     return (
@@ -843,18 +727,12 @@ export function MaterialUploadPreview({ data, type }: Props) {
 
   return (
     <div className={styles.container}>
-      {/* <div className={styles.header}>
-        <h1>材料上传</h1>
-        <p className={styles.subheader}>请上传所需的申请材料</p>
-      </div> */}
-
       {successMessage && (
         <div className={styles.successBanner}>
           <span className={styles.successIcon}>✓</span>
           <span>{successMessage}</span>
         </div>
       )}
-
       {error && (
         <div className={styles.errorBanner}>
           <span className={styles.errorBannerIcon}>✕</span>
@@ -879,66 +757,38 @@ export function MaterialUploadPreview({ data, type }: Props) {
           >
             <span className={styles.uploadIcon}>📁</span>
             <p className={styles.uploadText}>
-              {uploading || parsing ? '上传中...' : '点击上传（批量上传自动分类）'}
+              {uploading || parsing ? '上传中...' : '点击上传（批量自动分类）'}
             </p>
-            <p className={styles.uploadTip}>支持图片和PDF格式，单个文件不超过10MB</p>
+            <p className={styles.uploadTip}>支持图片/PDF，单文件≤10MB</p>
           </div>
         </div>
-
-        {/* <div className={styles.actionButtons}>
-          <button
-            className={styles.secondaryButton}
-            onClick={handleGetETicket}
-            title="获取电子证照"
-          >
-            获取电子证照
-          </button>
-          <button
-            className={styles.secondaryButton}
-            onClick={handleCloudSign}
-            title="云签"
-          >
-            云签
-          </button>
-        </div> */}
       </div>
 
       <div className={styles.materialsSection}>
         <h2 className={styles.sectionTitle}>已上传材料</h2>
-
         {materials.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p>暂无上传材料</p>
-          </div>
+          <div className={styles.emptyState}><p>暂无上传材料</p></div>
         ) : (
           <div className={styles.materialsList}>
-            {materials.map((material) => {
-              const requirement = materialRequirements.find(
-                (req) => req.id === material.materialId
-              );
-              const isRequired = requirement?.required;
-
+            {materials.map(material => {
+              const req = materialRequirements.find(r => r.id === material.materialId);
               return (
                 <div key={material.materialId} className={styles.materialGroup}>
                   <div className={styles.materialHeader}>
                     <h3 className={styles.materialName}>
                       {getMaterialName(type, material.materialId)}
-                      {isRequired && (
-                        <span className={styles.requiredTag}>必须</span>
-                      )}
+                      {req?.required && <span className={styles.requiredTag}>必须</span>}
                     </h3>
                     <span className={styles.fileCount}>
-                      {material.files.length}/{requirement?.maxFiles || '∞'}
+                      {material.files.length}/{req?.maxFiles || '∞'}
                     </span>
                   </div>
 
                   {material.files.length === 0 ? (
-                    <div className={styles.noFiles}>
-                      <p>暂未上传</p>
-                    </div>
+                    <div className={styles.noFiles}><p>暂未上传</p></div>
                   ) : (
                     <div className={styles.filesList}>
-                      {material.files.map((file) => (
+                      {material.files.map(file => (
                         <div key={file.id} className={styles.fileItem}>
                           <div className={styles.fileItemContent}>
                             <div className={styles.fileIcon}>
@@ -956,16 +806,12 @@ export function MaterialUploadPreview({ data, type }: Props) {
                               className={styles.actionButton}
                               onClick={() => handlePreviewFile(file)}
                               title="预览"
-                            >
-                              👁️
-                            </button>
+                            >👁️</button>
                             <button
                               className={styles.actionButton}
                               onClick={() => handleDeleteFile(material.materialId, file.id)}
                               title="删除"
-                            >
-                              🗑️
-                            </button>
+                            >🗑️</button>
                           </div>
                         </div>
                       ))}
@@ -981,9 +827,10 @@ export function MaterialUploadPreview({ data, type }: Props) {
       <div className={styles.submitSection}>
         <button
           className={styles.submitButton}
-          onClick={handleSubmitBusiness}
+          // ✅ 点击只弹确认框
+          onClick={handleShowSubmitConfirm}
           disabled={submitting || uploading || parsing || submitSuccess}
-          title={submitSuccess ? '业务已提交，不可重复提交' : ''}
+          title={submitSuccess ? '已提交，不可重复提交' : ''}
         >
           {submitting ? (
             <>
@@ -993,53 +840,49 @@ export function MaterialUploadPreview({ data, type }: Props) {
           ) : submitSuccess ? (
             '✓ 已提交'
           ) : (
-            '提交业务'
+            '业务提交'
           )}
         </button>
       </div>
 
+      {/* ✅ 提交确认弹框（恢复） */}
       {showSubmitConfirm && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
-              <h2>提交完成</h2>
+              <h2>确认提交</h2>
               <button
                 className={styles.closeButton}
                 onClick={() => setShowSubmitConfirm(false)}
-              >
-                ✕
-              </button>
+              >✕</button>
             </div>
-
             <div className={styles.modalBody}>
               <div className={styles.confirmContent}>
-                <p className={styles.confirmIcon}>✓</p>
-                <p className={styles.confirmMessage}>业务已成功提交！</p>
-                <p className={styles.confirmSubtext}>
-                  是否跳转到流程详情页查看进展？
-                </p>
+                <p className={styles.confirmIcon}>?</p>
+                <p className={styles.confirmMessage}>确定要提交该业务申请吗？</p>
+                <p className={styles.confirmSubtext}>提交后将进入审核流程，无法修改</p>
               </div>
             </div>
-
             <div className={styles.modalFooter}>
               <button
                 className={styles.secondaryButton}
                 onClick={() => setShowSubmitConfirm(false)}
               >
-                关闭
+                取消
               </button>
               <button
                 className={styles.primaryButton}
-                onClick={handleNavigateToDetail}
+                onClick={handleSubmitBusiness}
+                disabled={submitting}
               >
-                查看详情
+                {submitting ? '提交中...' : '确认提交'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {showPreview || showSubmitConfirm ? (
+      {(showPreview || showSubmitConfirm) && (
         <div
           className={styles.modalBackdrop}
           onClick={() => {
@@ -1047,7 +890,7 @@ export function MaterialUploadPreview({ data, type }: Props) {
             setShowSubmitConfirm(false);
           }}
         ></div>
-      ) : null}
+      )}
     </div>
   );
 }
