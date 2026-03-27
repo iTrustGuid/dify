@@ -31,6 +31,7 @@ import FeatureBar from '@/app/components/base/features/new-feature-panel/feature
 import type { FileUpload } from '@/app/components/base/features/types'
 import { TransferMethod } from '@/types/app'
 import { fetchAliyunNlsToken } from '@/utils/aliyun-nls'
+import FeatureButtonBar, { FeatureButton } from './feature-button-bar'
 
 const ALIYUN_URL = 'wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1'
 
@@ -87,7 +88,20 @@ const ChatInputArea = ({
   const historyRef = useRef([''])
   const [currentIndex, setCurrentIndex] = useState(-1)
   const isComposingRef = useRef(false)
-
+const [showFeaturePanel, setShowFeaturePanel] = useState(false)
+const featureButtons: FeatureButton[] = [
+  { id: 'quick', label: '快速', isExpandable: true },
+  { id: 'ai-create', label: 'AI 创作' },
+  { id: 'photo', label: '拍题答疑' },
+  { id: 'ppt', label: 'PPT 生成' },
+  { id: 'mindmap', label: '思维导图' },
+  { id: 'search2', label: '联网搜索' },
+  { id: 'search3', label: '联网搜索' },
+  { id: 'search45', label: '联网搜索' },
+  { id: 'search5', label: '联网搜索' },
+  { id: 'search6', label: '联网搜索' },
+  { id: 'search565', label: '联网搜索' },
+]
   // ====================== 语音识别状态 ======================
   const [confirmedText, setConfirmedText] = useState('')
   const [currentRecognizingText, setCurrentRecognizingText] = useState('')
@@ -625,6 +639,11 @@ const ChatInputArea = ({
 
   return (
     <>
+    {/* ✅ 新增：豆包风格可滑动按钮栏 */}
+    {/* <FeatureButtonBar
+      buttons={featureButtons}
+      onExpandClick={() => setShowFeaturePanel(true)}
+    /> */}
       <div className={cn(
         'relative z-10 overflow-hidden rounded-xl border border-components-chat-input-border bg-components-panel-bg-blur pb-[9px] shadow-md',
         isDragActive && 'border border-dashed border-components-option-card-option-selected-border',
