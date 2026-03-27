@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './app-yfwf-zm.module.css';
 import { INTELNET_BDCDJPT_URL } from '@/config';
-// 🔥 1. 导入通用Hook（同级路径）
+// ✅ 导入新版封装好的 Hook
 import { useWxMiniProgramPreview } from './WxMiniProgramPreview';
 
 interface PropertyInfo {
@@ -79,8 +79,10 @@ export function PropertyCertificate() {
   const [showPreview, setShowPreview] = useState(false);
   const [generateSuccess, setGenerateSuccess] = useState(false);
 
-  // 🔥 2. 使用通用Hook，传入小程序预览页路径（注意路径和原逻辑一致）
-  const { openPreview } = useWxMiniProgramPreview('/pagesB/my/preview/preview');
+  // ==============================================
+  // ✅ 关键 1：使用新版 Hook（无需传路径，内部已固定）
+  // ==============================================
+  const { openFilePreview } = useWxMiniProgramPreview();
 
   // 获取房产信息
   const fetchPropertyInfo = useCallback(async () => {
@@ -236,8 +238,9 @@ export function PropertyCertificate() {
     async (fileUrl: string) => {
       try {
         setPreviewLoading(true);
-
-        setPreviewUrl(`https://www.wnxbdcdjzx.com/estate/${fileUrl}`);
+        // ✅ 拼接完整预览地址
+        const fullUrl = `https://www.wnxbdcdjzx.com/estate/${fileUrl}`;
+        setPreviewUrl(fullUrl);
         setShowPreview(true);
       } catch (err) {
         const errorMessage =
@@ -248,20 +251,17 @@ export function PropertyCertificate() {
         setPreviewLoading(false);
       }
     },
-    [userToken]
+    []
   );
 
-  // 🔥 3. 简化打开预览逻辑：直接调用通用Hook的openPreview
+  // ==============================================
+  // ✅ 关键 2：调用新版 Hook 预览文件（极简）
+  // ==============================================
   const handleOpenPreview = useCallback(async () => {
     if (!previewUrl) return;
-    await openPreview(previewUrl); // 直接使用通用方法
-  }, [previewUrl, openPreview]);
-
-  // 🔥 4. 删除原组件内重复的以下方法：
-  // - isInWechatMiniProgram
-  // - isInWechatBrowser
-  // - openInWechatMiniProgram
-  // - openInWechatBrowser
+    // 直接调用：跳转固定预览页 + 自动传参
+    await openFilePreview(previewUrl);
+  }, [previewUrl, openFilePreview]);
 
   // 重置表单
   const handleReset = () => {
@@ -350,7 +350,7 @@ export function PropertyCertificate() {
               <select
                 className={styles.select}
                 value={selectedProperty}
-                onChange={(e) => setSelectedProperty(e.target.value)}
+                onChange={(e) => setSelectedProperty(e.value)}
                 disabled={generating}
               >
                 <option value="">请选择房屋</option>
@@ -406,7 +406,7 @@ export function PropertyCertificate() {
           <select
             className={styles.select}
             value={selectedPurpose}
-            onChange={(e) => setSelectedPurpose(e.target.value)}
+            onChange={(e) => setSelectedPurpose(e.value)}
             disabled={generating || dictLoading}
           >
             <option value="">
@@ -465,7 +465,7 @@ export function PropertyCertificate() {
 
             <div className={styles.modalBody}>
               <div className={styles.previewInfo}>
-                <p>证明已生成，点击下方按钮在新标签页中打开预览。</p>
+                <p>证明已生成，点击下方按钮在小程序内预览。</p>
               </div>
             </div>
 

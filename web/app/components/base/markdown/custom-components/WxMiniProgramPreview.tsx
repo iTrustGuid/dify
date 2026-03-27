@@ -3,26 +3,25 @@
 
 import { useCallback } from 'react';
 
-/**
- * 通用：H5 向微信小程序传递 URL 并跳转预览页的逻辑
- * @param miniProgramPreviewPath 小程序预览页路径（如 /pagesB/my/preview/preview）
- */
-export const useWxMiniProgramPreview = (miniProgramPreviewPath: string) => {
+// 固定常量：小程序预览页面路由（你业务固定的地址）
+const FIXED_PREVIEW_ROUTE = '/pagesB/my/preview/preview';
+
+export const useWxMiniProgramPreview = () => {
   const ua = navigator.userAgent.toLowerCase();
 
   // 等待 wx 对象加载完成（最多等3秒）
   const waitForWxReady = useCallback(async (): Promise<any> => {
     return new Promise((resolve) => {
       let checkTimer: NodeJS.Timeout;
-      const maxWaitTime = 3000; // 最大等待3秒
+      const maxWaitTime = 3000;
 
-      // 立即检查一次
+      // 立即检查
       if ((window as any).wx) {
         resolve((window as any).wx);
         return;
       }
 
-      // 轮询检查 wx 是否加载完成
+      // 轮询检查
       checkTimer = setInterval(() => {
         if ((window as any).wx) {
           clearInterval(checkTimer);
@@ -30,7 +29,7 @@ export const useWxMiniProgramPreview = (miniProgramPreviewPath: string) => {
         }
       }, 100);
 
-      // 超时未加载完成，返回 null
+      // 超时
       setTimeout(() => {
         clearInterval(checkTimer);
         resolve(null);
@@ -38,101 +37,89 @@ export const useWxMiniProgramPreview = (miniProgramPreviewPath: string) => {
     });
   }, []);
 
-  // 检测是否在微信小程序webview中
+  // 是否在微信小程序内
   const isInWechatMiniProgram = useCallback((): boolean => {
-    return typeof (window as any).wx !== 'undefined' && (window as any).wx.miniProgram && ua.includes('miniprogram');
-  }, []);
+    return typeof (window as any).wx !== 'undefined' && !! (window as any).wx.miniProgram && ua.includes('miniprogram');
+  }, [ua]);
 
-  // 检测是否在微信浏览器中
+  // 是否在微信浏览器
   const isInWechatBrowser = useCallback((): boolean => {
-    const ua = navigator.userAgent.toLowerCase();
     return /micromessenger/.test(ua);
-  }, []);
+  }, [ua]);
 
-  // 微信浏览器中打开链接
-  const openInWechatBrowser = useCallback((url: string) => {
-    window.location.href = url;
-  }, []);
-
-  // PC/其他浏览器中打开链接
-  const openInNormalBrowser = useCallback((url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }, []);
-
-  // 核心：跳转小程序并传递 URL 参数
-  const openInWechatMiniProgram = useCallback(
-    async (url: string) => {
+  /**
+   * 内部通用：小程序跳转方法（支持任意路由+参数）
+   */
+  const navigateToMiniProgram = useCallback(
+    async (route: string, queryParams?: Record<string, string>) => {
       const wx = await waitForWxReady();
 
-      if (!wx) {
-        alert('微信环境初始化失败，请刷新页面重试');
+      if (!wx || !wx.miniProgram) {
+        alert('请在微信小程序环境中使用');
         return;
       }
 
-      if (!wx.miniProgram) {
-        alert('当前未在微信小程序环境中');
-        return;
+      // 拼接参数
+      let targetUrl = route;
+      if (queryParams && Object.keys(queryParams).length > 0) {
+        const search = new URLSearchParams(queryParams).toString();
+        targetUrl = `${route}?${search}`;
       }
 
-      // 拼接小程序预览页路径 + URL 参数
-      const miniProgramPreviewUrl = `${miniProgramPreviewPath}?url=${encodeURIComponent(url)}`;
-
-      // 优先使用 navigateTo 跳转
+      // 优先 navigateTo
       if (wx.miniProgram.navigateTo) {
         wx.miniProgram.navigateTo({
-          url: miniProgramPreviewUrl,
-          success: () => {
-            console.log('✅ 跳转小程序预览页成功');
-          },
+          url: targetUrl,
+          success: () => console.log('✅ 小程序跳转成功'),
           fail: (err: any) => {
-            console.error('❌ navigateTo 跳转失败：', err);
-            // 备选：redirectTo 重试
-            if (wx.miniProgram.redirectTo) {
-              wx.miniProgram.redirectTo({
-                url: miniProgramPreviewUrl,
-              });
-            } else {
-              alert('跳转失败，请手动返回小程序重试');
-            }
+            console.error('❌ navigateTo 失败：', err);
+            // 降级 redirectTo
+            wx.miniProgram.redirectTo?.({ url: targetUrl });
           },
         });
-      }
-      // 兜底：postMessage 传参
-      else if (wx.miniProgram.postMessage) {
-        wx.miniProgram.postMessage({
-          data: {
-            action: 'openPreview',
-            url: url,
-          },
-        });
-        alert('已发送预览请求，请返回小程序页面查看');
       }
     },
-    [miniProgramPreviewPath, waitForWxReady]
+    [waitForWxReady]
   );
 
-  // 统一入口：根据环境打开预览链接
-  const openPreview = useCallback(
-    async (url: string) => {
-      if (isInWechatMiniProgram()) {
-        await openInWechatMiniProgram(url);
-      } else if (isInWechatBrowser()) {
-        openInWechatBrowser(url);
-      } else {
-        openInNormalBrowser(url);
+  // ==============================================
+  // 对外方法 1：跳转到【固定预览页】并传入文件 url
+  // ==============================================
+  const openFilePreview = useCallback(
+    async (fileUrl: string) => {
+      if (!isInWechatMiniProgram()) {
+        alert('仅支持在微信小程序内预览文件');
+        return;
       }
+
+      await navigateToMiniProgram(FIXED_PREVIEW_ROUTE, {
+        url: encodeURIComponent(fileUrl),
+      });
     },
-    [
-      isInWechatMiniProgram,
-      isInWechatBrowser,
-      openInWechatMiniProgram,
-      openInWechatBrowser,
-      openInNormalBrowser,
-    ]
+    [isInWechatMiniProgram, navigateToMiniProgram]
+  );
+
+  // ==============================================
+  // 对外方法 2：跳转到【自定义路由】（可传任意参数）
+  // ==============================================
+  const navigateToCustomRoute = useCallback(
+    async (route: string, params?: Record<string, string>) => {
+      if (!isInWechatMiniProgram()) {
+        alert('仅支持在微信小程序内跳转');
+        return;
+      }
+
+      await navigateToMiniProgram(route, params);
+    },
+    [isInWechatMiniProgram, navigateToMiniProgram]
   );
 
   return {
-    openPreview, // 对外暴露的核心方法
+    // 核心对外方法
+    openFilePreview, // 跳转固定预览页（传文件地址）
+    navigateToCustomRoute, // 跳转自定义路由
+
+    // 环境判断（可选保留）
     isInWechatMiniProgram,
     isInWechatBrowser,
   };
