@@ -142,14 +142,16 @@ const Answer: FC<AnswerProps> = ({
   return (
 
     <div className='mb-2 flex last:mb-0'>
+      {isBrowser() && (
       <div className='relative h-10 w-10 shrink-0'>
-        {isBrowser() && (answerIcon || <AnswerIcon />)}
+        {answerIcon || <AnswerIcon />}
         {responding && (
           <div className='absolute left-[-3px] top-[-3px] flex h-4 w-4 items-center rounded-full border-[0.5px] border-divider-subtle bg-background-section-burn pl-[6px] shadow-xs'>
             <LoadingAnim type='avatar' />
           </div>
         )}
       </div>
+      )}
       <div className='chat-answer-container group ml-1 w-0 grow pb-4' ref={containerRef}>
         <div className={cn('group relative pr-2', chatAnswerContainerInner)}>
           <div
