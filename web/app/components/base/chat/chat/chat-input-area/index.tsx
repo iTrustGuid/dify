@@ -52,7 +52,8 @@ type ChatInputAreaProps = {
   inputsForm?: InputForm[]
   theme?: Theme | null
   isResponding?: boolean
-  disabled?: boolean
+  disabled?: boolean,
+  onStopResponding?: () => void
 }
 
 const ChatInputArea = ({
@@ -69,6 +70,7 @@ const ChatInputArea = ({
   theme,
   isResponding,
   disabled,
+  onStopResponding  // 👈 加这行
 }: ChatInputAreaProps) => {
   const { t } = useTranslation()
   const { notify } = useToastContext()
@@ -541,10 +543,16 @@ const ChatInputArea = ({
   const handleSend = () => {
     if (isRecording) stopRecognition()
     
-    if (isResponding) {
-      notify({ type: 'info', message: t('appDebug.errorMessage.waitForResponse') })
-      return
-    }
+    // if (isResponding) {
+    //   notify({ type: 'info', message: t('appDebug.errorMessage.waitForResponse') })
+    //   return
+    // }
+
+      // 关键：正在回答时 → 自动停止上一轮，继续发新消息
+  if (isResponding && onStopResponding) {
+    onStopResponding() // 停止上一轮回答
+  }
+
     if (!onSend) return
 
     const { files, setFiles } = filesStore.getState()
