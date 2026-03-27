@@ -92,7 +92,10 @@ const SUBMIT_API = `${baseUrl}bdcpt/a/json/hlwywbase/info`;
 const USER_INFO_API = `${baseUrl}bdcpt/a/json/user/getUserInfo`;
 const FJID = '615fc82e0a294e95a841cd886006749b';
 const CONTRACT_FILE_FJID = '120f43025672496a9b1236f15b0f54cf';
-const PROPERTY_CERT_FJID = '1ccf126bda4d491fbad77f94be98f12d';
+const PROPERTY_CERT_FJID: { [key: string]: string } = {
+  '一手房转移': '1ccf126bda4d491fbad77f94be98f12d',
+  '补证换证': '72b8b0d940234509bffd6ce693e4b5cc'
+};
 const ETICKET_URL = 'https://www.wnxbdcdjzx.com/eticket';
 const CLOUD_SIGN_URL = 'https://www.wnxbdcdjzx.com/cloudsign';
 const MINI_PROGRAM_PATH = '/pagesB/my/process/detail';
@@ -230,7 +233,7 @@ export function MaterialUploadPreview({ data, type }: Props) {
           Authorization: userToken,
         },
         body: JSON.stringify({
-          fjid: PROPERTY_CERT_FJID,
+          fjid: PROPERTY_CERT_FJID[type],
           cqzhzmh: bdcqzh,
         }),
       });
@@ -244,7 +247,7 @@ export function MaterialUploadPreview({ data, type }: Props) {
       if (result.result_code === '200' && result.result?.filePath) {
         const files: FileInfo[] = result.result.filePath.map((path, index) => ({
           id: result.result.ids?.[index] || `cert-${index}`,
-          materialId: PROPERTY_CERT_FJID,
+          materialId: PROPERTY_CERT_FJID[type],
           fileName: result.result.fileName || '不动产权证书',
           filePath: `${INTELNET_BDCDJPT_URL}bdcpt${path}`,
           fileType: 'pdf',
@@ -255,7 +258,7 @@ export function MaterialUploadPreview({ data, type }: Props) {
         // 自动将证书文件添加到材料列表
         setMaterials((prevMaterials) =>
           prevMaterials.map((material) =>
-            material.materialId === PROPERTY_CERT_FJID
+            material.materialId === PROPERTY_CERT_FJID[type]
               ? { ...material, files }
               : material
           )
@@ -275,6 +278,13 @@ export function MaterialUploadPreview({ data, type }: Props) {
 
     if (parsed?.htbh) {
       fetchContractInfo(parsed.htbh);
+    }
+
+    if (type === '补证换证') {
+      // 直接获取证书材料
+      if (parsed?.bdcqzh) {
+        fetchElectronicCertificate(parsed?.bdcqzh);
+      }
     }
 
     setLoading(false);
@@ -578,6 +588,31 @@ export function MaterialUploadPreview({ data, type }: Props) {
     return ryxxVoList;
   }, [contractInfo, inputData, getIdCardType]);
 
+  // 构建人员列表(补证换证)
+  const buildPersonListByData = useCallback(() => {
+    const ryxxVoList: any[] = [];
+
+    if (inputData?.qlrmc) {
+      const qlrNames = inputData?.qlrmc.split('、');
+      const qlrIds = inputData?.sfzh?.split('、') || [];
+      qlrNames.forEach((name, index) => {
+        const idCardNo = qlrIds[index] || '';
+        const lxValue = getIdCardType(idCardNo);
+
+        ryxxVoList.push({
+          lx: 'lxValue',
+          sfzh: idCardNo,
+          lxfs: inputData?.mobile || '',
+          gyfe: '',
+          userName: name.trim(),
+          ryfl: '0',
+        });
+      });
+    }
+
+    return ryxxVoList;
+  }, [inputData, getIdCardType]);
+
   const handleSubmitBusiness = useCallback(async () => {
     try {
       setSubmitting(true);
@@ -603,41 +638,77 @@ export function MaterialUploadPreview({ data, type }: Props) {
         );
 
       // 构建提交数据
-      const submitData = {
-        id: '',
-        usercolum: '9',
-        ddmc: '3',
-        xlmc: '4b09bf2d95d44dbe9624f39d9a613449',
-        yhtype: '1',
-        qlrsfdl: 0,
-        ywrsfdl: 0,
-        sffjwz: 1,
-        cqType: '101',
-        fjPath,
-        flag: '',
-        sfwq: '1',
-        wqhtbh: inputData?.htbh || '',
-        cqzhzmh: contractInfo?.zl || '',
-        czorzmhend: '',
-        czorzmhstr: '',
-        data: {
-          htbh: inputData?.htbh || '',
-          wsbh: '',
-          jyje: contractInfo?.jyje?.toString() || '',
-          sffbcz: inputData?.gyfs?.sffbcz === '是' ? '1' : '0',
-          gyfs: inputData?.gyfs?.gyfs === '共同共有' ? '1' : inputData?.gyfs?.gyfs === '按份共有' ? '2' : '0',
-          qysj: contractInfo?.qysj ? new Date(contractInfo.qysj).toLocaleString('zh-CN') : '',
-        },
-        sendEms: [],
-        slry: inputData?.tzr?.name || '',
-        estatetag: 'YSFZY',
-        tdzh: '',
-        bdcdyh: '',
-        gyrList: [],
-        item: '4b09bf2d95d44dbe9624f39d9a613449',
-        ryxxVoList: buildPersonList(),
-        dlrxxVoList: [],
-      };
+      let submitData;
+      if (type === '一手房转移') {
+        submitData = {
+          id: '',
+          usercolum: '9',
+          ddmc: '3',
+          xlmc: '4b09bf2d95d44dbe9624f39d9a613449',
+          yhtype: '1',
+          qlrsfdl: 0,
+          ywrsfdl: 0,
+          sffjwz: 1,
+          cqType: '101',
+          fjPath,
+          flag: '',
+          sfwq: '1',
+          wqhtbh: inputData?.htbh || '',
+          cqzhzmh: contractInfo?.zl || '',
+          czorzmhend: '',
+          czorzmhstr: '',
+          data: {
+            htbh: inputData?.htbh || '',
+            wsbh: '',
+            jyje: contractInfo?.jyje?.toString() || '',
+            sffbcz: inputData?.gyfs?.sffbcz === '是' ? '1' : '0',
+            gyfs: inputData?.gyfs?.gyfs === '共同共有' ? '1' : inputData?.gyfs?.gyfs === '按份共有' ? '2' : '0',
+            qysj: contractInfo?.qysj ? new Date(contractInfo.qysj).toLocaleString('zh-CN') : '',
+          },
+          sendEms: [],
+          slry: inputData?.tzr?.name || '',
+          estatetag: 'YSFZY',
+          tdzh: '',
+          bdcdyh: '',
+          gyrList: [],
+          item: '4b09bf2d95d44dbe9624f39d9a613449',
+          ryxxVoList: buildPersonList(),
+          dlrxxVoList: [],
+        };
+      } else if (type === '补证换证') {
+        submitData = {
+          "id": "",
+          "usercolum": "9",
+          "ddmc": "22",
+          "xlmc": "0bd8e2ebff6e4e9c8a022a44d98d00f8",
+          "yhtype": "1",
+          "qlrsfdl": 0,
+          "ywrsfdl": 0,
+          "sffjwz": 1,
+          "cqType": "107",
+          fjPath,
+          "flag": "",
+          "sfwq": "1",
+          "wqhtbh": "",
+          "cqzhzmh": inputData?.bdcqzh,
+          "czorzmhend": "",
+          "czorzmhstr": "",
+          "data": {
+          },
+          "sendEms": [
+          ],
+          "slry": "",
+          "estatetag": "BZHZDJ",
+          "tdzh": "",
+          "bdcdyh": inputData?.bdcdyh,
+          "gyrList": [
+          ],
+          "item": "0bd8e2ebff6e4e9c8a022a44d98d00f8",
+          "ryxxVoList": buildPersonListByData(),
+          "dlrxxVoList": [
+          ],
+        }
+      }
 
       const response = await fetch(SUBMIT_API, {
         method: 'POST',
@@ -807,7 +878,7 @@ export function MaterialUploadPreview({ data, type }: Props) {
           >
             <span className={styles.uploadIcon}>📁</span>
             <p className={styles.uploadText}>
-              {uploading || parsing ? '上传中...' : '点击上传文件（批量上传自动分类）'}
+              {uploading || parsing ? '上传中...' : '点击上传（批量上传自动分类）'}
             </p>
             <p className={styles.uploadTip}>支持图片和PDF格式，单个文件不超过10MB</p>
           </div>

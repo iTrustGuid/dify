@@ -13,14 +13,18 @@ interface PropertyItem {
 
 type FlowStep = 'property-select' | 'material-upload';
 
-export function PropertyApplicationFlow({ data, type }: { data: Record<string, unknown>, type: string }) {
-  console.log('PropertyApplicationFlow data:', data, 'type:', type);
+export function PropertyApplicationFlow({ type }: { type: string }) {
+  console.log('PropertyApplicationFlow data:', 'type:', type);
   const [currentStep, setCurrentStep] = useState<FlowStep>('property-select');
   const [selectedProperty, setSelectedProperty] = useState<PropertyItem | null>(null);
+  const [flowData, setFlowData] = useState<{ [key: string]: any }>();
 
   // 处理房产选择确认
   const handlePropertyConfirm = useCallback((property: PropertyItem) => {
     setSelectedProperty(property);
+    setFlowData({
+      ...property,
+    })
     setCurrentStep('material-upload');
   }, []);
 
@@ -52,7 +56,7 @@ export function PropertyApplicationFlow({ data, type }: { data: Record<string, u
 
       {currentStep === 'material-upload' && selectedProperty && (
         <MaterialUploadPreviewWrapper
-          data={data}
+          data={selectedProperty}
           type={type}
           onBack={handleBackToPropertySelect}
           onComplete={handleMaterialUploadComplete}

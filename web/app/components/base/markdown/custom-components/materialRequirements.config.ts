@@ -80,13 +80,13 @@ const materialRequirements: ProcessTypeConfig = {
   ],
   // 补证换证
   '补证换证': [
-    {
-      id: '48467ceb366e48309bc3aac592c08ea8',
-      name: '申请表',
-      required: true,
-      maxFiles: 1,
-      acceptedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
-    },
+    // {
+    //   id: '48467ceb366e48309bc3aac592c08ea8',
+    //   name: '申请表',
+    //   required: true,
+    //   maxFiles: 1,
+    //   acceptedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
+    // },
     {
       id: '23ad749a40d240efa23ffa654b9f86bb',
       name: '身份证',

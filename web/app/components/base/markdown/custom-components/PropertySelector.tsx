@@ -3,13 +3,25 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './PropertySelector.module.css';
-import { INTELNET_BDCDJPT_URL } from '@/config';
+
+interface UserInfo {
+  no: string;           // 身份证号
+  name: string;         // 用户名
+  yhid?: string;        // 用户ID
+  token?: string;       // 令牌
+}
 
 interface PropertyItem {
   zl: string;           // 房产坐落
   bdcqzh: string;       // 不动产权证号
-  dy: string;           // 是否抵押（是/否）
-  cf: string;           // 是否查封（是/否）
+  sfdy: string;         // 是否抵押（0/1）
+  sfcf: string;         // 是否查封（0/1）
+  bdcdyh: string;       // 不动产单元号
+  yt: string;           // 用途
+  mj: string;           // 面积
+  qlrmc: string;        // 权利人名称
+  ywh?: string;         // 业务号
+  mobile?: string
 }
 
 interface ApiResponse<T> {
@@ -23,26 +35,25 @@ interface Props {
   onCancel?: () => void;
 }
 
-const baseUrl = location.href.startsWith('https') && INTELNET_BDCDJPT_URL || 'http://localhost:9000/';
-const API_URL = `${baseUrl}bdcpt/a/json/zssel/getCqzhList`;
+const BASE_URL = location.href.startsWith('https') && INTELNET_BDCDJPT_URL || 'http://localhost:9000/';
+const API_USER_INFO = `${BASE_URL}bdcpt/a/json/user/getUserInfo`;
+const API_PROPERTY_LIST = `${BASE_URL}bdcpt/a/json/hlwywbase/selfwbyytjlist`;
 
 export function PropertySelector({ onConfirm, onCancel }: Props) {
   const searchParams = useSearchParams();
   const userToken = searchParams.get('userToken') || '';
 
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
-  // 获取房产列表
-  const fetchProperties = useCallback(async () => {
+  // 获取用户信息
+  const fetchUserInfo = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(API_URL, {
+      const response = await fetch(API_USER_INFO, {
         method: 'GET',
         headers: {
           'Authorization': userToken,
@@ -51,7 +62,48 @@ export function PropertySelector({ onConfirm, onCancel }: Props) {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(`获取用户信息失败: HTTP ${response.status}`);
+      }
+
+      const data: ApiResponse<UserInfo> = await response.json();
+
+      if (data.result_code !== '200') {
+        throw new Error(data.result_msg || '获取用户信息失败');
+      }
+
+      setUserInfo(data.result);
+      return data.result;
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : '获取用户信息失败';
+      setError(errorMessage);
+      console.error('Error fetching user info:', err);
+      return null;
+    }
+  }, [userToken]);
+
+  // 获取房产列表
+  const fetchProperties = useCallback(async (user: UserInfo) => {
+    try {
+      setError(null);
+
+      const params = new URLSearchParams({
+        name: user.name,
+        no: user.no,
+        yhid: user.yhid || 'e595775e25664452ac080bcce088e14b',
+        basis: '1',
+      });
+
+      const response = await fetch(`${API_PROPERTY_LIST}?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': userToken,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`获取房产列表失败: HTTP ${response.status}`);
       }
 
       const data: ApiResponse<PropertyItem[]> = await response.json();
@@ -60,26 +112,12 @@ export function PropertySelector({ onConfirm, onCancel }: Props) {
         throw new Error(data.result_msg || '获取房产列表失败');
       }
 
-      setProperties(data.result.infos || []);
-      // setProperties([{
-      //   zl: '示例房产坐落地址',
-      //   bdcqzh: '赣2025万年县不动产权第0001566号',
-      //   dy: '否',
-      //   cf: '否',
-      // },
-      // {
-      //   zl: '示例房产坐落地址1',
-      //   bdcqzh: '赣2025万年县不动产权第0001567号',
-      //   dy: '否',
-      //   cf: '否',
-      // }]);
+      setProperties(Array.isArray(data.result) ? data.result : []);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : '获取房产列表失败，请稍后重试';
       setError(errorMessage);
       console.error('Error fetching properties:', err);
-    } finally {
-      setLoading(false);
     }
   }, [userToken]);
 
@@ -93,7 +131,7 @@ export function PropertySelector({ onConfirm, onCancel }: Props) {
     try {
       setConfirming(true);
       const selectedProperty = properties[selectedIndex];
-      onConfirm?.(selectedProperty);
+      onConfirm?.({ ...selectedProperty, mobile: userInfo.mobile });
       // window.postMessage({ type: 'dify-chatbot-append-message', message: `您选择的不动产权证号为: ${selectedProperty.bdcqzh}` }, '*');
     } catch (err) {
       const errorMessage =
@@ -109,15 +147,29 @@ export function PropertySelector({ onConfirm, onCancel }: Props) {
     onCancel?.();
   }, [onCancel]);
 
-  // 初始化加载
+  // 初始化加载：先获取用户信息，再获取房产列表
   useEffect(() => {
-    if (userToken) {
-      fetchProperties();
-    } else {
-      setError('未找到用户令牌，请检查URL参数');
-      setLoading(false);
-    }
-  }, [userToken, fetchProperties]);
+    const initialize = async () => {
+      try {
+        setLoading(true);
+
+        if (!userToken) {
+          setError('未找到用户令牌，请检查URL参数');
+          setLoading(false);
+          return;
+        }
+
+        const user = await fetchUserInfo();
+        if (user) {
+          await fetchProperties(user);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initialize();
+  }, [userToken, fetchUserInfo, fetchProperties]);
 
   if (loading) {
     return (
@@ -138,9 +190,12 @@ export function PropertySelector({ onConfirm, onCancel }: Props) {
           <p className={styles.errorMessage}>{error}</p>
           <button
             className={styles.retryButton}
-            onClick={() => {
+            onClick={async () => {
               setError(null);
-              fetchProperties();
+              const user = await fetchUserInfo();
+              if (user) {
+                await fetchProperties(user);
+              }
             }}
           >
             重试
@@ -186,23 +241,23 @@ export function PropertySelector({ onConfirm, onCancel }: Props) {
                     )}
                   </div>
                   <div className={styles.itemContent}>
-                    <p className={styles.bdcqzh}>{property.cqzh}</p>
+                    <p className={styles.bdcqzh}>{property.bdcqzh}</p>
                     <p className={styles.zl}>{property.zl}</p>
                   </div>
                 </div>
 
                 <div className={styles.itemFooter}>
                   <span
-                    className={`${styles.badge} ${property.sfdy === '1' ? styles.badgeDanger : styles.badgeSuccess
+                    className={`${styles.badge} ${property.sfdy === '0次' || property.sfdy === '0' ? styles.badgeSuccess : styles.badgeDanger
                       }`}
                   >
-                    抵押: {property.sfdy === '1' ? '是' : '否'}
+                    抵押: {property.dyqk}
                   </span>
                   <span
-                    className={`${styles.badge} ${property.sfcf === '1' ? styles.badgeDanger : styles.badgeSuccess
+                    className={`${styles.badge} ${property.sfcf === '0次' || property.sfcf === '0' ? styles.badgeSuccess : styles.badgeDanger
                       }`}
                   >
-                    查封: {property.sfcf === '1' ? '是' : '否'}
+                    查封: {property.sfcf}
                   </span>
                 </div>
               </div>
