@@ -4,8 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './app-yfwf-zm.module.css';
 import { INTELNET_BDCDJPT_URL } from '@/config';
-
-// 👇 这是你唯一需要的外部 Hook（确保这个文件单独存在）
+// ✅ 导入新版封装好的 Hook
 import { useWxMiniProgramPreview } from './WxMiniProgramPreview';
 
 interface PropertyInfo {
@@ -61,6 +60,7 @@ export function PropertyCertificate() {
   const searchParams = useSearchParams();
   const userToken = searchParams.get('userToken') || '';
 
+  // 状态管理
   const [certificateType, setCertificateType] = useState<CertificateType>(null);
   const [propertyList, setPropertyList] = useState<PropertyInfo[]>([]);
   const [dictList, setDictList] = useState<DictItem[]>([]);
@@ -80,9 +80,9 @@ export function PropertyCertificate() {
   const [generateSuccess, setGenerateSuccess] = useState(false);
 
   // ==============================================
-  // 🔥 唯一正确调用（最小化，不删不改）
+  // ✅ 关键 1：使用新版 Hook（无需传路径，内部已固定）
   // ==============================================
-  const { navigateToFixedPreview } = useWxMiniProgramPreview();
+  const { openFilePreview } = useWxMiniProgramPreview();
 
   // 获取房产信息
   const fetchPropertyInfo = useCallback(async () => {
@@ -114,6 +114,7 @@ export function PropertyCertificate() {
       const result = data.result;
       setPropertyList(result.infos || []);
 
+      // 判断证明类型
       if (result.infos && result.infos.length > 0) {
         setCertificateType('owned');
       } else {
@@ -218,6 +219,7 @@ export function PropertyCertificate() {
         throw new Error(data.result_msg || '生成证明失败');
       }
 
+      // 获取最终访问地址
       await fetchPreviewUrl(data.result);
       setSuccessMessage('证明生成成功！');
       setGenerateSuccess(true);
@@ -236,7 +238,9 @@ export function PropertyCertificate() {
     async (fileUrl: string) => {
       try {
         setPreviewLoading(true);
-        setPreviewUrl(`https://www.wnxbdcdjzx.com/estate/${fileUrl}`);
+        // ✅ 拼接完整预览地址
+        const fullUrl = `https://www.wnxbdcdjzx.com/estate/${fileUrl}`;
+        setPreviewUrl(fullUrl);
         setShowPreview(true);
       } catch (err) {
         const errorMessage =
@@ -251,15 +255,15 @@ export function PropertyCertificate() {
   );
 
   // ==============================================
-  // 🔥 打开预览（最小化，完全正常）
+  // ✅ 关键 2：调用新版 Hook 预览文件（极简）
   // ==============================================
   const handleOpenPreview = useCallback(async () => {
     if (!previewUrl) return;
-    const certType = certificateType === 'owned' ? 'fxzm' : 'zzlb';
-    await navigateToFixedPreview(previewUrl, certType);
-  }, [previewUrl, certificateType, navigateToFixedPreview]);
+    // 直接调用：跳转固定预览页 + 自动传参
+    await openFilePreview(previewUrl);
+  }, [previewUrl, openFilePreview]);
 
-  // 重置
+  // 重置表单
   const handleReset = () => {
     setSelectedProperty('');
     setSelectedPurpose('');
@@ -270,6 +274,7 @@ export function PropertyCertificate() {
     setGenerateSuccess(false);
   };
 
+  // 初始化加载
   useEffect(() => {
     if (userToken) {
       fetchPropertyInfo();
@@ -335,6 +340,7 @@ export function PropertyCertificate() {
       )}
 
       <div className={styles.formContainer}>
+        {/* 有房证明表单 */}
         {certificateType === 'owned' && (
           <>
             <div className={styles.formGroup}>
@@ -344,7 +350,7 @@ export function PropertyCertificate() {
               <select
                 className={styles.select}
                 value={selectedProperty}
-                onChange={(e) => setSelectedProperty(e.target.value)}
+                onChange={(e) => setSelectedProperty(e.value)}
                 disabled={generating}
               >
                 <option value="">请选择房屋</option>
@@ -382,6 +388,7 @@ export function PropertyCertificate() {
           </>
         )}
 
+        {/* 无房证明表单 */}
         {certificateType === 'unowned' && (
           <div className={styles.unownedTip}>
             <p className={styles.unownedIcon}>📋</p>
@@ -391,6 +398,7 @@ export function PropertyCertificate() {
           </div>
         )}
 
+        {/* 查档用途选择（通用） */}
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>
             查档用途 <span className={styles.required}>*</span>
@@ -398,23 +406,27 @@ export function PropertyCertificate() {
           <select
             className={styles.select}
             value={selectedPurpose}
-            onChange={(e) => setSelectedPurpose(e.target.value)}
+            onChange={(e) => setSelectedPurpose(e.value)}
             disabled={generating || dictLoading}
           >
             <option value="">
               {dictLoading ? '加载中...' : '请选择查档用途'}
             </option>
             {dictList.map((item) => (
-              <option key={item.value} value={item.value}>{item.label}</option>
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
             ))}
           </select>
         </div>
 
+        {/* 操作按钮 */}
         <div className={styles.buttonGroup}>
           <button
             className={styles.generateButton}
             onClick={handleGenerate}
             disabled={generating || dictLoading || !selectedPurpose || generateSuccess}
+            title={generateSuccess ? '证明已生成，请重置后重新生成' : ''}
           >
             {generating ? (
               <>
@@ -437,18 +449,26 @@ export function PropertyCertificate() {
         </div>
       </div>
 
+      {/* 预览模态框 */}
       {showPreview && previewUrl && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
               <h2>证明预览</h2>
-              <button className={styles.closeButton} onClick={() => setShowPreview(false)}>✕</button>
+              <button
+                className={styles.closeButton}
+                onClick={() => setShowPreview(false)}
+              >
+                ✕
+              </button>
             </div>
+
             <div className={styles.modalBody}>
               <div className={styles.previewInfo}>
-                <p>证明已生成，点击下方按钮在新标签页中打开预览。</p>
+                <p>证明已生成，点击下方按钮在小程序内预览。</p>
               </div>
             </div>
+
             <div className={styles.modalFooter}>
               <button
                 className={styles.previewButton}
@@ -468,7 +488,12 @@ export function PropertyCertificate() {
         </div>
       )}
 
-      {showPreview && <div className={styles.modalBackdrop} onClick={() => setShowPreview(false)}></div>}
+      {showPreview && (
+        <div
+          className={styles.modalBackdrop}
+          onClick={() => setShowPreview(false)}
+        ></div>
+      )}
     </div>
   );
 }

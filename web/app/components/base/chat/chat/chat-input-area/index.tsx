@@ -823,7 +823,7 @@ const ChatInputArea = ({
       {activePanel && (
         <div
           ref={panelRef}
-          className="absolute bottom-full left-[1px] w-[66.666%] mb-2 bg-white rounded-xl shadow-lg border border-gray-100 z-50"
+          className="absolute bottom-full  w-[66.666%] mb-2 bg-white rounded-xl shadow-lg border border-gray-100 z-50"
         >
           {renderPanel()}
         </div>
