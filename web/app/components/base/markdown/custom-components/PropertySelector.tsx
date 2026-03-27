@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './PropertySelector.module.css';
+import { INTELNET_BDCDJPT_URL } from '@/config';
 
 interface UserInfo {
   no: string;           // 身份证号
