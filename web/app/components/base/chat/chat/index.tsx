@@ -366,6 +366,7 @@ const Chat: FC<ChatProps> = ({
                 inputsForm={inputsForm}
                 theme={themeBuilder?.theme}
                 isResponding={isResponding}
+                onStopResponding={onStopResponding} 
               />
             )}
           </div>
