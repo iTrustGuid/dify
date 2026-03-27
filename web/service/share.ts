@@ -182,7 +182,7 @@ export const generationConversationName = async (isInstalledApp: boolean, instal
 }
 
 export const fetchChatList = async (conversationId: string, isInstalledApp: boolean, installedAppId = '') => {
-  return getAction('get', isInstalledApp)(getUrl('messages', isInstalledApp, installedAppId), { params: { conversation_id: conversationId, limit: 20, last_id: '' } }) as any
+  return getAction('get', isInstalledApp)(getUrl('messages', isInstalledApp, installedAppId), { params: { conversation_id: conversationId, limit: 20, last_id: '' } }, { silent: true }) as any
 }
 
 // Abandoned API interface
@@ -305,7 +305,7 @@ export const fetchAccessToken = async ({ userId, appCode }: { userId?: string, a
   if (userId)
     params.append('user_id', userId)
   const url = `/passport?${params.toString()}`
-  return get<{ access_token: string }>(url, { headers }) as Promise<{ access_token: string }>
+  return get<{ access_token: string }>(url, { headers }, { silent: true }) as Promise<{ access_token: string }>
 }
 
 export const getUserCanAccess = (appId: string, isInstalledApp: boolean) => {
