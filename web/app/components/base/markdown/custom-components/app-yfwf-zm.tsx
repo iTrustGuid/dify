@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './app-yfwf-zm.module.css';
 import { INTELNET_BDCDJPT_URL } from '@/config';
-// 🔥 1. 导入通用Hook（同级路径）
+// 🔥 导入最新 Hook
 import { useWxMiniProgramPreview } from './WxMiniProgramPreview';
 
 interface PropertyInfo {
@@ -79,8 +79,10 @@ export function PropertyCertificate() {
   const [showPreview, setShowPreview] = useState(false);
   const [generateSuccess, setGenerateSuccess] = useState(false);
 
-  // 🔥 2. 使用通用Hook，传入小程序预览页路径（注意路径和原逻辑一致）
-  const { openPreview } = useWxMiniProgramPreview('/pagesB/my/preview/preview');
+  // ==============================================
+  // 🔥 核心修改 1：只调用一次 Hook，取出两个方法
+  // ==============================================
+  const { navigateToFixedPreview } = useWxMiniProgramPreview();
 
   // 获取房产信息
   const fetchPropertyInfo = useCallback(async () => {
@@ -112,7 +114,6 @@ export function PropertyCertificate() {
       const result = data.result;
       setPropertyList(result.infos || []);
 
-      // 判断证明类型
       if (result.infos && result.infos.length > 0) {
         setCertificateType('owned');
       } else {
@@ -217,7 +218,6 @@ export function PropertyCertificate() {
         throw new Error(data.result_msg || '生成证明失败');
       }
 
-      // 获取最终访问地址
       await fetchPreviewUrl(data.result);
       setSuccessMessage('证明生成成功！');
       setGenerateSuccess(true);
@@ -236,7 +236,7 @@ export function PropertyCertificate() {
     async (fileUrl: string) => {
       try {
         setPreviewLoading(true);
-
+        // 拼接完整预览地址
         setPreviewUrl(`https://www.wnxbdcdjzx.com/estate/${fileUrl}`);
         setShowPreview(true);
       } catch (err) {
@@ -248,20 +248,21 @@ export function PropertyCertificate() {
         setPreviewLoading(false);
       }
     },
-    [userToken]
+    []
   );
 
-  // 🔥 3. 简化打开预览逻辑：直接调用通用Hook的openPreview
+  // ==============================================
+  // 🔥 核心修改 2：使用新方法跳转，自动传 certType
+  // ==============================================
   const handleOpenPreview = useCallback(async () => {
     if (!previewUrl) return;
-    await openPreview(previewUrl); // 直接使用通用方法
-  }, [previewUrl, openPreview]);
 
-  // 🔥 4. 删除原组件内重复的以下方法：
-  // - isInWechatMiniProgram
-  // - isInWechatBrowser
-  // - openInWechatMiniProgram
-  // - openInWechatBrowser
+    // 有房 → fxzm，无房 → zzlb
+    const certType = certificateType === 'owned' ? 'fxzm' : 'zzlb';
+
+    // 直接调用 Hook 方法，自动拼接 url + certType
+    await navigateToFixedPreview(previewUrl, certType);
+  }, [previewUrl, certificateType, navigateToFixedPreview]);
 
   // 重置表单
   const handleReset = () => {
@@ -340,7 +341,6 @@ export function PropertyCertificate() {
       )}
 
       <div className={styles.formContainer}>
-        {/* 有房证明表单 */}
         {certificateType === 'owned' && (
           <>
             <div className={styles.formGroup}>
@@ -388,7 +388,6 @@ export function PropertyCertificate() {
           </>
         )}
 
-        {/* 无房证明表单 */}
         {certificateType === 'unowned' && (
           <div className={styles.unownedTip}>
             <p className={styles.unownedIcon}>📋</p>
@@ -398,102 +397,98 @@ export function PropertyCertificate() {
           </div>
         )}
 
-        {/* 查档用途选择（通用） */}
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>
             查档用途 <span className={styles.required}>*</span>
-          </label>
-          <select
-            className={styles.select}
-            value={selectedPurpose}
-            onChange={(e) => setSelectedPurpose(e.target.value)}
-            disabled={generating || dictLoading}
-          >
-            <option value="">
-              {dictLoading ? '加载中...' : '请选择查档用途'}
-            </option>
-            {dictList.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* 操作按钮 */}
-        <div className={styles.buttonGroup}>
-          <button
-            className={styles.generateButton}
-            onClick={handleGenerate}
-            disabled={generating || dictLoading || !selectedPurpose || generateSuccess}
-            title={generateSuccess ? '证明已生成，请重置后重新生成' : ''}
-          >
-            {generating ? (
-              <>
-                <span className={styles.spinner2}></span>
-                生成中...
-              </>
-            ) : generateSuccess ? (
-              '✓ 已生成'
-            ) : (
-              '生成证明'
-            )}
-          </button>
-          <button
-            className={styles.resetButton}
-            onClick={handleReset}
-            disabled={generating}
-          >
-            重置
-          </button>
-        </div>
-      </div>
-
-      {/* 预览模态框 */}
-      {showPreview && previewUrl && (
-        <div className={styles.modal}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h2>证明预览</h2>
-              <button
-                className={styles.closeButton}
-                onClick={() => setShowPreview(false)}
+              </label>
+              <select
+                className={styles.select}
+                value={selectedPurpose}
+                onChange={(e) => setSelectedPurpose(e.target.value)}
+                disabled={generating || dictLoading}
               >
-                ✕
-              </button>
+                <option value="">
+                  {dictLoading ? '加载中...' : '请选择查档用途'}
+                </option>
+                {dictList.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className={styles.modalBody}>
-              <div className={styles.previewInfo}>
-                <p>证明已生成，点击下方按钮在新标签页中打开预览。</p>
-              </div>
-            </div>
-
-            <div className={styles.modalFooter}>
+            <div className={styles.buttonGroup}>
               <button
-                className={styles.previewButton}
-                onClick={handleOpenPreview}
-                disabled={previewLoading}
+                className={styles.generateButton}
+                onClick={handleGenerate}
+                disabled={generating || dictLoading || !selectedPurpose || generateSuccess}
               >
-                {previewLoading ? '加载中...' : '打开预览'}
+                {generating ? (
+                  <>
+                    <span className={styles.spinner2}></span>
+                    生成中...
+                  </>
+                ) : generateSuccess ? (
+                  '✓ 已生成'
+                ) : (
+                  '生成证明'
+                )}
               </button>
               <button
-                className={styles.closeModalButton}
-                onClick={() => setShowPreview(false)}
+                className={styles.resetButton}
+                onClick={handleReset}
+                disabled={generating}
               >
-                关闭
+                重置
               </button>
             </div>
           </div>
-        </div>
-      )}
 
-      {showPreview && (
-        <div
-          className={styles.modalBackdrop}
-          onClick={() => setShowPreview(false)}
-        ></div>
-      )}
-    </div>
+          {showPreview && previewUrl && (
+            <div className={styles.modal}>
+              <div className={styles.modalContent}>
+                <div className={styles.modalHeader}>
+                  <h2>证明预览</h2>
+                  <button
+                    className={styles.closeButton}
+                    onClick={() => setShowPreview(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className={styles.modalBody}>
+                  <div className={styles.previewInfo}>
+                    <p>证明已生成，点击下方按钮在新标签页中打开预览。</p>
+                  </div>
+                </div>
+
+                <div className={styles.modalFooter}>
+                  <button
+                    className={styles.previewButton}
+                    onClick={handleOpenPreview}
+                    disabled={previewLoading}
+                  >
+                    {previewLoading ? '加载中...' : '打开预览'}
+                  </button>
+                  <button
+                    className={styles.closeModalButton}
+                    onClick={() => setShowPreview(false)}
+                  >
+                    关闭
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showPreview && (
+            <div
+              className={styles.modalBackdrop}
+              onClick={() => setShowPreview(false)}
+            ></div>
+          )}
+        </div>
   );
 }

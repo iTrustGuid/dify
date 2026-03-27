@@ -4,25 +4,22 @@
 import { useCallback } from 'react';
 
 /**
- * 通用：H5 向微信小程序传递 URL 并跳转预览页的逻辑
- * @param miniProgramPreviewPath 小程序预览页路径（如 /pagesB/my/preview/preview）
+ * 微信小程序 H5 跳转 Hook（最终版，支持 url + certType）
  */
-export const useWxMiniProgramPreview = (miniProgramPreviewPath: string) => {
+export const useWxMiniProgramPreview = () => {
   const ua = navigator.userAgent.toLowerCase();
 
-  // 等待 wx 对象加载完成（最多等3秒）
+  // 等待微信JSSDK
   const waitForWxReady = useCallback(async (): Promise<any> => {
     return new Promise((resolve) => {
       let checkTimer: NodeJS.Timeout;
-      const maxWaitTime = 3000; // 最大等待3秒
+      const maxWaitTime = 3000;
 
-      // 立即检查一次
       if ((window as any).wx) {
         resolve((window as any).wx);
         return;
       }
 
-      // 轮询检查 wx 是否加载完成
       checkTimer = setInterval(() => {
         if ((window as any).wx) {
           clearInterval(checkTimer);
@@ -30,7 +27,6 @@ export const useWxMiniProgramPreview = (miniProgramPreviewPath: string) => {
         }
       }, 100);
 
-      // 超时未加载完成，返回 null
       setTimeout(() => {
         clearInterval(checkTimer);
         resolve(null);
@@ -38,102 +34,72 @@ export const useWxMiniProgramPreview = (miniProgramPreviewPath: string) => {
     });
   }, []);
 
-  // 检测是否在微信小程序webview中
+  // 是否在小程序内
   const isInWechatMiniProgram = useCallback((): boolean => {
-    return typeof (window as any).wx !== 'undefined' && (window as any).wx.miniProgram && ua.includes('miniprogram');
-  }, []);
+    return !!(
+      typeof (window as any).wx !== 'undefined' &&
+      (window as any).wx.miniProgram &&
+      ua.includes('miniprogram')
+    );
+  }, [ua]);
 
-  // 检测是否在微信浏览器中
-  const isInWechatBrowser = useCallback((): boolean => {
-    const ua = navigator.userAgent.toLowerCase();
-    return /micromessenger/.test(ua);
-  }, []);
-
-  // 微信浏览器中打开链接
-  const openInWechatBrowser = useCallback((url: string) => {
-    window.location.href = url;
-  }, []);
-
-  // PC/其他浏览器中打开链接
-  const openInNormalBrowser = useCallback((url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }, []);
-
-  // 核心：跳转小程序并传递 URL 参数
-  const openInWechatMiniProgram = useCallback(
-    async (url: string) => {
+  // 统一跳转执行
+  const navigateToMiniProgram = useCallback(
+    async (fullPath: string) => {
       const wx = await waitForWxReady();
-
       if (!wx) {
-        alert('微信环境初始化失败，请刷新页面重试');
+        alert('微信环境初始化失败，请刷新重试');
         return;
       }
-
       if (!wx.miniProgram) {
-        alert('当前未在微信小程序环境中');
+        alert('当前不在微信小程序环境');
         return;
       }
 
-      // 拼接小程序预览页路径 + URL 参数
-      const miniProgramPreviewUrl = `${miniProgramPreviewPath}?url=${encodeURIComponent(url)}`;
+      console.log('🚀 跳转:', fullPath);
 
-      // 优先使用 navigateTo 跳转
       if (wx.miniProgram.navigateTo) {
         wx.miniProgram.navigateTo({
-          url: miniProgramPreviewUrl,
-          success: () => {
-            console.log('✅ 跳转小程序预览页成功');
-          },
+          url: fullPath,
+          success: () => console.log('✅ 跳转成功'),
           fail: (err: any) => {
-            console.error('❌ navigateTo 跳转失败：', err);
-            // 备选：redirectTo 重试
-            if (wx.miniProgram.redirectTo) {
-              wx.miniProgram.redirectTo({
-                url: miniProgramPreviewUrl,
-              });
-            } else {
-              alert('跳转失败，请手动返回小程序重试');
-            }
+            console.error('❌ 失败', err);
+            wx.miniProgram.redirectTo?.({ url: fullPath });
           },
         });
-      }
-      // 兜底：postMessage 传参
-      else if (wx.miniProgram.postMessage) {
-        wx.miniProgram.postMessage({
-          data: {
-            action: 'openPreview',
-            url: url,
-          },
-        });
-        alert('已发送预览请求，请返回小程序页面查看');
       }
     },
-    [miniProgramPreviewPath, waitForWxReady]
+    [waitForWxReady]
   );
 
-  // 统一入口：根据环境打开预览链接
-  const openPreview = useCallback(
-    async (url: string) => {
-      if (isInWechatMiniProgram()) {
-        await openInWechatMiniProgram(url);
-      } else if (isInWechatBrowser()) {
-        openInWechatBrowser(url);
-      } else {
-        openInNormalBrowser(url);
-      }
+  // ==============================================
+  // 【核心方法 1】跳固定预览页（支持 url + certType）
+  // ==============================================
+  const navigateToFixedPreview = useCallback(
+    async (fileUrl: string, certType: string = '') => {
+      const url = encodeURIComponent(fileUrl);
+      const type = encodeURIComponent(certType);
+      const fullPath = `/pagesB/my/preview/preview?url=${url}&certType=${type}`;
+      await navigateToMiniProgram(fullPath);
     },
-    [
-      isInWechatMiniProgram,
-      isInWechatBrowser,
-      openInWechatMiniProgram,
-      openInWechatBrowser,
-      openInNormalBrowser,
-    ]
+    [navigateToMiniProgram]
+  );
+
+  // ==============================================
+  // 【核心方法 2】跳任意页面（自由传参）
+  // ==============================================
+  const navigateToCustomPage = useCallback(
+    async (route: string, params: Record<string, any> = {}) => {
+      const paramsStr = new URLSearchParams(params).toString();
+      const fullPath = paramsStr ? `${route}?${paramsStr}` : route;
+      await navigateToMiniProgram(fullPath);
+    },
+    [navigateToMiniProgram]
   );
 
   return {
-    openPreview, // 对外暴露的核心方法
     isInWechatMiniProgram,
-    isInWechatBrowser,
+    navigateToFixedPreview,  // 跳预览页（主推）
+    navigateToCustomPage,    // 跳任意页
   };
 };
