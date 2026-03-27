@@ -285,10 +285,27 @@ const ChatInputArea = ({
         return (
           <div className="p-4">
             <div className="space-y-3">
-              <button className="block w-full text-left text-sm text-gray-900">
+              {/* 历史对话 → 打开左侧边栏 */}
+              {/* <button
+                onClick={() => {
+                  // 打开左侧历史记录
+                  window.postMessage({ type: "OPEN_SIDEBAR" }, "*"); // 👈 去掉 parent
+                  closePanel();
+                }}
+                className="block w-full text-left text-sm text-gray-900"
+              >
                 历史对话
-              </button>
-              <button className="block w-full text-left text-sm text-gray-900">
+              </button> */}
+
+              {/* 重置对话 → 新建对话（清空当前） */}
+              <button
+                onClick={() => {
+                  // 触发重置/新建对话
+                  window.parent.postMessage({ type: "NEW_CONVERSATION" }, "*");
+                  closePanel();
+                }}
+                className="block w-full text-left text-sm text-gray-900"
+              >
                 重置对话
               </button>
             </div>
@@ -823,7 +840,11 @@ const ChatInputArea = ({
       {activePanel && (
         <div
           ref={panelRef}
-          className="absolute bottom-full  w-[66.666%] mb-2 bg-white rounded-xl shadow-lg border border-gray-100 z-50"
+          className="absolute bottom-full w-[66.666%] mb-2 max-h-[60vh] overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-100 z-50
+    scrollbar-hide
+    [-ms-overflow-style:'none']
+    [scrollbar-width:'none']
+    "
         >
           {renderPanel()}
         </div>
